@@ -518,7 +518,7 @@ QVariant DataSetPackage::data(const QModelIndex &index, int role) const
 		case int(specialRoles::shadowDisplay):					return tq(column->getShadow(index.row()));
 		case int(specialRoles::valuesDblList):					return getColumnValuesAsDoubleList(getColumnIndex(column->name()));
 		case int(specialRoles::nonFilteredNumericValuesCount):	return column->nonFilteredNumericsCount();
-		case int(specialRoles::nonFilteredLevels):				return tql(column->nonFilteredLevels());
+        case int(specialRoles::nonFilteredLevels):				return tq(column->nonFilteredLevels());
 		case int(specialRoles::computedColumnType):				return int(column->codeType());
 		case int(specialRoles::columnPkgIndex):					return index.column();
 		case int(specialRoles::lines):
@@ -551,7 +551,7 @@ QVariant DataSetPackage::data(const QModelIndex &index, int role) const
 		switch(role)
 		{
 		case int(specialRoles::nonFilteredNumericValuesCount):	return column->nonFilteredNumericsCount();
-		case int(specialRoles::nonFilteredLevels):				return tql(column->nonFilteredLevels());
+        case int(specialRoles::nonFilteredLevels):				return tq(column->nonFilteredLevels());
 		case int(specialRoles::valuesDblList):					return getColumnValuesAsDoubleList(getColumnIndex(column->name()));
 		case int(specialRoles::description):					return index.row() >= labels.size() ? "" : tq(labels[index.row()]->description());
 		case int(specialRoles::filter):							return index.row() >= labels.size() || labels[index.row()]->filterAllows();
@@ -1488,24 +1488,10 @@ bool DataSetPackage::initColumnWithStrings(QVariant colId, const std::string & n
 {
 	JASPTIMER_SCOPE(DataSetPackage::initColumnWithStrings);
 	
-	int			colIndex		=	getColIndex(colId),
-				threshold		=	Settings::value(Settings::THRESHOLD_SCALE).toInt();
-	Column	*	column			=	_dataSet->columns()[colIndex];
-				column			->	setHasCustomEmptyValues(emptyValues.size());
-				column			->	setCustomEmptyValues(emptyValues);
-				column			->	setName(newName);
-				column			->	setTitle(title);
-				column			->	beginBatchedLabelsDB();
-	bool		anyChanges		=	title != column->title() || newName != column->name();
-	columnType	prevType		=	column->type(),
-				suggestedType	=	column->setValues(values, labels,	threshold, &anyChanges);  //If less unique integers than the thresholdScale then we think it must be ordinal: https://github.com/jasp-stats/INTERNAL-jasp/issues/270
-				column			->	setType(column->type() != columnType::unknown ? column->type() : desiredType == columnType::unknown ? suggestedType : desiredType);
-				column			->	endBatchedLabelsDB();
-				
-	if(PreferencesModel::prefs()->orderByValueByDefault())
-		column->labelsOrderByValue();
-	
-	return anyChanges || column->type() != prevType;
+	return _dataSet->initColumnWithStrings(
+				getColIndex(colId), newName, values, labels, title, desiredType, emptyValues,
+				Settings::value(Settings::THRESHOLD_SCALE).toInt(),
+				PreferencesModel::prefs()->orderByValueByDefault());
 }
 
 void DataSetPackage::initializeComputedColumns()

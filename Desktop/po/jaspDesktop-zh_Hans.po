@@ -5376,3 +5376,7 @@ msgstr "菜单栏缩放（%）: "
 msgctxt "PrefsUI|"
 msgid "Set the scale of height of the ribbon."
 msgstr "设置顶部分析菜单栏的高度尺寸。"
+
+msgctxt "TabView|"
+msgid "Double click to edit this name"
+msgstr "双击以编辑此名称"

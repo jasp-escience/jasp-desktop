@@ -5629,3 +5629,7 @@ msgstr "Escala de cinta (%): "
 msgctxt "PrefsUI|"
 msgid "Set the scale of height of the ribbon."
 msgstr "Establecer la escala de altura de la cinta."
+
+msgctxt "TabView|"
+msgid "Double click to edit this name"
+msgstr "Haga doble clic para editar este nombre"

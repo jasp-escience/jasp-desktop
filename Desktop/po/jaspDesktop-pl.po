@@ -5269,12 +5269,10 @@ msgid ""
 "This setting can always be changed in the Interface Preferences."
 msgstr ""
 
-#, fuzzy
 msgctxt "MainWindow|"
 msgid "Yes"
 msgstr "Tak"
 
-#, fuzzy
 msgctxt "MainWindow|"
 msgid "No"
 msgstr "Nie"
@@ -5284,24 +5282,21 @@ msgctxt "ListModelTermsAssigned|"
 msgid "Only %1 variables are allowed"
 msgstr ""
 
-#, fuzzy
 msgctxt "VariableInfo|"
 msgid "Scale"
 msgstr "Skala"
 
-#, fuzzy
 msgctxt "VariableInfo|"
 msgid "Ordinal"
 msgstr "Porządkowa"
 
-#, fuzzy
 msgctxt "VariableInfo|"
 msgid "Nominal"
 msgstr "Nominalna"
 
 msgctxt "VariableInfo|"
 msgid "Unknown"
-msgstr ""
+msgstr "Nieznane"
 
 msgctxt "ColumnBasicInfo|"
 msgid "<First fill in the column name>"
@@ -5324,7 +5319,7 @@ msgstr ""
 
 msgctxt "ActionButtons|"
 msgid "New"
-msgstr ""
+msgstr "Nowy"
 
 msgctxt "FileEvent|"
 msgid "Importing Excel File"
@@ -5537,4 +5532,8 @@ msgstr ""
 
 msgctxt "PrefsUI|"
 msgid "Set the scale of height of the ribbon."
+msgstr ""
+
+msgctxt "TabView|"
+msgid "Double click to edit this name"
 msgstr ""

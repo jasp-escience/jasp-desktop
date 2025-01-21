@@ -968,10 +968,11 @@ int Column::nonFilteredNumericsCount()
 	return _nonFilteredNumericsCount;
 }
 
-stringset Column::nonFilteredLevels()
+stringvec Column::nonFilteredLevels()
 {
 	if (_nonFilteredLevels.empty())
 	{
+        stringset levels;
 		for(size_t r=0; r<_data->rowCount(); r++)
 			if(_data->filter()->filtered()[r])
 			{
@@ -979,14 +980,19 @@ stringset Column::nonFilteredLevels()
 				{
 					Label * label = labelByIntsId(_ints[r]);
 					if(label && !label->isEmptyValue())
-						_nonFilteredLevels.insert(label->label());
+                        levels.insert(label->label());
 				}
 				else if(!isEmptyValue(_dbls[r]))
-					_nonFilteredLevels.insert(ColumnUtils::doubleToString(_dbls[r]));
+                    levels.insert(ColumnUtils::doubleToString(_dbls[r]));
 			}
-	}
 
-	return _nonFilteredLevels;
+        // Use the right label order
+        for (std::string& label : _labelsTemp)
+            if (levels.find(label) != levels.end())
+                _nonFilteredLevels.push_back(label);
+    }
+
+    return _nonFilteredLevels;
 }
 
 void Column::nonFilteredCountersReset()

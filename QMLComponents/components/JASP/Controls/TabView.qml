@@ -92,6 +92,7 @@ ComponentsListBase
 					leftPadding			: jaspTheme.labelSpacing
 					color				: jaspTheme.black
 					text				: model.name
+					font				: jaspTheme.font
 					elide				: Text.ElideRight
 					width				: parent.width - jaspTheme.labelSpacing - (removeIconItem.visible ? removeIconItem.width  : 0)
 					visible				: !textFieldItem.visible
@@ -168,6 +169,14 @@ ComponentsListBase
 					color					: jaspTheme.uiBorder
 					visible					: !checked
 				}
+			}
+
+			QtControls.ToolTip
+			{
+				text			: qsTr("Double click to edit this name")
+				timeout			: jaspTheme.toolTipTimeout
+				delay			: jaspTheme.toolTipDelay
+				visible			: tabView.tabNameEditable && tabButton.hovered
 			}
 
 			onDoubleClicked:

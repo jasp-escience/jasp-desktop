@@ -5174,3 +5174,7 @@ msgstr ""
 msgctxt "PrefsUI|"
 msgid "Set the scale of height of the ribbon."
 msgstr ""
+
+msgctxt "TabView|"
+msgid "Double click to edit this name"
+msgstr ""

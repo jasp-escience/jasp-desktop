@@ -5205,7 +5205,6 @@ msgctxt "ResizeDataDialog|"
 msgid "Rows"
 msgstr "Zeilen"
 
-#, fuzzy
 msgctxt "ResizeDataDialog|"
 msgid "Resize"
 msgstr "Größe ändern"
@@ -5433,7 +5432,6 @@ msgctxt "PrefsResults|"
 msgid "PDF Settings"
 msgstr "PDF-Einstellungen"
 
-#, fuzzy
 msgctxt "PrefsResults|"
 msgid "Orientation"
 msgstr "Ausrichtung"
@@ -5450,7 +5448,6 @@ msgctxt "PrefsResults|"
 msgid "Page size"
 msgstr "Seitengröße"
 
-#, fuzzy
 msgctxt "FilterConstructor|"
 msgid "Filter cleared\n"
 msgstr "Filter gelöscht\n"
@@ -5471,7 +5468,6 @@ msgstr ""
 "Formel gibt keine logischen Werte zurück, und kann darum nicht in dem Filter "
 "genutzt werden.\n"
 
-#, fuzzy
 msgctxt "FilterConstructor|"
 msgid "Welcome to the drag and drop filter!\n"
 msgstr "Willkommen zum Ziehen-&-Ablegen-Filter!\n"
@@ -5504,9 +5500,10 @@ msgstr ""
 "Klicken Sie auf das (i)-Symbol in der unteren rechten Ecke für weitere "
 "Hilfe.\n"
 
+#, fuzzy
 msgctxt "TextInputBase|"
 msgid "Column-name-is-free field"
-msgstr ""
+msgstr "Feld Spaltenname-ist-frei"
 
 #, qt-format
 msgctxt "TextInputBase|"
@@ -5521,14 +5518,14 @@ msgstr "Filter hatte Fehler '%1'"
 
 msgctxt "LabelEditorWindow|"
 msgid "Automatically order labels by their value"
-msgstr ""
+msgstr "Sortiere Bezeichnungen automatisch nach deren Wert"
 
-#, fuzzy, qt-format
+#, qt-format
 msgctxt "JASPListControl|"
 msgid "Minimum number of levels is %1. Variable %2 has only %3 levels"
 msgstr "Minimale Anzahl von Stufen ist %1. Variable %2 hat nur %3 Stufen"
 
-#, fuzzy, qt-format
+#, qt-format
 msgctxt "JASPListControl|"
 msgid "Maximum number of levels is %1. Variable %2 has %3 levels."
 msgstr "Maximale Anzahl von Stufen ist %1. Die Variable %2 hat %3 Stufen."
@@ -5630,3 +5627,7 @@ msgstr "Skalierung des Menübandes (%): "
 msgctxt "PrefsUI|"
 msgid "Set the scale of height of the ribbon."
 msgstr "Legen Sie den Skalierungsgrad der Höhe des Menübandes fest."
+
+msgctxt "TabView|"
+msgid "Double click to edit this name"
+msgstr "Doppelklicken, um diesen Namen zu ändern"
