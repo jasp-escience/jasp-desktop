@@ -50,7 +50,8 @@ The functionality of those files can be graphically summarized as follows:
 
 ```mermaid
 graph TD
-R["R functions"] -- imported via --> NAMESPACE -- called by --> qmls["qml files"] -- to create--> Analyses
+Package["Dependencies"] --installed via--> renv["renv::install(packagename)"] -- functions imported via --> NAMESPACE
+R["Custom R functions"] -- imported via --> NAMESPACE -- called by --> qmls["qml files"] -- to create--> Analyses
 Analyses & help & icons & aesthetics["other aesthetics"] -- coordinated by --> Description.qml -- to create --> Menu["Graphical menu"]
 ```
 
