@@ -134,7 +134,7 @@ Item
 		Item
 		{
 			id:		columnList
-			width:	columns.width + columnsLeftScrollBar.width
+			width:	columns.width + columnsLeftScrollBar.width + jaspTheme.contentMargin + (columnsLeftScrollBar.visible ? jaspTheme.contentMargin : 0)
 
 			anchors
 			{
@@ -307,8 +307,8 @@ Item
 				bottomMargin:	filterConstructor.extraSpaceUnderColumns + filterConstructor.blockDim
 			}
 
-			width: functieLijst.width + anchors.rightMargin + functionsRightScrollBar.width
-
+			width: functieLijst.width + functionsRightScrollBar.width + jaspTheme.contentMargin + (functionsRightScrollBar.visible ? jaspTheme.contentMargin : 0)
+			
 			JASPScrollBar
 			{
 				id:				functionsRightScrollBar
