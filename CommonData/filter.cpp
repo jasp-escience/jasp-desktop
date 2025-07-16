@@ -1,17 +1,18 @@
+#include <cassert>
 #include "filter.h"
 #include "timers.h"
 #include "dataset.h"
 #include "databaseinterface.h"
 
 Filter::Filter(DataSet * data)
-	: DataSetBaseNode(dataSetBaseNodeType::filter, data), _data(data)
+	: DataSetBaseNode(dataSetBaseNodeType::filter, data), _data(data), _name(DEFAULT_FILTER_NAME)
 { }
 
 Filter::Filter(DataSet * data, const std::string & name, bool createIfMissing)
 	: DataSetBaseNode(dataSetBaseNodeType::filter), _data(data), _name(name)
 {
 	assert(_name != "");
-
+	
 	if(db().filterGetId(_name) > -1)	dbLoad();
 	else if(createIfMissing)			dbCreate();
 	else								throw std::runtime_error("Filter by name '" + _name + "' but it doesnt exist and createIfMissing=false!\nAre you sure this filter should exist?");
@@ -29,22 +30,27 @@ void Filter::dbUpdate()
 
 	assert(_id != -1);
 
-	db().transactionWriteBegin();
 	if(!_data->writeBatchedToDB())
+	{
+		db().transactionWriteBegin();
 		db().filterUpdate(_id, _rFilter, _generatedFilter, _constructorJson, _constructorR, _name);
 
-	incRevision();
-	db().transactionWriteEnd();
+		incRevision();
+		db().transactionWriteEnd();
+	}
 }
 
 void Filter::dbUpdateErrorMsg()
 {
 	assert(_id != -1);
-	db().transactionWriteBegin();
+	
 	if(!_data->writeBatchedToDB())
+	{
+		db().transactionWriteBegin();
 		db().filterUpdateErrorMsg(_id, _errorMsg);
-	incRevision();
-	db().transactionWriteEnd();
+		incRevision();
+		db().transactionWriteEnd();
+	}
 }
 
 void Filter::dbLoad()
@@ -158,7 +164,7 @@ bool Filter::checkForUpdates()
 		if(_id == -1)
 			return false;
 	}
-	else if(_revision == db().filterGetRevision(_id))
+	else if(_revision >= db().filterGetRevision(_id))
 		return false;
 
 	if(_data->id() != -1 && _id != -1)

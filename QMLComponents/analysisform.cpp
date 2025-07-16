@@ -41,16 +41,19 @@ AnalysisForm::AnalysisForm(QQuickItem *parent) : QQuickItem(parent)
 	setObjectName("AnalysisForm");
 
 	_rSyntax = new RSyntax(this);
+
 	// _startRSyntaxTimer is used to call setRSyntaxText only once in a event loop.
-	connect(this,									&AnalysisForm::infoChanged,					this, &AnalysisForm::helpMDChanged			);
-	connect(this,									&AnalysisForm::infoBottomChanged,			this, &AnalysisForm::helpMDChanged			);
-	connect(this,									&AnalysisForm::formCompletedSignal,			this, &AnalysisForm::formCompletedHandler,	Qt::QueuedConnection);
-	connect(this,									&AnalysisForm::analysisChanged,				this, &AnalysisForm::knownIssuesUpdated,	Qt::QueuedConnection);
-	connect(KnownIssues::issues(),					&KnownIssues::knownIssuesUpdated,			this, &AnalysisForm::knownIssuesUpdated,	Qt::QueuedConnection);
-	connect(this,									&AnalysisForm::showAllROptionsChanged,		this, &AnalysisForm::setRSyntaxText,		Qt::QueuedConnection);
-	connect(PreferencesModelBase::preferences(),	&PreferencesModelBase::showRSyntaxChanged,	this, &AnalysisForm::setRSyntaxText,		Qt::QueuedConnection);
-	connect(PreferencesModelBase::preferences(),	&PreferencesModelBase::showAllROptionsChanged,	this, &AnalysisForm::showAllROptionsChanged, Qt::QueuedConnection	);
-	connect(this,									&AnalysisForm::analysisChanged,				this, &AnalysisForm::setRSyntaxText,		Qt::QueuedConnection);
+
+	connect(this,									&AnalysisForm::infoChanged,						this, &AnalysisForm::helpMDChanged									);
+	connect(this,									&AnalysisForm::infoBottomChanged,				this, &AnalysisForm::helpMDChanged									);
+	connect(this,									&AnalysisForm::formCompletedSignal,				this, &AnalysisForm::formCompletedHandler,		Qt::QueuedConnection);
+	connect(this,									&AnalysisForm::analysisChanged,					this, &AnalysisForm::knownIssuesUpdated,		Qt::QueuedConnection);
+	connect(KnownIssues::issues(),					&KnownIssues::knownIssuesUpdated,				this, &AnalysisForm::knownIssuesUpdated,		Qt::QueuedConnection);
+	connect(this,									&AnalysisForm::showAllROptionsChanged,			this, &AnalysisForm::rSyntaxTextChanged,		Qt::QueuedConnection);
+	connect(PreferencesModelBase::preferences(),	&PreferencesModelBase::showRSyntaxChanged,		this, &AnalysisForm::rSyntaxTextChanged,		Qt::QueuedConnection);
+	connect(PreferencesModelBase::preferences(),	&PreferencesModelBase::showAllROptionsChanged,	this, &AnalysisForm::showAllROptionsChanged,	Qt::QueuedConnection);
+	connect(PreferencesModelBase::preferences(),	&PreferencesModelBase::developerModeChanged,	this, &AnalysisForm::helpMDChanged,				Qt::QueuedConnection);
+	connect(this,									&AnalysisForm::analysisChanged,					this, &AnalysisForm::rSyntaxTextChanged,		Qt::QueuedConnection);
 }
 
 AnalysisForm::~AnalysisForm()
@@ -81,9 +84,23 @@ void AnalysisForm::refreshAnalysis()
 	_analysis->refresh();
 }
 
-QString AnalysisForm::generateWrapper() const
+QString AnalysisForm::generateWrapper(const QString& moduleName, const QString& analysisName, const QString& qmlFileName, const QString& analysisTitle, bool preloadData)
 {
-	return _rSyntax->generateWrapper();
+	return _rSyntax->generateWrapper(moduleName, analysisName, qmlFileName, analysisTitle, preloadData);
+}
+
+QVariant AnalysisForm::getConstant(QString key, QVariant defaultValue) const
+{
+	if(_analysis)
+		return _analysis->getConstant(key, defaultValue);
+	return defaultValue;
+}
+
+QVariant AnalysisForm::getConstant(QString key, QVariant defaultValue, QString module, QString analysis) const
+{
+	if(_analysis)
+		return _analysis->getConstant(key, defaultValue, module, analysis);
+	return defaultValue;
 }
 
 void AnalysisForm::itemChange(QQuickItem::ItemChange change, const QQuickItem::ItemChangeData &value)
@@ -132,7 +149,7 @@ void AnalysisForm::runScriptRequestDone(const QString& result, const QString& co
 				bindTo(Json::nullValue);
 				// Some controls generate extra controls (rowComponents): these extra controls must be first destroyed, because they may disturb the binding of other controls
 				// For this, bind all controls to null and wait for the controls to be completely destroyed.
-				QTimer::singleShot(0, [=](){
+				QTimer::singleShot(0, this, [this, options](){
 					bindTo(options);
 					blockValueChangeSignal(false, false);
 					_analysis->boundValueChangedHandler();
@@ -232,7 +249,7 @@ void AnalysisForm::sortControls(QList<JASPControl*>& controls)
 	for (JASPControl* control : controls)
 	{
 		control->addExplicitDependency();
-		std::vector<JASPControl*> depends(control->depends().begin(), control->depends().end());
+		JASPControls depends(control->depends().begin(), control->depends().end());
 
 		// By adding at the end of the vector new dependencies, this makes sure that these dependencies of these new dependencies are
 		// added and so on recursively, so that the 'depends' set of each control gets all (direct or indirect) controls it depends on.
@@ -268,28 +285,41 @@ void AnalysisForm::setHasVolatileNotes(bool hasVolatileNotes)
 	emit hasVolatileNotesChanged();
 }
 
+void AnalysisForm::clearAllErrors()
+{
+	for (QQuickItem* item : _controlErrorMessageCache)
+	{
+		JASPControl* control = item->property("control").value<JASPControl*>();
+		if (control)
+		{
+			item->setProperty("control", QVariant());
+			control->setHasError(false);
+			control->setHasWarning(false);
+		}
+	}
+}
 
-QString AnalysisForm::parseOptions(QString options)
+bool AnalysisForm::parseOptions(std::string rawOptions, Json::Value& parsedOptions, std::string& errorMsg)
 {
 	Json::Reader jsonReader;
-	Json::Value	 jsonOptions;
-	Json::Value jsonResult(Json::objectValue);
-
 	
-	jsonReader.parse(fq(options), jsonOptions, false);
+	jsonReader.parse(rawOptions, parsedOptions, false);
 
-	if (!_analysis)
-		setAnalysis(new AnalysisBase(this)); // Create a dummy analyis object
+	clearAllErrors(); // Remove old error in case
 
-	if (_rSyntax->parseRSyntaxOptions(jsonOptions))
+	if (_rSyntax->parseRSyntaxOptions(parsedOptions))
 	{
-		bindTo(jsonOptions);
-		jsonOptions = _analysis->boundValues();
+		bindTo(parsedOptions);
+		parsedOptions = _analysis->boundValues();
 	}
 
-	jsonResult["options"] = jsonOptions;
-	jsonResult["error"] = fq(getError());
-	return tq(jsonResult.toStyledString());
+	if (hasError())
+	{
+		errorMsg = fq(getError(true));
+		return false;
+	}
+
+	return true;
 }
 
 void AnalysisForm::_setUp()
@@ -336,6 +366,18 @@ QString AnalysisForm::msgsListToString(const QStringList & list) const
 			text.append("<li>").append(msg).append("</li>");
 
 	return !text.size() ? "" : "<ul style=\"margins:0px\">" + text + "</ul>";
+}
+
+void AnalysisForm::lockOptions()
+{
+	if(!_analysis)
+		return;
+
+	for (JASPControl* control : _dependsOrderedCtrls)
+	{
+		if(_analysis->optionLocked(control->name()))
+			control->setEnabled(false);
+	}
 }
 
 QString AnalysisForm::_getControlLabel(QString controlName)
@@ -386,6 +428,7 @@ void AnalysisForm::bindTo(const Json::Value & defaultOptions)
 		if (boundControl)
 		{
 			std::string name = control->name().toStdString();
+
 			if (defaultOptions.isMember(name))
 				optionValue = defaultOptions[name];
 
@@ -456,7 +499,7 @@ void AnalysisForm::addControlError(JASPControl* control, QString message, bool t
 			// Cannot instantiate _controlErrorMessageComponent in the constructor (it crashes), and it might be too late in the formCompletedHandler since error can be generated earlier
 			// So create it when it is needed for the first time.
 			if (!_controlErrorMessageComponent)
-				_controlErrorMessageComponent = new QQmlComponent(qmlEngine(this), "qrc:///components/JASP/Controls/ControlErrorMessage.qml");
+				_controlErrorMessageComponent = new QQmlComponent(qmlEngine(this), "qrc:/jasp-stats.org/imports/JASP/Controls/components/JASP/Controls/ControlErrorMessage.qml");
 
 			controlErrorMessageItem = qobject_cast<QQuickItem*>(_controlErrorMessageComponent->create(QQmlEngine::contextForObject(this)));
 			if (!controlErrorMessageItem)
@@ -481,8 +524,10 @@ void AnalysisForm::addControlError(JASPControl* control, QString message, bool t
 		controlErrorMessageItem->setProperty("control", QVariant::fromValue(control));
 		controlErrorMessageItem->setProperty("warning", warning);
 		controlErrorMessageItem->setProperty("closeable", closeable);
+		controlErrorMessageItem->setProperty("testIt", "ZZZZ");
+		controlErrorMessageItem->setProperty("messageError", message);
 		controlErrorMessageItem->setParentItem(container);
-		QMetaObject::invokeMethod(controlErrorMessageItem, "showMessage", Qt::QueuedConnection, Q_ARG(QVariant, message), Q_ARG(QVariant, temporary));
+		QMetaObject::invokeMethod(controlErrorMessageItem, "showMessage", Qt::QueuedConnection, Q_ARG(QVariant, temporary));
 	}
 
 	if (warning)	control->setHasWarning(true);
@@ -502,13 +547,21 @@ bool AnalysisForm::hasError()
 	return false;
 }
 
-QString AnalysisForm::getError()
+QString AnalysisForm::getError(bool withControlName)
 {
 	QString message;
 
 	for (QQuickItem* item : _controlErrorMessageCache)
-		if (item->property("control").value<JASPControl*>() != nullptr)
-			message += (message != "" ? ", " : "") + item->property("message").toString();
+	{
+		JASPControl* control = item->property("control").value<JASPControl*>();
+		if (control != nullptr)
+		{
+			if (!message.isEmpty()) message +=  ", ";
+			if (withControlName && !control->name().isEmpty() && control->name() != rSyntaxControlName)
+				message += control->name() + ": ";
+			message += item->property("messageError").toString();
+		}
+	}
 
 	return message;
 }
@@ -603,13 +656,14 @@ void AnalysisForm::setAnalysisUp()
 	Json::Value defaultOptions = _analysis->orgBoundValues();
 	_analysis->clearOptions();
 	bindTo(defaultOptions);
+	lockOptions();
 
 	blockValueChangeSignal(false, false);
 
 	_initialized = true;
 
 	// Don't bind boundValuesChanged before it is initialized: each setup of all controls will generate a boundValuesChanged
-	connect(_analysis,					&AnalysisBase::boundValuesChanged,		this,			&AnalysisForm::setRSyntaxText,				Qt::QueuedConnection	);
+	connect(_analysis,					&AnalysisBase::boundValuesChanged,		this,			&AnalysisForm::rSyntaxTextChanged,				Qt::QueuedConnection	);
 
 	emit analysisChanged();
 }
@@ -735,7 +789,7 @@ void AnalysisForm::blockValueChangeSignal(bool block, bool notifyOnceUnblocked)
 
 QString AnalysisForm::rSyntaxText() const
 {
-	return _rSyntaxText;
+	return generateRSyntax();
 }
 
 bool AnalysisForm::needsRefresh() const
@@ -904,20 +958,21 @@ QString AnalysisForm::helpMD() const
 
 	QStringList markdown =
 	{
-		"# ", title(), "\n",
+		"# ", titleDefault(), "\n",
 		_info, "\n"
 	};
 
-
 	QList<JASPControl*> orderedControls = JASPControl::getChildJASPControls(this);
-	orderedControls.removeIf([](JASPControl* c) { return c->helpMD().isEmpty(); });
 
 	if (orderedControls.length() > 0 && orderedControls[0]->controlType() != JASPControl::ControlType::Expander)
-		// If the first control is an ExpanderButton, then it adds already a line
+		// If the first control is an Section, then it adds already a line
 		markdown << "\n---\n";
 
 	for(JASPControl * control : orderedControls)
-		markdown << control->helpMD() << "\n";
+	{
+		if (control->hasInfoSomewhere())
+			markdown << control->generateMDHelp() << "\n";
+	}
 
 	markdown << metaHelpMD();
 
@@ -987,18 +1042,10 @@ void AnalysisForm::setDeveloperMode(bool developerMode)
 	emit developerModeChanged();
 }
 
-void AnalysisForm::setRSyntaxText()
+void AnalysisForm::sendRSyntax(QString text)
 {
-	if (!initialized() || !PreferencesModelBase::preferences()->showRSyntax())
-		return;
-
-	QString text = generateRSyntax();
-
-	if (text != _rSyntaxText)
-	{
-		_rSyntaxText = text;
-		emit rSyntaxTextChanged();
-	}
+	PreferencesModelBase::preferences()->setShowRSyntax(true);
+	_analysis->sendRScript(text, rSyntaxControlName, false);
 }
 
 bool AnalysisForm::showAllROptions() const
@@ -1009,12 +1056,6 @@ bool AnalysisForm::showAllROptions() const
 void AnalysisForm::setShowAllROptions(bool showAllROptions)
 {
 	PreferencesModelBase::preferences()->setShowAllROptions(showAllROptions);
-}
-
-void AnalysisForm::sendRSyntax(QString text)
-{
-	PreferencesModelBase::preferences()->setShowRSyntax(true);
-	_analysis->sendRScript(text, rSyntaxControlName, false);
 }
 
 void AnalysisForm::toggleRSyntax()

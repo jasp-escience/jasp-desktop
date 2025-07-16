@@ -31,9 +31,9 @@
 #include <QDir>
 #include <map>
 #include <set>
+#include "utils.h"
 #include <string>
 #include <vector>
-#include <sstream>
 #include <json/json.h>
 #include <QItemSelection>
 
@@ -77,9 +77,8 @@ QString decrypt(const QString &input);
 QString getSortableTimestamp();
 QString QJSErrorToString(QJSValue::ErrorType errorType);
 
-void	copyQDirRecursively(QDir copyThis, QDir toHere);
 
-QString shortenWinPaths(QString);
+void	copyQDirRecursively(QDir copyThis, QDir toHere);
 
 bool pathIsSafeForR(const QString & checkThis);
 
@@ -97,6 +96,31 @@ void set##WHAT_TO_SET(TYPE new##WHAT_TO_SET)								\
 	}																		\
 }
 
+class QColumnUtils
+{
+public:	
+	static bool					getIntValue(	const QString		& value, int	& intValue);
+	static bool					getDoubleValue(	const QString		& value, double	& doubleValue, bool useLocale = true);
+	static doubleset			getDoubleValues(const QStringList	& values, bool stripNAN = true);
 
+	static bool					isIntValue(		const QString		& value);
+	static bool					isDoubleValue(	const QString		& value);
+	
+	static QLocale				currentQLocale();
+	
+	static QString				decimalPoint();
+	static QString				doubleToString(			double dbl, int precision = 10);
+	static QString				doubleToStringMaxPrec(	double dbl);
+	static QString				currencyString(			double money, const QString &symbol = QString());
+	
+	
+    static void					setOmitGroupSeparatorOnQLocale(QLocale & locale);
+	static void					setCallbacksAndDefaultLocale(const QLocale & locale, bool useThousandSeps);
+	
+
+private:
+	static QString				_lastQLocaleId;
+	static QLocale				_lastQLocale;
+};
 
 #endif // QUTILS_H

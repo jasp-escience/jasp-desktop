@@ -118,6 +118,8 @@ void AsyncLoader::saveTask(FileEvent *event)
 			Utils::sleep(sleepTime);
 			delay += sleepTime;
 		}
+		
+		DataSetPackage::pkg()->doWalCheckPoint();
 
 		Exporter *exporter = event->exporter();
 		if (exporter)	exporter->saveDataSet(fq(tempPath), boost::bind(&AsyncLoader::progressHandler, this, _1));
@@ -236,12 +238,12 @@ void AsyncLoader::loadPackage(QString id)
 			if(!pkg->dataSet())
 				pkg->createDataSet();
 
-			if(_currentEvent->operation() != FileEvent::FileSyncData && _currentEvent->type() != Utils::FileType::jasp && !_currentEvent->isReadOnly())
-				pkg->setSynchingExternally(true);
-
 			if (_currentEvent->operation() == FileEvent::FileSyncData)
 					_loader.syncPackage(path, extension, boost::bind(&AsyncLoader::progressHandler, this, _1));
 			else	_loader.loadPackage(path, extension, boost::bind(&AsyncLoader::progressHandler, this, _1));
+
+			if(_currentEvent->operation() != FileEvent::FileSyncData && _currentEvent->type() != Utils::FileType::jasp && !_currentEvent->isReadOnly())
+				pkg->setSynchingExternally(true);
 
 			QString calcMD5 = fileChecksum(tq(path), QCryptographicHash::Md5);
 
@@ -280,6 +282,7 @@ void AsyncLoader::loadPackage(QString id)
 		{
 			Log::log() << "Runtime Exception in loadPackage: " << e.what() << std::endl;
 
+			DataSetPackage::pkg()->dbDelete();
 			DataSetPackage::pkg()->deleteDataSet(); //Make sure we dont keep failed stuff in memory
 
 			if (dataNode != nullptr)

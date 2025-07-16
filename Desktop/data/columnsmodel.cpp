@@ -21,17 +21,22 @@ ColumnsModel::ColumnsModel(DataSetTableModel *tableModel)
 	auto * info = new VariableInfo(_singleton);
 
 
-	connect(this, &ColumnsModel::namesChanged,							info, &VariableInfo::namesChanged		);
-	connect(this, &ColumnsModel::columnsChanged,						info, &VariableInfo::columnsChanged		);
-	connect(this, &ColumnsModel::columnTypeChanged,						info, &VariableInfo::columnTypeChanged	);
-	connect(this, &ColumnsModel::labelsChanged,							info, &VariableInfo::labelsChanged		);
-	connect(this, &ColumnsModel::labelsReordered,						info, &VariableInfo::labelsReordered	);
-	connect(this, &ColumnsModel::filterChanged,							info, &VariableInfo::filterChanged		);
-	connect(this, &ColumnsModel::dataSetChanged,						info, &VariableInfo::dataSetChanged		);
-	connect(this, &QTransposeProxyModel::columnsInserted,				info, &VariableInfo::rowCountChanged	);
-	connect(this, &QTransposeProxyModel::columnsRemoved,				info, &VariableInfo::rowCountChanged	);
-	connect(this, &QTransposeProxyModel::modelReset,					info, &VariableInfo::rowCountChanged	);
-	connect(MainWindow::singleton(), &MainWindow::dataAvailableChanged, info, &VariableInfo::dataAvailableChanged );
+	connect(this, &ColumnsModel::columnNamesChanged,					info, &VariableInfo::variableNamesChanged	);
+	connect(this, &ColumnsModel::columnsChanged,						info, &VariableInfo::variablesChanged		);
+	connect(this, &ColumnsModel::columnTypeChanged,						this, [this] (QString colName)
+		{
+			Term term(colName, columnType(data(index(getColumnIndex(fq(colName)), 0), ColumnsModel::ColumnTypeRole).toInt()));
+			emit VariableInfo::info()->variableTypeChanged(term);
+		} );
+
+	connect(this, &ColumnsModel::labelsChanged,							info, &VariableInfo::labelsChanged			);
+	connect(this, &ColumnsModel::labelsReordered,						info, &VariableInfo::labelsReordered		);
+	connect(this, &ColumnsModel::filterChanged,							info, &VariableInfo::filterChanged			);
+	connect(this, &ColumnsModel::dataSetChanged,						info, &VariableInfo::dataSetChanged			);
+	connect(this, &QTransposeProxyModel::columnsInserted,				info, &VariableInfo::rowCountChanged		);
+	connect(this, &QTransposeProxyModel::columnsRemoved,				info, &VariableInfo::rowCountChanged		);
+	connect(this, &QTransposeProxyModel::modelReset,					info, &VariableInfo::rowCountChanged		);
+	connect(MainWindow::singleton(), &MainWindow::dataAvailableChanged, info, &VariableInfo::dataAvailableChanged	);
 }
 
 ColumnsModel::~ColumnsModel()
@@ -53,6 +58,11 @@ QString ColumnsModel::getColumnIcon(int colType, bool isTransformed) const
 QString ColumnsModel::getColumnIcon(columnType colType) const
 {
 	return VariableInfo::getIconFile(colType, VariableInfo::DefaultIconType);
+}
+
+QString ColumnsModel::getColumnDescription(const QString &name) const
+{
+	return provideInfo(VariableInfo::ColumnDescription, name).toString().trimmed();
 }
 
 QString ColumnsModel::getColumnIconTransform(int colType) const
@@ -147,12 +157,11 @@ QVariant ColumnsModel::provideInfo(VariableInfo::InfoType info, const QString& c
 		QModelIndex qColIndex = index(colIndex, 0),
 					qValIndex = index(colIndex, row);
 
-		int			colTypeInt	= data(qColIndex, ColumnsModel::ColumnTypeRole).toInt();
 		//columnType	colTypeHere	= static_cast<columnType>(colTypeInt);
 
 		switch(info)
 		{
-		case VariableInfo::VariableType:				return	colTypeInt;
+		case VariableInfo::VariableType:				return	data(qColIndex, ColumnsModel::ColumnTypeRole).toInt();
 		case VariableInfo::DoubleValues:				return	QTransposeProxyModel::data(qColIndex,						int(DataSetPackage::specialRoles::valuesDblList));
 		case VariableInfo::TotalNumericValues:			return	QTransposeProxyModel::data(qColIndex,						int(DataSetPackage::specialRoles::nonFilteredNumericValuesCount));
 		case VariableInfo::TotalLevels:					return	QTransposeProxyModel::data(qColIndex,						int(DataSetPackage::specialRoles::nonFilteredLevels)).toStringList().length();
@@ -168,6 +177,7 @@ QVariant ColumnsModel::provideInfo(VariableInfo::InfoType info, const QString& c
 		case VariableInfo::PreviewScale:				return	QTransposeProxyModel::headerData(colIndex, Qt::Vertical,	int(DataSetPackage::specialRoles::previewScale));
 		case VariableInfo::PreviewOrdinal:				return	QTransposeProxyModel::headerData(colIndex, Qt::Vertical,	int(DataSetPackage::specialRoles::previewOrdinal));
 		case VariableInfo::PreviewNominal:				return	QTransposeProxyModel::headerData(colIndex, Qt::Vertical,	int(DataSetPackage::specialRoles::previewNominal));
+		case VariableInfo::ColumnDescription:			return	QTransposeProxyModel::headerData(colIndex, Qt::Vertical,	int(DataSetPackage::specialRoles::description));
 		case VariableInfo::DataSetPointer:				return	QVariant::fromValue<void*>(DataSetPackage::pkg()->dataSet());
 		}
 	}
@@ -232,16 +242,6 @@ QHash<int, QByteArray> ColumnsModel::roleNames() const
 	return roles;
 }
 
-int ColumnsModel::rowCount(const QModelIndex & p) const
-{
-	return QTransposeProxyModel::rowCount(p);
-}
-
-QQmlContext* ColumnsModel::providerQMLContext() const
-{
-	return MainWindow::singleton()->giveRootQmlContext();
-}
-
 QStringList ColumnsModel::getColumnNames() const
 {
 	QStringList result;
@@ -262,7 +262,7 @@ void ColumnsModel::datasetChanged(  QStringList                             chan
 	   if(! (missingColumns.size() > 0 || hasNewColumns))
 	   {
 			   if (changeNameColumns.size() > 0)
-					   emit namesChanged(changeNameColumns);
+					   emit columnNamesChanged(changeNameColumns);
 			   else if (changedColumns.size() > 0 || rowCountChanged)
 			   {
 					   if (rowCountChanged)

@@ -21,7 +21,6 @@
 #define TEXTAREABASE_H
 
 #include "jasplistcontrol.h"
-#include "boundcontrols/boundcontrolbase.h"
 #include "models/listmodeltermsavailable.h"
 #include "boundcontrols/boundcontroltextarea.h"
 
@@ -35,11 +34,13 @@
 class TextAreaBase : public JASPListControl, public BoundControl
 {
 	Q_OBJECT
+	QML_ELEMENT
 
 	Q_PROPERTY( TextType	textType			READ textType				WRITE setTextType			NOTIFY textTypeChanged							)
 	Q_PROPERTY( bool		hasScriptError		READ hasScriptError			WRITE setHasScriptError		NOTIFY hasScriptErrorChanged					)
 	Q_PROPERTY( bool		autoCheckSyntax		READ autoCheckSyntax		WRITE setAutoCheckSyntax	NOTIFY autoCheckSyntaxChanged					)
 	Q_PROPERTY( bool		checkSyntax			READ checkSyntax			WRITE setCheckSyntax		NOTIFY checkSyntaxChanged						)
+	Q_PROPERTY( QString		variableSeparator	READ variableSeparator		WRITE setVariableSeparator	NOTIFY variableSeparatorChanged					)
 
 public:
 	TextAreaBase(QQuickItem* parent = nullptr);
@@ -59,23 +60,29 @@ public:
 	ListModelTermsAvailable*	availableModel()							const				{ return _model;										}
 	void						setUp()												override;
 	void						setUpModel()										override;
+	bool						containsVariables()							const	override;
+
 
 	void						rScriptDoneHandler(const QString &result)			override;
+	BoundControl			*	boundControl()										override	{ return isBound() ? _boundControl : nullptr;			}
 
 	TextType					textType()									const				{ return _textType;										}
 	bool						hasScriptError()							const				{ return _hasScriptError;								}
 	const QList<QString>&		separators()								const				{ return _separators;									}
+	QString						variableSeparator()							const				{ return _variableSeparator;							}
 	QString						text();
 	void						setText(const QString& text);
 
 	bool autoCheckSyntax()								const	{	return _autoCheckSyntax;	}
 	bool checkSyntax()									const	{	return _checkSyntax;		}
 
+
 public slots:
-	GENERIC_SET_FUNCTION(TextType,			_textType,			textTypeChanged,		TextType	)
-	GENERIC_SET_FUNCTION(HasScriptError,	_hasScriptError,	hasScriptErrorChanged,	bool		)
-	GENERIC_SET_FUNCTION(AutoCheckSyntax,	_autoCheckSyntax,	autoCheckSyntaxChanged,	bool		)
-	GENERIC_SET_FUNCTION(CheckSyntax,		_checkSyntax,		checkSyntaxChanged,		bool		)
+	GENERIC_SET_FUNCTION(TextType,				_textType,				textTypeChanged,			TextType	)
+	GENERIC_SET_FUNCTION(HasScriptError,		_hasScriptError,		hasScriptErrorChanged,		bool		)
+	GENERIC_SET_FUNCTION(AutoCheckSyntax,		_autoCheckSyntax,		autoCheckSyntaxChanged,		bool		)
+	GENERIC_SET_FUNCTION(CheckSyntax,			_checkSyntax,			checkSyntaxChanged,			bool		)
+	GENERIC_SET_FUNCTION(VariableSeparator,		_variableSeparator,		variableSeparatorChanged,	QString		)
 
 	void	checkSyntaxHandler()		{ if(_checkSyntax)		_boundControl->checkSyntax();		}
 	void	checkSyntaxMaybeHandler()	{ if(_autoCheckSyntax)	checkSyntaxHandler();				}
@@ -87,10 +94,11 @@ signals:
 	void	editingFinished();
 	void	autoCheckSyntaxChanged();
 	void	checkSyntaxChanged();
+	void	variableSeparatorChanged();
 
 protected slots:
 	void	termsChangedHandler()		override;
-    
+
 protected:
 	void						_setInitialized(const Json::Value& value = Json::nullValue)	override;
 
@@ -99,6 +107,7 @@ protected:
 	bool						_hasScriptError			= false,
 								_autoCheckSyntax		= true,
 								_checkSyntax			= true;
+	QString						_variableSeparator		= "_";
 	QList<QString>				_separators;
 	
 	ListModelTermsAvailable*	_model					= nullptr;

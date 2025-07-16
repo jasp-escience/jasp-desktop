@@ -26,7 +26,8 @@
 #include "appinfo.h"
 #include "simplecrypt.h"
 #include "log.h"
-#include "utils.h"
+#include "emptyvalues.h"
+#include "columnutils.h"
 
 
 using namespace std;
@@ -159,7 +160,7 @@ Json::Value fqj(const QJSValue & jsVal)
 		return json;
 	}
 
-	if(jsVal.isObject() && !(jsVal.isCallable() || jsVal.isQObject() || jsVal.isVariant()))
+	if(jsVal.isObject() && !(jsVal.isCallable() || jsVal.isQObject()))
 	{
 		Json::Value json = Json::objectValue;
 		QJSValueIterator it(jsVal);
@@ -224,15 +225,6 @@ QString QJSErrorToString(QJSValue::ErrorType errorType)
 	}
 	
 	return "Could not determine error from type.";
-}
-
-QString shortenWinPaths(QString in)
-{
-#ifdef _WIN32
-	return QString::fromStdWString(Utils::getShortPathWin(in.toStdWString()));
-#else
-	return in;
-#endif
 }
 
 void copyQDirRecursively(QDir copyThis, QDir toHere)
@@ -323,4 +315,130 @@ QPoint maxQModelIndex(const QItemSelection &list)
 	}
 	
 	return QPoint(c, r);
+}
+
+QLocale QColumnUtils::_lastQLocale = QLocale();
+QString QColumnUtils::_lastQLocaleId = "C";
+
+bool QColumnUtils::getIntValue(const QString &value, int &intValue)
+{
+	return ColumnUtils::getIntValue(fq(value), intValue);
+}
+
+bool QColumnUtils::getDoubleValue(const QString &value, double &doubleValue, bool useLocale)
+{
+	return ColumnUtils::getDoubleValue(fq(value), doubleValue, useLocale);
+}
+
+doubleset QColumnUtils::getDoubleValues(const QStringList &values, bool stripNAN)
+{
+	return ColumnUtils::getDoubleValues(fql(values), stripNAN);
+}
+
+bool QColumnUtils::isIntValue(const QString &value)
+{
+	return ColumnUtils::isIntValue(fq(value));
+}
+
+bool QColumnUtils::isDoubleValue(const QString &value)
+{
+	return ColumnUtils::isDoubleValue(fq(value));
+}
+
+void QColumnUtils::setOmitGroupSeparatorOnQLocale(QLocale & locale)
+{
+	locale.setNumberOptions(QLocale::OmitGroupSeparator);
+}
+
+QLocale QColumnUtils::currentQLocale()
+{
+	QString newId = tq(ColumnUtils::currentQLocaleId());
+	
+	if(newId != _lastQLocaleId)
+	{
+		_lastQLocaleId = newId;
+		_lastQLocale   = QLocale(_lastQLocaleId);
+		setOmitGroupSeparatorOnQLocale(_lastQLocale); // here we always set it, and this locale can then be used in qmlcomponents, always omitting thousands separators!
+	}
+	
+	return _lastQLocale;
+}
+
+QString QColumnUtils::doubleToString(double dbl, int precision)
+{
+	return tq(ColumnUtils::doubleToString(dbl, precision));
+}
+
+QString QColumnUtils::doubleToStringMaxPrec(double dbl)
+{
+	return tq(ColumnUtils::doubleToStringMaxPrec(dbl));
+}
+
+QString QColumnUtils::currencyString(double money, const QString &symbol)
+{
+	return tq(ColumnUtils::currencyString(money, fq(symbol)));
+}
+
+QString QColumnUtils::decimalPoint()
+{
+	return tq(ColumnUtils::decimalPoint());
+}
+
+
+void QColumnUtils::setCallbacksAndDefaultLocale(const QLocale & locale, bool useThousandSeps)
+{
+	QLocale::setDefault(locale);
+	ColumnUtils::setCurrentQLocaleId(			fq(locale.bcp47Name())		);
+	ColumnUtils::setDecimalPoint(				fq(locale.decimalPoint())	);
+	
+	static ColumnUtils::currencyF	altFuncCurToString;
+	static ColumnUtils::toDoubleF	altFuncToDouble;
+	static ColumnUtils::doubleF		altFuncToString;
+	static ColumnUtils::toIntF		altFuncToInt;
+	
+	altFuncToString = [locale, useThousandSeps](double dbl, int precision, bool sepas)
+	{
+		QLocale loc(locale);
+		
+		if(!sepas || !useThousandSeps)
+			QColumnUtils::setOmitGroupSeparatorOnQLocale(loc);
+		
+		return fq(loc.toString(dbl, 'g', precision));
+	};
+	
+	altFuncCurToString = [locale, useThousandSeps](double dbl, const std::string & symbol, bool sepas)
+	{
+		QLocale loc(locale);
+		
+		if(!sepas || !useThousandSeps)
+			QColumnUtils::setOmitGroupSeparatorOnQLocale(loc);
+		
+		return fq(loc.toCurrencyString(dbl, tq(symbol)));
+	};
+
+	altFuncToDouble = [locale, useThousandSeps](const std::string & str, double & dbl)
+	{
+		bool	isDouble	= false;
+				dbl			= locale.toDouble(tq(str), &isDouble);
+		
+		if(!isDouble)
+			dbl = EmptyValues::missingValueDouble;
+
+		return isDouble;
+	};
+
+	altFuncToInt = [locale, useThousandSeps](const std::string & str, int & intVal)
+	{
+		bool isInt = false;
+		intVal = locale.toInt(tq(str), &isInt);
+
+		if(!isInt)
+			intVal = EmptyValues::missingValueInteger;
+
+		return isInt;
+	};
+	
+	// ColumnUtils is in CommonData library and doesn't access Qt (for instance for QLocale), so instead we use a callback.
+	ColumnUtils::setAlternativeDoubleToString(	altFuncToString, altFuncCurToString	);
+	ColumnUtils::setExtraStringToNumber(		altFuncToDouble, altFuncToInt		);	
 }

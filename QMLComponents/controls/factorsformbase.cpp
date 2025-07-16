@@ -28,7 +28,6 @@ FactorsFormBase::FactorsFormBase(QQuickItem *parent)
 {
 	_controlType			= ControlType::FactorsForm;
 	_useControlMouseArea	= false;
-	_containsVariables		= true;
 	_mayUseFormula			= false;
 	_useTermsInRSyntax		= false;
 }
@@ -44,6 +43,12 @@ void FactorsFormBase::setUpModel()
 	_availableVariablesListItem = qobject_cast<JASPListControl *>(availableListVariant.value<QObject *>());
 
 	connect(this, &FactorsFormBase::initializedChanged, this, &FactorsFormBase::countVariablesChanged);
+	connect(_factorsModel, &ListModelFactorsForm::modelReset, this, &FactorsFormBase::factorsTitlesChanged);
+	connect(_factorsModel, &ListModelFactorsForm::modelReset, this, &FactorsFormBase::factorsItemsChanged);
+	connect(_factorsModel, &ListModelFactorsForm::rowsInserted, this, &FactorsFormBase::factorsTitlesChanged);
+	connect(_factorsModel, &ListModelFactorsForm::rowsInserted, this, &FactorsFormBase::factorsItemsChanged);
+	connect(_factorsModel, &ListModelFactorsForm::rowsRemoved, this, &FactorsFormBase::factorsTitlesChanged);
+	connect(_factorsModel, &ListModelFactorsForm::rowsRemoved, this, &FactorsFormBase::factorsItemsChanged);
 }
 
 void FactorsFormBase::bindTo(const Json::Value& value)
@@ -55,7 +60,7 @@ void FactorsFormBase::bindTo(const Json::Value& value)
 	{
 		int termId = 0;
 		Terms initTerms;
-		const Json::Value& termsJson = factor[fq(_optionKey)];
+		const Json::Value& termsJson = factor[fq(_optionKeyValue)];
 		Json::Value valuePart = _isValueWithTypes(termsJson) ? termsJson["value"] : termsJson;
 		Json::Value typesPart = _isValueWithTypes(termsJson) ? termsJson["types"] : Json::arrayValue;
 		for (Json::Value& termJson : valuePart)
@@ -97,7 +102,7 @@ void FactorsFormBase::bindTo(const Json::Value& value)
 		Json::Value newTerms = Json::objectValue;
 		newTerms["value"] = valuePart;
 		newTerms["types"] = initTerms.types();
-		factor[fq(_optionKey)] = newTerms;
+		factor[fq(_optionKeyValue)] = newTerms;
 	}
 
 	BoundControlBase::bindTo(newValue);
@@ -114,7 +119,7 @@ Json::Value FactorsFormBase::createJson() const
 		Json::Value row(Json::objectValue);
 		row["name"] = fq(baseName() + QString::number(i + startIndex()));
 		row["title"] = fq(baseTitle() + " " + QString::number(i + startIndex()));
-		row[fq(_optionKey)] = Json::Value(Json::objectValue);
+		row[fq(_optionKeyValue)] = Json::Value(Json::objectValue);
 
 		result.append(row);
 	}
@@ -129,7 +134,7 @@ bool FactorsFormBase::isJsonValid(const Json::Value &value) const
 	{
 		for (const Json::Value& factor : value)
 		{
-			valid = factor.isObject() && factor["name"].isString() && factor["title"].isString() && factor.isMember(fq(_optionKey));
+			valid = factor.isObject() && factor["name"].isString() && factor["title"].isString() && factor.isMember(fq(_optionKeyValue));
 			if (!valid) break;
 		}
 	}
@@ -164,7 +169,7 @@ void FactorsFormBase::termsChangedHandler()
 					termJson.append(elt);
 			}
 			else
-				termJson = term.asString();
+				termJson = fq(term.value());
 			valuePart.append(termJson);
 		}
 		Json::Value factorJson(Json::objectValue),
@@ -173,7 +178,7 @@ void FactorsFormBase::termsChangedHandler()
 		factorJson["title"] = fq(factor.title);
 		termsJson["value"] = valuePart;
 		termsJson["types"] = terms.types();
-		factorJson[fq(_optionKey)] = termsJson;
+		factorJson[fq(_optionKeyValue)] = termsJson;
 		boundValue.append(factorJson);
 	}
 	
@@ -195,4 +200,40 @@ void FactorsFormBase::factorAdded(int index, QVariant item)
 	connect(listView->model(), &ListModel::termsChanged, _factorsModel, &ListModelFactorsForm::resetModelTerms, Qt::QueuedConnection);
 	connect(listView->model(), &ListModel::termsChanged, this, &FactorsFormBase::countVariablesChanged);
 	connect(listView->model(), &ListModel::termsChanged, _factorsModel, &ListModelFactorsForm::ensureNesting);
+
+	listView->setInitialized();
 }
+
+
+QVariantList FactorsFormBase::factorsTitles() const
+{
+	QVariantList titles;
+
+	if (!_factorsModel)
+		return titles;
+
+	for (auto factorModel : _factorsModel->getFactors())
+	{
+		QMap<QString, QVariant> map;
+		map["label"] = factorModel.title;
+		map["value"] = factorModel.name;
+		titles.append(map);
+	}
+
+	return titles;
+}
+
+QVariantList FactorsFormBase::factorsItems() const
+{
+	QVariantList items;
+
+	if (!_factorsModel)
+		return items;
+
+	for (auto factorModel : _factorsModel->getFactors())
+		items.append(QVariant::fromValue(factorModel.listView));
+
+	return items;
+}
+
+

@@ -5,6 +5,11 @@
 #include "qutils.h"
 #include "log.h"
 #include "columnencoder.h"
+#include "models/term.h"
+#include "jaspcontrol.h"
+#include "altnavpostfixassignmentstrategy.h"
+#include "variableinfo.h"
+#include "messageforwarder.h"
 
 #ifdef linux
 #include <QtGlobal>
@@ -169,3 +174,35 @@ QDir QmlUtils::generateQMLCacheDir()
 }
 
 #endif
+
+void QmlUtils::setGlobalPropertiesInQMLContext(QQmlContext * ctxt)
+{
+	bool	debug	= false,
+			isMac	= false,
+			isLinux = false;
+
+#ifdef JASP_DEBUG
+	debug = true;
+#endif
+
+#ifdef __APPLE__
+	isMac = true;
+#endif
+
+#ifdef __linux__
+	isLinux = true;
+#endif
+
+	bool isWindows = !isMac && !isLinux;
+
+	ctxt->setContextProperty("DEBUG_MODE",				debug);
+	ctxt->setContextProperty("MACOS",					isMac);
+	ctxt->setContextProperty("LINUX",					isLinux);
+	ctxt->setContextProperty("WINDOWS",					isWindows);
+	ctxt->setContextProperty("INTERACTION_SEPARATOR",	Term::separator);
+	ctxt->setContextProperty("dataSetInfo",				VariableInfo::info());
+	ctxt->setContextProperty("messages",				MessageForwarder::msgForwarder());
+
+	qmlRegisterUncreatableType<JASPControl>(					"JASP",		1, 0, "JASP",					"Impossible to create JASP Object");
+	qmlRegisterUncreatableType<ALTNavPostfixAssignmentStrategy>("JASP",		1, 0, "AssignmentStrategy",		"Can't make it"	);
+}

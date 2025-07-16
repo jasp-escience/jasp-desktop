@@ -324,14 +324,6 @@ msgctxt "MainPage|"
 msgid "Drag to show data"
 msgstr "Arraste para mostrar os dados"
 
-msgctxt "ModuleInstaller|"
-msgid "Browse for JASP Module"
-msgstr "Procure pelo Módulo JASP"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module"
-msgstr "Selecione um Módulo JASP"
-
 msgctxt "ModulesMenu|"
 msgid "Install Module"
 msgstr "Instalar Módulo"
@@ -803,14 +795,6 @@ msgstr "Novo valor"
 msgctxt "DataLibraryBreadCrumbsListModel|"
 msgid "Categories"
 msgstr "Categorias"
-
-msgctxt "ModelTermsList|"
-msgid "Model Terms"
-msgstr "Termos do modelo"
-
-msgctxt "ModelTermsList|"
-msgid "Add to null model"
-msgstr "Adicionar a modelo nulo"
 
 msgctxt "TableView|"
 msgid "Row #"
@@ -1419,16 +1403,6 @@ msgid ""
 msgstr ""
 "O JASP teve um erro interno inesperado:\n"
 "%1"
-
-msgctxt "MainWindow|"
-msgid ""
-"JASP cannot continue and will close.\n"
-"\n"
-"We would be grateful if you could report this error to the JASP team."
-msgstr ""
-"O JASP não pode continuar e irá fechar.\n"
-"\n"
-"Ficaremos agradecidos se você reportar esse erro à equipe do JASP."
 
 msgctxt "MainWindow|"
 msgid "Report"
@@ -2139,15 +2113,6 @@ msgctxt "FilterWindow|"
 msgid "returns true if string contains substring at least once"
 msgstr "retorna verdadeiro se a cadeia contém a sub-cadeia pelo menos uma vez"
 
-msgctxt "ModuleInstaller|"
-msgid "<i>Browse for a JASP Module to see more information here</i>"
-msgstr "<i>Procure um Módulo JASP para ver mais informações aqui</i>"
-
-#, qt-format
-msgctxt "ModuleInstaller|"
-msgid "<i>%1 is not a (correct) JASP Module!</i>"
-msgstr "<i>%1 não é um Módulo JASP (correto)!</i>"
-
 msgctxt "ModulesMenu|"
 msgid "Ready"
 msgstr "Pronto"
@@ -2484,25 +2449,6 @@ msgid ""
 msgstr ""
 "A instalação do Módulo %1 falhou com a seguinte mensagem de erro:\n"
 "%2"
-
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid "Cannot install module because %1 does not exist."
-msgstr "Não é possível instalar o módulo porque %1 não existe."
-
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"Cannot install module because it is named '%1' and that name is reserved for "
-"installing the development module.\n"
-"Change the name (in DESCRIPTION and description.json) and try it again. If "
-"you are not the author of this module and do not know how to do this, "
-"contact: %2"
-msgstr ""
-"Não é possível instalar o módulo porque ele se chama '%1' e esse nome é "
-"reservado para a instalação do módulo de desenvolvimento.\n"
-"Mude o nome (em DESCRIÇÃO e descrição.json) e tente novamente. Se você não é "
-"o autor deste módulo e não sabe como fazer isso, entre em contato: %2"
 
 msgctxt "Modules::DynamicModules|"
 msgid "Select a folder"
@@ -2850,10 +2796,6 @@ msgid "Percentage Field"
 msgstr "Campo percentual"
 
 msgctxt "TextInputBase|"
-msgid "Integers Field"
-msgstr "Campo de Inteiros"
-
-msgctxt "TextInputBase|"
 msgid "Doubles Field"
 msgstr "Campo Double"
 
@@ -2868,10 +2810,6 @@ msgstr "Adicionar Campo de Coluna Computada"
 msgctxt "TextInputBase|"
 msgid "Formula Field"
 msgstr "Campo de Fórmula"
-
-msgctxt "TextInputBase|"
-msgid "Formulas Field"
-msgstr "Campo de Fórmulas"
 
 msgctxt "TextInputBase|"
 msgid "Text Field"
@@ -2958,10 +2896,6 @@ msgstr "Tema escuro"
 msgctxt "PrefsUI|"
 msgid "Preferred language"
 msgstr "Língua preferida"
-
-msgctxt "PrefsUI|"
-msgid "Choose language  "
-msgstr "Escolha o idioma  "
 
 msgctxt "PrefsUI|"
 msgid "Safe graphics mode"
@@ -3100,23 +3034,6 @@ msgid "Initializing module %1 failed"
 msgstr "Módulo inicializador %1 falhou"
 
 msgctxt "RibbonModel|"
-msgid "Module missing"
-msgstr "Módulo faltando"
-
-#, qt-format
-msgctxt "RibbonModel|"
-msgid ""
-"It seems the bundled module %1 wasn't correctly installed, and thus cannot "
-"be loaded.\n"
-"If you installed this version of JASP via an official installer let the JASP "
-"team know."
-msgstr ""
-"Parece que o módulo agrupado %1 não foi instalado corretamente, e portanto "
-"não pode ser carregado.\n"
-"Se você instalou esta versão do JASP através de um instalador oficial "
-"informe a equipe JASP."
-
-msgctxt "RibbonModel|"
 msgid "Execute R code in a console"
 msgstr "Executar código R em um console"
 
@@ -3156,10 +3073,6 @@ msgstr ""
 msgctxt "PrefsAdvanced|"
 msgid "Clear installed modules and packages"
 msgstr "Excluir módulos e pacotes instalados"
-
-msgctxt "PrefsAdvanced|"
-msgid "This will erase the 'renv' and 'Modules' folders in the appdata."
-msgstr "Isso apagará as pastas 'renv' e 'Módulos' nos dados de aplicativos."
 
 msgctxt "PrefsData|"
 msgid "Windows workaround"
@@ -3300,18 +3213,6 @@ msgctxt "PrefsUI|"
 msgid "Help us translate or improve JASP in your language"
 msgstr "Ajude-nos a traduzir o JASP para o Português :D"
 
-msgctxt "ModuleInstaller|"
-msgid "Install"
-msgstr "Instalar"
-
-msgctxt "ModuleInstaller|"
-msgid "Press this to install your selected Module"
-msgstr "Clique aqui para instalar o módulo selecionado"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module to install"
-msgstr "Selecionar um módulo JASP para instalar"
-
 msgctxt "ErrorMessage|"
 msgid "Don't show again"
 msgstr "Não mostrar novamente"
@@ -3338,14 +3239,30 @@ msgid ""
 "For a local or toy database this is probably overkill, but use your own "
 "judgement."
 msgstr ""
+"Aviso!\n"
+"\n"
+"O JASP armazena a senha do seu banco de dados nos arquivos do JASP. Embora a "
+"senha não seja diretamente legível, ela pode ser facilmente extraída.\n"
+"\n"
+"Se você compartilhar este arquivo, significa que os destinatários, e "
+"qualquer pessoa com quem eles compartilhem o arquivo, poderão extrair a "
+"senha com algum esforço.\n"
+"\n"
+"Caso você esteja tentando conectar a um banco de dados de produção ou mesmo "
+"a um banco acessível pela rede:\n"
+"Recomendamos fortemente que você crie um usuário especial para o JASP no seu "
+"banco, com o mínimo de permissões necessárias.\n"
+"\n"
+"Para um banco local ou de teste, isso pode ser exagero, mas use seu próprio "
+"critério."
 
 msgctxt "Database|"
 msgid "Hostname"
-msgstr ""
+msgstr "Nome do Host"
 
 msgctxt "Database|"
 msgid "Port"
-msgstr ""
+msgstr "Porta"
 
 msgctxt "Database|"
 msgid "Name"
@@ -3391,13 +3308,15 @@ msgstr "Carregar no JASP"
 
 msgctxt "Database|"
 msgid "Synching interval in minutes: "
-msgstr ""
+msgstr "Intervalo de sincronização (em minutos): "
 
 msgctxt "Database|"
 msgid ""
 "0 means no automatic synching, but you can still synch manually by pressing "
 "Ctrl/Cmd+Y"
 msgstr ""
+"0 significa que não haverá sincronização automática, mas você ainda pode "
+"sincronizar manualmente pressionando Ctrl/Cmd+Y"
 
 msgctxt "QObject|"
 msgid ""
@@ -3415,6 +3334,8 @@ msgstr "A consulta falhou: '%1'"
 msgctxt "QObject|"
 msgid "Query wasn't a SELECT-like statement and returned nothing."
 msgstr ""
+"A consulta não foi uma instrução do tipo SELECT e não retornou nenhum "
+"resultado."
 
 msgctxt "QObject|"
 msgid "No active result found, maybe there is something wrong with your query?"
@@ -3430,10 +3351,11 @@ msgstr "Senha da base de dados"
 msgctxt "DataSetPackage|"
 msgid "The databaseconnection needs a password for user '%1'"
 msgstr ""
+"A conexão com o banco de dados precisa de uma senha para o usuário '%1'"
 
 msgctxt "DataSetPackage|"
 msgid "The databaseconnection needs a password"
-msgstr ""
+msgstr "A conexão com o banco de dados precisa de uma senha"
 
 msgctxt "DataSetPackage|"
 msgid "Connection failed"
@@ -3445,6 +3367,8 @@ msgid ""
 "Could not connect to database because of '%1', want to try a different "
 "password?"
 msgstr ""
+"Não foi possível conectar ao banco de dados por causa de '%1'. Deseja tentar "
+"uma senha diferente?"
 
 msgctxt "DataSetPackage|"
 msgid "Could not connect to the database so synchronizing will be disabled."
@@ -3585,12 +3509,6 @@ msgstr ""
 
 msgctxt "Modules::DynamicModules|"
 msgid "Select an exisiting folder"
-msgstr ""
-
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"To install a development module you need to select and existing folder, you "
-"selected '$1' but it doesn't exist."
 msgstr ""
 
 msgctxt "AnalysisFormExpander|"
@@ -4443,18 +4361,16 @@ msgstr ""
 
 msgctxt "ContactWindow|"
 msgid "Contact JASP"
-msgstr ""
+msgstr "Contato do JASP"
 
 msgctxt "Supporters|"
 msgid "JASP is supported by the following institutions:"
-msgstr ""
+msgstr "O JASP é apoiado pelas seguintes instituições:"
 
-#, fuzzy
 msgctxt "WavyWindow|"
 msgid "About JASP"
 msgstr "Sobre o JASP"
 
-#, fuzzy
 msgctxt "WavyWindow|"
 msgid "Close"
 msgstr "Fechar"
@@ -4462,17 +4378,20 @@ msgstr "Fechar"
 #, qt-format
 msgctxt "QObject|"
 msgid "Copy column '%1' into column number '%2'"
-msgstr ""
+msgstr "Copiar a coluna '%1' para a coluna número '%2'"
 
 msgctxt "ActionButtons|"
 msgid "Contact"
-msgstr ""
+msgstr "Contato"
 
 msgctxt "AboutModel|"
 msgid ""
 "This program is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE "
 "WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE."
 msgstr ""
+"Este programa é fornecido NO ESTADO EM QUE SE ENCONTRA, SEM GARANTIA DE "
+"QUALQUER TIPO, INCLUINDO GARANTIA IMPLÍCITA DE ADEQUAÇÃO, COMERCIALIZAÇÃO OU "
+"APTIDÃO PARA UM PROPÓSITO ESPECÍFICO."
 
 #, qt-format
 msgctxt "MainWindow|"
@@ -4547,40 +4466,42 @@ msgstr "Redefinir todas as marcas de seleção de filtro para todas as colunas"
 
 msgctxt "MainPage|"
 msgid "Image"
-msgstr ""
+msgstr "Imagem"
 
 msgctxt "ModulesMenu|"
 msgid "Workspace settings"
-msgstr ""
+msgstr "Configurações do espaço de trabalho"
 
 #, qt-format
 msgctxt "ModulesMenu|"
 msgid "Name: %1"
-msgstr ""
+msgstr "Nome: %1"
 
 msgctxt "ModulesMenu|"
 msgid "Description: "
-msgstr ""
+msgstr "Descrição: "
 
 msgctxt "ModulesMenu|"
 msgid "Reset missing values with the ones set in Data Preferences"
 msgstr ""
+"Redefinir os valores ausentes com aqueles definidos nas Preferências de Dados"
 
 msgctxt "RibbonBar|"
 msgid "Show workspace settings"
-msgstr ""
+msgstr "Mostrar configurações do espaço de trabalho"
 
 msgctxt "VariablesWindow|"
 msgid "Use custom values"
-msgstr ""
+msgstr "Usar valores personalizados"
 
 msgctxt "VariablesWindow|"
 msgid "Reset missing values with the ones set in your workspace"
 msgstr ""
+"Redefinir os valores ausentes com aqueles definidos no seu espaço de trabalho"
 
 msgctxt "QObject|"
 msgid "Not computed"
-msgstr ""
+msgstr "Não calculado"
 
 msgctxt "QObject|"
 msgid "Computed with R code"
@@ -4598,24 +4519,21 @@ msgctxt "QObject|"
 msgid "Column added by analysis"
 msgstr ""
 
-#, fuzzy
 msgctxt "QObject|"
 msgid "Scale"
 msgstr "Escala"
 
-#, fuzzy
 msgctxt "QObject|"
 msgid "Ordinal"
 msgstr "Ordinal"
 
-#, fuzzy
 msgctxt "QObject|"
 msgid "Nominal"
 msgstr "Nominal"
 
 msgctxt "ColumnModel|"
 msgid "Computed column definition"
-msgstr ""
+msgstr "Definição de coluna computada"
 
 msgctxt "ColumnModel|"
 msgid "Label editor"
@@ -4699,7 +4617,7 @@ msgid "JASP Community"
 msgstr ""
 
 msgctxt "Supporters|"
-msgid "Suggest your institution joins the JASP Community"
+msgid "Suggest your institution join the JASP Community"
 msgstr ""
 
 #, qt-format
@@ -4756,9 +4674,10 @@ msgctxt "ColumnBasicInfo|"
 msgid "Close variable window"
 msgstr ""
 
+#, fuzzy
 msgctxt "ColumnBasicInfo|"
 msgid "Description: "
-msgstr ""
+msgstr "Descrição: "
 
 msgctxt "ColumnModel|"
 msgid "Column definition"
@@ -5329,10 +5248,6 @@ msgctxt "JASPColumn|"
 msgid "Click icon to change column type"
 msgstr ""
 
-msgctxt "JASPColumn|"
-msgid "Transformed to"
-msgstr ""
-
 msgctxt "TextInputBase|"
 msgid "Column-name-is-free field"
 msgstr ""
@@ -5404,10 +5319,6 @@ msgid "Development module"
 msgstr ""
 
 msgctxt "PrefsAdvanced|"
-msgid "Enable direct libpath mode"
-msgstr ""
-
-msgctxt "PrefsAdvanced|"
 msgid ""
 "Load modules from a binary in an R-library instead of installing it from "
 "sources."
@@ -5415,10 +5326,6 @@ msgstr ""
 
 msgctxt "PrefsAdvanced|"
 msgid "Source folder:"
-msgstr ""
-
-msgctxt "PrefsAdvanced|"
-msgid "Libpath:"
 msgstr ""
 
 msgctxt "PrefsAdvanced|"
@@ -5455,4 +5362,417 @@ msgstr ""
 
 msgctxt "TabView|"
 msgid "Double click to edit this name"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Choose language"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Use an alternative language and territory dependent display for numbers"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Use the locale specified below for display of numbers and currency."
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Alt. language"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Alt. territory"
+msgstr ""
+
+msgctxt "JASPColumn|"
+msgid "Column description: "
+msgstr ""
+
+msgctxt "VariablesList|"
+msgid "Click icon to change column type"
+msgstr ""
+
+msgctxt "VariablesList|"
+msgid "Column description: "
+msgstr ""
+
+#, qt-format
+msgctxt "Modules::DynamicModules|"
+msgid ""
+"To install a development module you need to select and existing folder, you "
+"selected '%1' but it doesn't exist."
+msgstr ""
+
+msgctxt "MainPage|"
+msgid "Remove this note"
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid ""
+"No log files are available. To get more information, please turn logging on. "
+"For this: open the file menu (the blue hamburger button left top), navigate "
+"to Advanced Preferences and check the 'Log to file' checkbox."
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid "Please drag and drop these log files into this issue: "
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Select a filter to use for this computed column"
+msgstr ""
+
+#, fuzzy
+msgctxt "LabelEditorWindow|"
+msgid "Remove"
+msgstr "Remover"
+
+msgctxt "LabelEditorWindow|"
+msgid "Add new level:"
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid "Add a level that's missing from the data"
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Keeping levels, so all levels are passed to the analysis, both filtered out "
+"ones and those added later manually."
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Dropping levels, so only those levels in the (possibly filtered) data get "
+"sent to the analysis."
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to reverse order of all labels"
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels up manually"
+msgstr ""
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels down manually"
+msgstr ""
+
+msgctxt "QObject|"
+msgid "No filter"
+msgstr ""
+
+msgctxt "QObject|"
+msgid "Use filter"
+msgstr ""
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column compute filter of '%1' from '%2' to '%3'"
+msgstr ""
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column drop levels of '%1' from '%2' to '%3'"
+msgstr ""
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Delete label %1 of column '%2'"
+msgstr ""
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Adding value + label '%1' + '%2' to column '%3'"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Sandbox engines"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Strengthen security on Windows by isolating Engines running R-code"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Use thousands separators"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Disable to remove thousands separators from all numbers."
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Select a file..."
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Select a folder..."
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Select a R-library..."
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Safe Graphics mode changed"
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid ""
+"You've changed the Safe Graphics mode of JASP, for this option to take "
+"effect you need to restart JASP"
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Text rendering setting changed"
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The textrendering setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid "Engine Sandbox setting changed"
+msgstr ""
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The Engine Sandbox setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr ""
+
+msgctxt "MessageForwarder|"
+msgid "Sandbox warning"
+msgstr ""
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to save a file outside of the sandbox directory! We will correct "
+"the path to: "
+msgstr ""
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to load a file outside of the sandbox directory! This will fail "
+"please move the file to: "
+msgstr ""
+
+msgctxt "MessageForwarder|"
+msgid ""
+"The jasp engine is running in security sandbox mode and only has access to: "
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise mean"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise sum"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise standard deviation"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise variance"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise median"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise minimum"
+msgstr ""
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise maximum"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Use a configuration file."
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Use remote configuration file."
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Use the remote configuration file pointed to by URL"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration URL: "
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file."
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise mean"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise sum"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise standard deviation"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise variance"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise median"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise minimum"
+msgstr ""
+
+msgctxt "FilterWindow|"
+msgid "Rowwise maximum"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Should JASP open its window maximized on startup?"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid ""
+"This will erase the 'renv', 'Modules' and development Module folders in the "
+"appdata."
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Enable renv mode"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Project library:"
+msgstr ""
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration file options"
+msgstr ""
+
+msgctxt "PrefsUI|"
+msgid "Start maximized"
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid ""
+"JASP had a serious error and cannot calculate anymore.\n"
+"\n"
+"We would be grateful if you could report this error to the JASP team."
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid "Salvage"
+msgstr ""
+
+msgctxt "Modules::DynamicModules|"
+msgid "Install complete"
+msgstr ""
+
+msgctxt "Modules::DynamicModules|"
+msgid "Completed installation of Bundles: "
+msgstr ""
+
+msgctxt "QObject|"
+msgid "Security Sandbox Failure"
+msgstr ""
+
+msgctxt "QObject|"
+msgid ""
+"Failed to activate Security Sandbox. Your system does not allow security "
+"sandboxing. Do you wish to continue with out is? (probably fine)"
+msgstr ""
+
+msgctxt "QObject|"
+msgid "Continue"
+msgstr ""
+
+#, fuzzy
+msgctxt "QObject|"
+msgid "Exit"
+msgstr "Sair"
+
+#, qt-format
+msgctxt "ComboBoxBase|"
+msgid "Possible values are: %1"
+msgstr ""
+
+#, qt-format
+msgctxt "ImportDataSet|"
+msgid "Originally imported into %1 on %2"
+msgstr ""
+
+msgctxt "FileEvent|"
+msgid "Loading R Data File"
+msgstr ""
+
+msgctxt "RDataImporter|"
+msgid "0 valid columns were read from the file, please check your data file."
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid "Salvaging"
+msgstr ""
+
+msgctxt "MainWindow|"
+msgid ""
+"We're very sorry JASP has had a fatal error.\n"
+"To allow you to salvage or recover something out of this mess JASP will stay "
+"partly functional.\n"
+"\n"
+"You can for instance save your current workspace, or try changing a setting "
+"to perhaps prevent the problem next time.\n"
+"\n"
+"Analyses or computed columns and the like will not function anymore until "
+"you restart JASP."
+msgstr ""
+
+#, qt-format
+msgctxt "Computer|"
+msgid "R Data files %1"
+msgstr ""
+
+msgctxt "ModelTermsList|"
+msgid "Model Terms"
+msgstr "Termos do modelo"
+
+msgctxt "ModelTermsList|"
+msgid "Add to null model"
+msgstr "Adicionar a modelo nulo"
+
+msgctxt "MainWindow|"
+msgid "Open file"
+msgstr ""
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "Cannot access file %1"
+msgstr ""
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "File %1 is not found."
+msgstr ""
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "JASP does not support this file type %1."
 msgstr ""

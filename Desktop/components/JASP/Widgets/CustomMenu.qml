@@ -16,9 +16,9 @@
 // <http://www.gnu.org/licenses/>.
 //
 
-import QtQuick						2.15
-import QtQuick.Controls				2.4
-import JASP.Controls				1.0 as JASPControl
+import QtQuick
+import QtQuick.Controls
+import JASP.Controls				as JASPControl
 import Qt5Compat.GraphicalEffects
 
 FocusScope
@@ -176,7 +176,7 @@ FocusScope
 		z		: menuShadow.z + 1
 		color	: jaspTheme.fileMenuColorBackground
 		focus	: true
-		width	: column.maxWidth + (itemScrollbar.visible ? itemScrollbar.width : 0)
+		width	: column.maxWidth + jaspTheme.menuPadding + itemScrollbar.width
 		height	: menuOffset.y + column.maxHeight > menuMaxPos.y ? menuMaxPos.y - menuOffset.y : column.maxHeight
 
 		MouseArea
@@ -203,13 +203,42 @@ FocusScope
 			}
 		}
 
+		JASPControl.ScrollMoreIndicator 
+		{
+			id: 		scrollingGuideBottom
+			
+			anchors
+			{
+				left: 	parent.left
+				right: 	itemScrollbar.left
+				bottom: parent.bottom
+			}
+
+			extraSpace: itemFlickable.contentHeight - (itemFlickable.contentY + itemFlickable.height)
+		}
+		
+		JASPControl.ScrollMoreIndicator 
+		{
+			id: 		scrollingGuideTop
+			
+			anchors
+			{
+				left: 	parent.left
+				right: 	itemScrollbar.left
+				top:	parent.top
+			}
+			
+			upsideDown:	true
+			extraSpace: itemFlickable.contentY
+		}
+
 		Flickable
 		{
 			id						: itemFlickable
 			anchors.fill			: parent
 			anchors.topMargin		: jaspTheme.menuPadding / 2
 			anchors.leftMargin		: jaspTheme.menuPadding / 2
-			anchors.rightMargin		: itemScrollbar.width + anchors.margins
+			anchors.rightMargin		: itemScrollbar.width + jaspTheme.menuPadding / 2
 			clip					: true
 			boundsBehavior			: Flickable.StopAtBounds
 			contentWidth			: column.width
@@ -286,9 +315,9 @@ FocusScope
 														? jaspTheme.buttonColorHovered
 														: "transparent"
 
-								property bool itemEnabled: menu.props.hasOwnProperty("enabled") ? menu.props["enabled"][index] : (model.modelData !== undefined || model.isEnabled)
-								property int padding: 4 + (menu.hasIcons ? 1 : 0) + (menuItemShortcut.text ? 1 : 0)
-								property double initWidth: (menu.hasIcons ? menuItemImage.width : 0) + menuItemText.implicitWidth + menuItemShortcut.implicitWidth + menu._iconPad * padding
+								property bool	itemEnabled:	menu.props.hasOwnProperty("enabled") ? menu.props["enabled"][index] : (model.modelData !== undefined || model.isEnabled)
+								property int	padding:		4 + (menu.hasIcons ? 1 : 0) + (menuItemShortcut.text ? 1 : 0)
+								property double initWidth:		(menu.hasIcons ? menuItemImage.width : 0) + menuItemText.implicitWidth + menuItemShortcut.implicitWidth + menu._iconPad * padding
 
 								Image
 								{
@@ -352,7 +381,7 @@ FocusScope
 							{
 								id		: menuItem
 								width	: initWidth
-								height	: (isSmall ? 0.5 : 1) * jaspTheme.menuGroupTitleHeight
+								height	: (isSmall ? 0.666 : 1) * jaspTheme.menuGroupTitleHeight
 
 								property double initWidth: menuItemImage.width + menuItemText.implicitWidth + 15 * preferencesModel.uiScale
 
@@ -381,12 +410,15 @@ FocusScope
 								{
 									id					: menuItemText
 									text				: model.modelData !== undefined ? model.modelData.substring(3) : displayText
-									font				: jaspTheme.fontGroupTitle
+									font				: isSmall ? jaspTheme.fontGroupTitleSmall : jaspTheme.fontGroupTitle
 									color				: jaspTheme.textEnabled
+									verticalAlignment	: Text.AlignVCenter
 									anchors
 									{
-										left			: menuItemImage.right
+										left			: menuItemImage.visible ? menuItemImage.right : parent.left
+										right			: parent.right
 										leftMargin		: menu._iconPad
+										rightMargin		: menu._iconPad
 										verticalCenter	: parent.verticalCenter
 									}
 								}

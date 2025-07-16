@@ -21,7 +21,7 @@ import QtWebEngine
 import QtWebChannel
 import JASP
 import QtQuick.Controls
-import JASP.Controls	1.0 as JC
+import JASP.Controls		as JC
 
 Item
 {
@@ -41,11 +41,12 @@ Item
 
 	property bool hasData:		mainWindow.dataAvailable
 	property bool hasAnalysis:	mainWindow.analysesAvailable && !ribbonModel.dataMode
+	property bool keepDataPanelMaximised: false
 
 	function minimizeDataPanel()
 	{
 		handleDataAnalyses.x = 0
-
+		keepDataPanelMaximised = false
 	}
 
 	function maximizeDataPanel()
@@ -78,7 +79,7 @@ Item
 
 	onWidthChanged:
 	{
-		if (handleDataAnalyses.visible && handleDataAnalyses.x > (width - handleDataAnalyses.width)) maximizeDataPanel()
+		if (keepDataPanelMaximised || (handleDataAnalyses.visible && handleDataAnalyses.x > (width - handleDataAnalyses.width))) maximizeDataPanel()
 	}
 
 	DataPanel
@@ -97,18 +98,22 @@ Item
 		onArrowClicked:
 		{
 			if (pointingLeft) minimizeDataPanel()
-			else maximizeDataPanel()
+			else
+			{
+				maximizeDataPanel()
+				keepDataPanelMaximised = true
+			}
 		}
 		pointingLeft:		x > 0
 		toolTipArrow:		pointingLeft ? qsTr("Hide data")  : qsTr("Show data")
 		toolTipDrag:		pointingLeft ? qsTr("Resize data/results") : qsTr("Drag to show data")
 		onXChanged:			checkPosition(false)
-		onDraggingChanged:	checkPosition(true)
+		onDraggingChanged:	{ checkPosition(true); keepDataPanelMaximised = false }
 
-		ALTNavigation.enabled:				true
-		ALTNavigation.onTagMatch:			{ arrowClicked(); }
-		ALTNavigation.requestedPostfix:		"D"
-		ALTNavigation.y:					height / 2 - 25 * jaspTheme.uiScale
+		JC.ALTNavigation.enabled:				true
+		JC.ALTNavigation.onTagMatch:			{ arrowClicked(); }
+		JC.ALTNavigation.requestedPostfix:		"D"
+		JC.ALTNavigation.y:					height / 2 - 25 * jaspTheme.uiScale
 
 		function checkPosition(forceCheck)
 		{
@@ -230,9 +235,9 @@ Item
 		visible:				hasAnalysis && !ribbonModel.dataMode
 		color:					analysesModel.currentAnalysisIndex !== -1 ? jaspTheme.uiBackground : jaspTheme.white
 
-		ALTNavigation.enabled:				true
-		ALTNavigation.requestedPostfix:		"R"
-		ALTNavigation.onTagMatch:			{ resultsView.nextItemInFocusChain().forceActiveFocus(); }
+		JC.ALTNavigation.enabled:				true
+		JC.ALTNavigation.requestedPostfix:		"R"
+		JC.ALTNavigation.onTagMatch:			{ resultsView.nextItemInFocusChain().forceActiveFocus(); }
 
 		Rectangle
 		{
@@ -321,8 +326,8 @@ Item
 			{
 				switch(event)
 				{
-				case Qt.Key_PageDown:	resultsView.runJavaScript("windows.pageDown();");	break;
-				case Qt.Key_PageUp:		resultsView.runJavaScript("windows.pageUp();");		break;
+				case Qt.Key_PageDown:	resultsView.runJavaScript("windows.pageDown();");	event.accepted=true; break;
+				case Qt.Key_PageUp:		resultsView.runJavaScript("windows.pageUp();");		event.accepted=true; break;
 				}
 			}
 
@@ -439,7 +444,7 @@ Item
 				"Unsupported video services":			qsTr("Unsupported video services"),			"Input LaTeX here:":				qsTr("Input LaTeX here:"),		
 				"Press `Cmd/Ctrl + Enter` to apply;":	qsTr("Press `Cmd/Ctrl + Enter` to apply;"),	"Click to apply formula":			qsTr("Click to apply formula"), 
 				"Click to edit this formula":			qsTr("Click to edit this formula"),			"Citations copied to clipboard":	qsTr("Citations copied to clipboard"), 	
-				"LaTeX code copied to clipboard":		qsTr("LaTeX code copied to clipboard"),	
+				"LaTeX code copied to clipboard":		qsTr("LaTeX code copied to clipboard"),		"Remove this note":					qsTr("Remove this note"),
 				
 				"JASP only allows the following videoservices:":								qsTr("JASP only allows the following videoservices:"), 
 				"Contact the JASP team to request adding another videoservice to the list." :	qsTr("Contact the JASP team to request adding another videoservice to the list.")

@@ -1,17 +1,22 @@
 #include "languagemodel.h"
-#include "log.h"
-#include "utilities/settings.h"
-#include <QDebug>
-#include <QDir>
-#include "dirs.h"
 #include "utilities/qutils.h"
-#include <QDirIterator>
+#include "utilities/settings.h"
+#include "resultstesting/compareresults.h"
 #include "results/resultsjsinterface.h"
 #include "modules/dynamicmodule.h"
+#include "emptyvalues.h"
+#include "columnutils.h"
+#include <QDirIterator>
+#include <QDebug>
+#include "dirs.h"
+#include <QDir>
+#include "log.h"
 
-LanguageModel * LanguageModel::_singleton = nullptr;
-QLocale LanguageModel::_defaultLocale = QLocale(QLocale::English, QLocale::World);
+LanguageModel * LanguageModel::_singleton	= nullptr;
+QLocale LanguageModel::_defaultLocale		= QLocale(QLocale::English, QLocale::UnitedStates);
+QLocale LanguageModel::_alternativeLocale	= QLocale(QLocale::English, QLocale::UnitedStates);
 
+// the bool indicates whether the language is considered "complete" or not
 QMap<QString, bool> LanguageModel::LanguageInfo::_allowedLanguages =
 {
 	{ "en"		,	true	},
@@ -23,10 +28,11 @@ QMap<QString, bool> LanguageModel::LanguageInfo::_allowedLanguages =
 	{ "es"		,	true	},
 	{ "zh_Hans"	,	true	},
 	{ "zh_Hant" ,	true	},
-	{ "id"		,	false	},
 	{ "fr"		,	true    },
-	{ "ru"		,	false	},
 	{ "pl"		,	true	},
+	{ "sr"		,	true	},
+	{ "id"		,	false	},
+	{ "ru"		,	false	},
 	{ "it"		,	false	}
 };
 
@@ -46,6 +52,11 @@ LanguageModel::LanguageInfo::LanguageInfo(const QLocale& _locale, const QString&
 	if (!_qmFilename.isEmpty())		qmFilenames.push_back(_qmFilename);
 }
 
+void LanguageModel::setAlternativeLocaleStatic()
+{
+	_alternativeLocale = QLocale(_nativeLanguageNameToEnum[_currentAltLanguage], _nativeTerritoryNameToEnum[_currentAltTerritory]);	
+}
+
 LanguageModel::LanguageModel(QApplication *app, QQmlApplicationEngine *qml, QObject *parent)
 	: QAbstractListModel(parent),
 	  _mApp(app),
@@ -53,7 +64,7 @@ LanguageModel::LanguageModel(QApplication *app, QQmlApplicationEngine *qml, QObj
 	  _qml(qml)
 {
 	assert(!_singleton);
-
+	
 	_singleton = this;
 	_qmLocation = tq(Dirs::resourcesDir()) + "Translations";
 
@@ -62,22 +73,116 @@ LanguageModel::LanguageModel(QApplication *app, QQmlApplicationEngine *qml, QObj
 
 void LanguageModel::initialize()
 {
-	QString defaultLanguageCode = LanguageInfo::getLanguageCode(_defaultLocale);
-	LanguageInfo defaultLanguageInfo(_defaultLocale);
+	
+	QString			defaultLanguageCode = LanguageInfo::getLanguageCode(_defaultLocale);
+	LanguageInfo	defaultLanguageInfo	= _defaultLocale;
+	
 	_languages[defaultLanguageCode] = defaultLanguageInfo;
 
 	findQmFiles();
 
-	_currentLanguageCode = Settings::value(Settings::PREFERRED_LANGUAGE).toString();
-	if (!LanguageInfo::isLanguageAllowed(_currentLanguageCode)) _currentLanguageCode = defaultLanguageCode;
+	_currentLanguageCode	= Settings::value(Settings::PREFERRED_LANGUAGE		).toString();
+	_useAlternativeLocale	= Settings::value(Settings::USE_ALT_LOCALE			).toBool();
+	_currentAltLanguage		= Settings::value(Settings::ALT_LOCALE_LANGUAGE		).toString();
+	_currentAltTerritory	= Settings::value(Settings::ALT_LOCALE_REGION		).toString();
+	_useThousandSeps		= Settings::value(Settings::USE_THOUSAND_SEPARATORS	).toBool();
+	
+	fillAltOptions();
+	
+	if(resultXmlCompare::compareResults::theOne()->testMode()) //in testmode we run usa locale without thousands separators
+	{
+		_currentLanguageCode	= defaultLanguageCode;
+		_useAlternativeLocale	= true;
+		_useThousandSeps		= false;
+		_currentAltLanguage		= _defaultLocale.nativeLanguageName();
+		_currentAltTerritory	= _defaultLocale.nativeTerritoryName();
+	}
+	
+	if (!LanguageInfo::isLanguageAllowed(_currentLanguageCode)) 
+		_currentLanguageCode = defaultLanguageCode;
 
 	if (_currentLanguageCode != defaultLanguageCode)
 	{
 		// Load all translated language files for specific language
 		loadQmFilesForLanguage(_currentLanguageCode);
+		
+		setDefaultLocaleFromCurrent();
+		
 		_qml->retranslate();
 	}
+}
 
+void LanguageModel::fillAltOptions()
+{
+	QList<QLocale> allLocales = QLocale::matchingLocales(
+				QLocale::AnyLanguage,
+				QLocale::AnyScript,
+				QLocale::AnyCountry);
+	
+	QSet<QString> nativeLanguageNames;
+	_nativeLanguageNameToEnum.clear();
+	
+	for(QLocale & l : allLocales)
+	{
+		_nativeLanguageNameToEnum[l.nativeLanguageName()] = l.language();
+		nativeLanguageNames.insert(l.nativeLanguageName());
+	}
+	nativeLanguageNames.remove("");
+	_altLanguages	= QStringList(nativeLanguageNames.begin(),	nativeLanguageNames.end());
+	
+	std::sort(_altLanguages.begin(), _altLanguages.end(), [](const QString & l, const QString & r)
+	{
+		return l.toLower() < r.toLower();
+	});
+	
+	fillAltTerritories();
+}
+
+void LanguageModel::fillAltTerritories()
+{
+	QLocale::Language languageChosen = _currentAltLanguage == "" ? _defaultLocale.language() : _nativeLanguageNameToEnum[_currentAltLanguage];
+	
+	QList<QLocale> languageLocales = QLocale::matchingLocales(
+				languageChosen,
+				QLocale::AnyScript,
+				QLocale::AnyCountry);
+	
+	bool				previouslyChosenTerritoryFound	= false;
+	QLocale::Territory	prevTer							= _nativeTerritoryNameToEnum.count(_currentAltTerritory) ? _nativeTerritoryNameToEnum.at(_currentAltTerritory) : QLocale::Territory::AnyTerritory;
+	
+			
+	QSet<QString> nativeTerritoryNames;
+	_nativeTerritoryNameToEnum.clear();
+
+	for(QLocale & l : languageLocales)
+	{
+		QString territory = l.nativeTerritoryName();
+		
+		nativeTerritoryNames.insert(territory);
+		_nativeTerritoryNameToEnum [territory] = l.territory();
+		
+		if(prevTer == l.territory())		
+			previouslyChosenTerritoryFound	= true;
+	}
+	
+	nativeTerritoryNames.remove("");
+	_altTerritories = QStringList(nativeTerritoryNames.begin(), nativeTerritoryNames.end());
+	
+	std::sort(_altTerritories.begin(), _altTerritories.end(), [](const QString & l, const QString & r)
+	{
+		return l.toLower() < r.toLower();
+	});
+	
+	emit altTerritoriesChanged();
+	
+	
+	if(!previouslyChosenTerritoryFound || _currentAltTerritory == "" || prevTer == QLocale::Territory::AnyTerritory)
+		_currentAltTerritory = QLocale(languageChosen).nativeTerritoryName();
+	else if(prevTer != QLocale::Territory::AnyTerritory)
+		_currentAltTerritory = QLocale(languageChosen, prevTer).nativeTerritoryName();
+	
+
+	emit currentAltTerritoryChanged();
 }
 
 QVariant LanguageModel::data(const QModelIndex &index, int role) const
@@ -85,7 +190,8 @@ QVariant LanguageModel::data(const QModelIndex &index, int role) const
 	if (index.row() < 0 || index.row() >= rowCount())
 		return QVariant();
 
-	QString languageCode = _languages.keys()[index.row()];
+	
+	QString languageCode = std::next(_languages.begin(), index.row())->first;
 
 	QString result;
 	switch(role)
@@ -93,7 +199,7 @@ QVariant LanguageModel::data(const QModelIndex &index, int role) const
 	case NameRole:
 	case Qt::DisplayRole:
 	case LabelRole:
-	case ValueRole:			result = _languages[languageCode].entryName; break;
+	case ValueRole:			result = _languages.at(languageCode).entryName; break;
 	case NationFlagRole:	result = "qrc:/translations/images/flag_" + languageCode + ".png"; break;
 	case LocalNameRole:		result = languageCode; break;
 	default: result = "";
@@ -119,8 +225,11 @@ QHash<int, QByteArray> LanguageModel::roleNames() const
 
 void LanguageModel::setCurrentLanguage(QString language)
 {	
+	if(resultXmlCompare::compareResults::theOne()->testMode())
+		return;
+	
 	QString languageCode = language.split(" ")[0];
-	if (languageCode == _currentLanguageCode || languageCode.isEmpty() || !_languages.contains(languageCode))
+	if (languageCode == _currentLanguageCode || languageCode.isEmpty() || !_languages.count(languageCode))
 		return;
 
 	_currentLanguageCode = languageCode;
@@ -128,9 +237,26 @@ void LanguageModel::setCurrentLanguage(QString language)
 	if (_currentLanguageCode == LanguageInfo::getLanguageCode(_defaultLocale))	removeTranslators();
 	else																		loadQmFilesForLanguage(_currentLanguageCode);
 
+	refreshAll();
+}
+
+void LanguageModel::setDefaultLocaleFromCurrent()
+{
+	setAlternativeLocaleStatic();
+	
+	QColumnUtils::setCallbacksAndDefaultLocale(currentLocale(), useThousandSeps());
+	
+	emit currentLocaleChanged(currentLocale().bcp47Name(), useThousandSeps());
+	emit exampleFormattingChanged();
+}
+
+void LanguageModel::refreshAll()
+{
 	//prepare for language change
 	emit aboutToChangeLanguage();								//asks all analyses to abort and to block refresh
 	ResultsJsInterface::singleton()->setResultsLoaded(false);	//So that javascript starts queueing any Js (such as title changed of an analysis) until the page is reloaded
+	
+	setDefaultLocaleFromCurrent();
 
 	//On linux it somehow ignores the newer settings, so instead of pausing we kill the engines... https://github.com/jasp-stats/jasp-test-release/issues/1046
 	//But I do not know if it necessary, because the modules-translations aren't working.
@@ -145,13 +271,31 @@ void LanguageModel::setCurrentLanguage(QString language)
 	emit stopEngines();
 
 	_qml->retranslate();
-	Settings::setValue(Settings::PREFERRED_LANGUAGE , _currentLanguageCode);
-	Settings::setValue(Settings::PREFERRED_COUNTRY, _languages[_currentLanguageCode].locale.country());
+	if(!resultXmlCompare::compareResults::theOne()->testMode())
+	{
+		Settings::setValue(Settings::PREFERRED_LANGUAGE ,	currentLanguageCode());
+		Settings::setValue(Settings::PREFERRED_COUNTRY,		currentLocale().country());
+	}
 	_shouldEmitLanguageChanged = true;
 
 	ResultsJsInterface::singleton()->resetResults();
 	
 	//resumeEngines() will be emitted in resultsPageLoaded
+	
+	emit languageChangeDone();
+}
+
+void LanguageModel::setUseAlternativeLocale(bool useIt)
+{
+	if(_useAlternativeLocale == useIt || resultXmlCompare::compareResults::theOne()->testMode())
+		return;
+		
+	_useAlternativeLocale = useIt;
+	
+	Settings::setValue(Settings::USE_ALT_LOCALE ,	_useAlternativeLocale);
+	
+	emit useAlternativeLocaleChanged();
+	refreshAll();
 }
 
 void LanguageModel::resultsPageLoaded()
@@ -161,6 +305,7 @@ void LanguageModel::resultsPageLoaded()
 	
 	_shouldEmitLanguageChanged = false;
 	emit currentLanguageChanged();
+	emit currentLocaleChanged(currentLocale().bcp47Name(), useThousandSeps());
 	emit resumeEngines();
 }
 
@@ -206,7 +351,7 @@ void LanguageModel::loadModuleTranslationFiles(Modules::DynamicModule *dyn)
 			continue;
 		}
 
-		if (!_languages.contains(languageCode))
+		if (!_languages.count(languageCode))
 		{
 			Log::log() << "Not a Jasp supported language in: " << fi.fileName().toStdString()  << std::endl ;
 			continue;
@@ -260,7 +405,7 @@ void LanguageModel::findQmFiles()
 			continue;
 		}
 
-		if (!_languages.contains(languageCode))
+		if (!_languages.count(languageCode))
 		{
 			Log::log() << "Language (" << QLocale::languageToString(loc.language()) << ") not registered in LanguageModel, adding it now" << std::endl;
 			_languages[languageCode] = LanguageInfo(loc, languageCode, fi.filePath());
@@ -278,7 +423,7 @@ void LanguageModel::loadQmFilesForLanguage(const QString& languageCode)
 {
 	LanguageInfo & li = _languages[languageCode];
 
-	for (QString qmfilename: li.qmFilenames)
+	for (const QString & qmfilename: li.qmFilenames)
 		loadQmFile(qmfilename);
 
 }
@@ -318,12 +463,89 @@ void LanguageModel::removeTranslators()
 
 QString LanguageModel::currentLanguage() const
 {
-	const LanguageInfo & li = _languages[_currentLanguageCode];
-	return li.entryName;
+	return _languages.at(_currentLanguageCode).entryName;
+}
+
+const QLocale & LanguageModel::currentLocale() const
+{
+	
+	return useAlternativeLocale() ? _alternativeLocale : _languages.at(_currentLanguageCode).locale;
 }
 
 bool LanguageModel::hasDefaultLanguage() const
 {
-	const LanguageInfo & li = _languages[_currentLanguageCode];
-	return li.locale == _defaultLocale;
+	return _languages.at(_currentLanguageCode).locale == _defaultLocale;
+}
+
+QString LanguageModel::currentAltLanguage() const
+{
+	return _currentAltLanguage;
+}
+
+void LanguageModel::setCurrentAltLanguage(const QString &newCurrentAltLanguage)
+{
+	if (_currentAltLanguage == newCurrentAltLanguage)
+		return;
+	
+	_currentAltLanguage = newCurrentAltLanguage;
+	emit currentAltLanguageChanged();
+	
+	Settings::setValue(Settings::ALT_LOCALE_LANGUAGE, _currentAltLanguage);
+		
+	fillAltTerritories();
+	
+	refreshAll();
+}
+
+
+QString LanguageModel::currentAltTerritory() const
+{
+	return _currentAltTerritory;
+}
+
+QString LanguageModel::exampleFormatting() const
+{
+	QLocale cur = currentLocale();
+	
+	QStringList examples;
+	
+	examples.push_back(QColumnUtils::doubleToString(1.234567890));
+	examples.push_back(QColumnUtils::doubleToString(12345.67890));
+	examples.push_back(QColumnUtils::doubleToString(1234567890));
+	examples.push_back(QColumnUtils::currencyString(10000000.10, "€"));
+	
+	return examples.join("\n");
+	
+}
+
+void LanguageModel::setCurrentAltTerritory(const QString &newCurrentAltTerritory)
+{
+	if (_currentAltTerritory == newCurrentAltTerritory)
+		return;
+	
+	_currentAltTerritory = newCurrentAltTerritory;
+	emit currentAltTerritoryChanged();
+	
+	Settings::setValue(Settings::ALT_LOCALE_REGION, _currentAltTerritory);
+	
+	refreshAll();
+}
+
+bool LanguageModel::useThousandSeps() const
+{
+	return _useThousandSeps;
+}
+
+void LanguageModel::setUseThousandSeps(bool newUseThousandSeps)
+{
+	if (_useThousandSeps == newUseThousandSeps)
+		return;
+	
+	_useThousandSeps = newUseThousandSeps;
+	emit useThousandSepsChanged();
+	emit currentLocaleChanged(currentLocale().bcp47Name(), useThousandSeps());
+	
+	Settings::setValue(Settings::USE_THOUSAND_SEPARATORS, _useThousandSeps);
+	
+	refreshAll();
 }

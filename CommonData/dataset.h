@@ -5,10 +5,13 @@
 #include "column.h"
 #include "filter.h"
 #include "emptyvalues.h"
+#include "version.h"
 
 class DataSet : public DataSetBaseNode
 {
 public:
+	typedef 	std::map<std::string,columnType> colTypeMap;
+	
 							DataSet(int index = -1); ///< index==-1: create a new dataSet, >0: load that dataSet, 0: do nothing
 							~DataSet();
 	
@@ -30,11 +33,12 @@ public:
 	const	std::string &	dataFilePath()			const { return _dataFilePath;			}
 			int				dataFileTimestamp()		const { return _dataFileTimestamp;		}
 	const	std::string &	databaseJson()			const { return _databaseJson;			}
-			bool			writeBatchedToDB()		const { return _writeBatchedToDB;		}
+			bool			writeBatchedToDB()		const { return _writeBatchedToDBDepth;		}
+			void			batchColumnHadChange(Column *col);
 
 			void			dbCreate();
 			void			dbUpdate();
-			void			dbLoad(int index = -1, std::function<void(float)> progressCallback = [](float){}, bool do019Fix = false);
+			void			dbLoad(int index = -1, std::function<void(float)> progressCallback = [](float){}, Version doUpgradeFrom = Version());
 			void			dbDelete();
 
 			void			beginBatchedToDB();
@@ -48,12 +52,13 @@ public:
 			Column		*	newColumn(		const	std::string &	name);
 			int				getColumnIndex(	const	std::string &	name	) const;
 			int				columnIndex(	const	Column		*	col		) const;
-			void			columnsReorder(	const	stringvec	&	order	); ///< Expects a sane order vector
+			void			columnsReorder(			stringvec		order	); ///< Expects a sane order vector, with or without computed columns
 
 			bool			allColumnsPassFilter()					const;
 
-			qsizetype		getMaximumColumnWidthInCharacters(size_t columnIndex) const;
+			size_t			getMaximumColumnWidthInCharacters(size_t columnIndex) const;
 			stringvec		getColumnNames();
+			colTypeMap		getColumnTypesMap();
 
 			void			setDataFile( const std::string & dataFilePath, long timestamp)	{ _dataFilePath	= dataFilePath;	_dataFileTimestamp = timestamp; dbUpdate(); }
 			void			setDatabaseJson(	const std::string & databaseJson)	{ _databaseJson		= databaseJson;			dbUpdate(); }
@@ -69,7 +74,6 @@ public:
 			
 			void			loadOldComputedColumnsJson(const Json::Value & json); ///< Should act the same as the old ComputedColumns::fromJson() to allow loading "older jaspfiles"
 			stringset		findUsedColumnNames(std::string searchThis);
-			bool			initColumnWithStrings(int colIndex, const std::string & newName, const stringvec &values, const stringvec & labels, const std::string & title, columnType desiredType, const stringset & emptyValues, int threshold, bool orderLabelsByValue);
 
 			DatabaseInterface	 &	db();
 	const	DatabaseInterface	 &	db() const;
@@ -83,9 +87,11 @@ public:
 			void					setWorkspaceEmptyValues(	const stringset& values);
 	const	std::string			&	description()																	const	{ return _description; }
 			void					setDescription(				const std::string& desc);
-
+			void					updateLabelsPostLocaleChange();
+			
 private:			
 			void					upgradeTo019(const Json::Value & emptyVals);
+			void					upgrade019To095();
 			void					setEmptyValuesJsonOldStuff(	const Json::Value & emptyValues);
 			
 			
@@ -96,13 +102,14 @@ private:
 	Filter					*	_filter					= nullptr;
 	EmptyValues				*	_emptyValues			= nullptr;
 	int							_dataSetID				= -1,
-								_rowCount				= -1;
+								_rowCount				= -1,
+								_writeBatchedToDBDepth	= 0;
+	ColumnSet					_changedDuringBatch		= {};
 	long						_dataFileTimestamp		= 0;
 	std::string					_dataFilePath,
 								_databaseJson;
 	
-	bool						_writeBatchedToDB		= false,
-								_dataFileSynch			= false;
+	bool						_dataFileSynch			= false;
 	static stringset			_defaultEmptyvalues;	// Default empty values if workspace do not have its own empty values (used for backward compatibility)
 	std::string					_description;
 };

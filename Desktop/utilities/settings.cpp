@@ -39,6 +39,10 @@ const Settings::Setting Settings::Values[] = {
 	{"userHasGitHubAccount",		false},
 	{"preferredLanguage",			"en"},
 	{"preferredCountry",			QLocale::World},
+	{"useAlternativeLocale",		true},
+	{"alternativeLocLanguage",		QLocale(QLocale::English, QLocale::UnitedStates).nativeLanguageName() },
+	{"alternativeLocRegion",		QLocale(QLocale::English, QLocale::UnitedStates).nativeTerritoryName() },
+	{"useThousandSeparators",		true },
 	{"themeName",					"lightTheme"},
 	{"useNativeFileDialog",			true},
 	{"disableAnimations",			false},
@@ -99,8 +103,17 @@ const Settings::Setting Settings::Values[] = {
 	{"directLibpathEnabled",		true	},
 	{"directLibpathFolder",			""		},
 	{"directDevModName",			""		},
-	{"ribbonBarHeightScale",		1.0		}
-	
+	{"ribbonBarHeightScale",		1.0		},
+#ifdef WIN32
+    {"engineSandbox",				true	},
+#else
+    {"engineSandbox",				false	},
+#endif
+	{"remoteConfiguration",			false   },
+	{"remoteConfigurationURL",		""		},
+	{"localConfigurationPath",		""		},
+	{"useConfigurationFile",		true	},
+	{"startMaximized",				false	},
 };	
 
 QVariant Settings::value(Settings::Type key)

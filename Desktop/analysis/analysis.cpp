@@ -30,16 +30,17 @@
 #include "gui/preferencesmodel.h"
 #include "results/resultsjsinterface.h"
 #include "utilities/messageforwarder.h"
+#include "gui/jaspConfiguration/jaspconfiguration.h"
 
 Analysis::Analysis(size_t id, Modules::AnalysisEntry * analysisEntry, std::string title, std::string moduleVersion, Json::Value *data) :
 	  AnalysisBase(Analyses::analyses(), moduleVersion),
-	  _id(				id),
-	  _name(			analysisEntry->function()),
-	  _qml(				analysisEntry->qml().empty() ? _name : analysisEntry->qml()),
-	  _titleDefault(	analysisEntry->title()),
-	  _title(			title == "" ? _titleDefault : title),
-	  _moduleData(		analysisEntry),
-	  _dynamicModule(	_moduleData->dynamicModule())
+		_id(				id),
+		_name(			analysisEntry->function()),
+		_qml(			analysisEntry->qml().empty() ? _name : analysisEntry->qml()),
+		_titleDefault(	analysisEntry->title()),
+		_title(			title == "" ? _titleDefault : title),
+		_moduleData(		analysisEntry),
+		_dynamicModule(	_moduleData->dynamicModule())
 {
 	if(_moduleVersion.isEmpty() && _dynamicModule)
 		_moduleVersion = _dynamicModule->version();
@@ -162,6 +163,21 @@ bool Analysis::checkAnalysisEntry()
 			_QMLFileWatcher.removePaths(_QMLFileWatcher.files());
 		return false;
 	}
+}
+
+QVariant Analysis::getConstant(const QString& key, const QVariant& defaultValue) const
+{
+	return JASPConfiguration::getInstance()->getConstant(key, defaultValue, tq(module()), tq(name()));
+}
+
+QVariant Analysis::getConstant(const QString& key, const QVariant& defaultValue, const QString& module, const QString& analysis) const
+{
+	return JASPConfiguration::getInstance()->getConstant(key, defaultValue, module, analysis);
+}
+
+bool Analysis::optionLocked(const QString& name) const
+{
+	return JASPConfiguration::getInstance()->optionLocked(tq(module()), tq(this->name()), name);
 }
 
 void Analysis::setTitle(const std::string& title)
@@ -340,6 +356,7 @@ void Analysis::createForm(QQuickItem* parentItem)
 		connect(this,					&Analysis::refreshTableViewModels,	_analysisForm,	&AnalysisForm::refreshTableViewModels		);
 		connect(this, 					&Analysis::titleChanged,			_analysisForm,	&AnalysisForm::titleChanged					);
 		connect(this,					&Analysis::needsRefreshChanged,		_analysisForm,	&AnalysisForm::needsRefreshChanged			);
+		connect(this,					&Analysis::needsRefreshChanged,		_analysisForm,	&AnalysisForm::rSyntaxTextChanged			);
 		connect(this,					&Analysis::boundValuesChanged,		this,			&Analysis::setRSyntaxTextInResult,		Qt::QueuedConnection	);
 
 		setRSyntaxTextInResult();
@@ -473,6 +490,7 @@ void Analysis::setStatus(Analysis::Status status)
 
 void Analysis::boundValueChangedHandler()
 {
+	emit userModifiedSomething();
 	incrementRevision(); // To make sure we always process all changed options we increment the revision whenever anything changes
 
 	Log::log() << "Option changed for analysis '" << name() << "' and id " << id() << ", revision incremented to: " << _revision << std::endl;
@@ -599,6 +617,17 @@ QString	Analysis::fullHelpPath(QString helpFileName)
 void Analysis::duplicateMe()
 {
 	Analyses::analyses()->duplicateAnalysis(_id);
+}
+
+QString Analysis::generateWrapper()
+{
+	return _analysisForm->generateWrapper(
+					tq(_moduleData->dynamicModule()->name()),
+					tq(_name),
+					tq(_qml),
+					tq(_title),
+					_moduleData->preloadData()
+	);
 }
 
 void Analysis::showDependenciesOnQMLForObject(QString uniqueName)

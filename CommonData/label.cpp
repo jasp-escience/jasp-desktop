@@ -1,23 +1,11 @@
 #include "label.h"
 #include "column.h"
+#include <cassert>
 #include "timers.h"
+#include "columnutils.h"
 #include "databaseinterface.h"
 
-const int Label::DOUBLE_LABEL_VALUE			= -1; 
-
-Label::Label(Column * column)
-: DataSetBaseNode(dataSetBaseNodeType::label, column), _column(column)
-{
-	_intsId = EmptyValues::missingValueInteger;
-}
-
-Label::Label(Column * column, int value)
-: DataSetBaseNode(dataSetBaseNodeType::label, column), _column(column)
-{
-	setIntsId(value);
-	setOriginalValue(value);
-	setLabel(originalValueAsString());
-}
+const int Label::NO_LABEL			= -1; 
 
 Label::Label(Column * column, const std::string &label, int value, bool filterAllows, const std::string & description, const Json::Value & originalValue, int order, int id)
 : DataSetBaseNode(dataSetBaseNodeType::label, column), _column(column)
@@ -26,9 +14,10 @@ Label::Label(Column * column, const std::string &label, int value, bool filterAl
 	_intsId			= value;
 	_filterAllows	= filterAllows;
 	_description	= description;//description != "" || label.size() < MAX_LABEL_DISPLAY_LENGTH ? description : label; //Use description given if filled otherwise use label if the label won't be displayed entirely
-	_originalValue	= originalValue;
 	_order			= order;
 
+	_setOriginalValue(originalValue);
+	
 	if(id == -1)	dbCreate();
 	else			_dbId = id;
 }
@@ -67,11 +56,11 @@ void Label::dbLoad(int labelId)
 	int columnId;
 
 	std::string origValJsonStr;
-	db().labelLoad(labelId, columnId, _intsId, _label, _filterAllows, _description, origValJsonStr, _order);
+	db().labelLoad(labelId, columnId, _intsId, _label, _filterAllows, _description, origValJsonStr, _order, _userAdded);
 
-	_originalValue = Json::nullValue;
-
-	Json::Reader().parse(origValJsonStr, _originalValue);
+	Json::Value originalValue = Json::nullValue;
+	Json::Reader().parse(origValJsonStr, originalValue);
+	_setOriginalValue(originalValue);
 }
 
 void Label::dbUpdate()
@@ -85,7 +74,7 @@ void Label::dbUpdate()
 		dbCreate();
 	else
 	{
-		db().labelSet(_dbId, _column->id(), _intsId, _label, _filterAllows, _description, _originalValue.toStyledString());
+		db().labelSet(_dbId, _column->id(), _intsId, _label, _filterAllows, _description, _originalValue.toStyledString(), _userAdded);
 		_column->incRevision();
 	}
 }
@@ -99,7 +88,22 @@ void Label::setInformation(Column * column, int id, int order, const std::string
 	_intsId			= value;	
 	_filterAllows	= filterAllows;
 	_description	= description;
-	_originalValue	= originalValue;
+	
+	_setOriginalValue(originalValue);
+}
+
+void Label::updateDoubleLabelsPostLocaleChange()
+{
+	if(_originalValue.isDouble() && originalValueAsString() != _label)
+	{
+		//Maybe they really arent the same, but its also possible a languagechange just changed the way the decimal separator is written...
+		double labelDouble;
+		if(ColumnUtils::getDoubleValue(_label, labelDouble) && ColumnUtils::doubleToString(labelDouble) == originalValueAsString())
+		{
+			_label = originalValueAsString();
+			dbUpdate();
+		}
+	}
 }
 
 Json::Value Label::serialize() const
@@ -147,12 +151,22 @@ bool Label::setLabel(const std::string & label)
 	return false;
 }
 
+void Label::_setOriginalValue(const Json::Value & originalValue)
+{
+	_originalValue			= originalValue;
+		
+	ColumnUtils::getDoubleValue(originalValueAsString(false, true), _dblValue);
+}
+
+
 bool Label::setOriginalValue(const Json::Value & originalValue)
 {
 	if(_originalValue != originalValue)
 	{
 		Json::Value previous	= _originalValue;
-		_originalValue			= originalValue;
+		
+		_setOriginalValue(originalValue);
+		
 		dbUpdate();
 		
 		_column->labelValueChanged(this, previous);
@@ -175,8 +189,7 @@ bool Label::setOrigValLabel(const Json::Value &originalValue)
 		_label = newLabel;
 	
 	if(valChange)
-		_originalValue			= originalValue;
-	
+		_setOriginalValue(originalValue);
 	
 	if(aChange)
 	{
@@ -212,6 +225,15 @@ bool Label::setFilterAllows(bool allowFilter)
 	return false;
 }
 
+void Label::setUserAdded(bool userAddedIt) 
+{ 	
+	if(_userAdded != userAddedIt)
+	{
+		_userAdded = userAddedIt;
+		dbUpdate();
+	}
+}
+
 DatabaseInterface & Label::db()
 {
 	return _column->db();
@@ -227,6 +249,7 @@ Label &Label::operator=(const Label &label)
 	this->_originalValue	= label._originalValue;
 	this->_filterAllows		= label._filterAllows;
 	this->_description		= label._description;
+	this->_dblValue			= label._dblValue;
 	this->_intsId			= label._intsId;
 	this->_label			= label._label;
 	this->_order			= label._order;
@@ -241,22 +264,17 @@ std::string Label::labelDisplay() const
 	return isEmptyValue() ? EmptyValues::displayString() : label();
 }
 
-std::string Label::labelIgnoreEmpty() const
-{
-	return label();
-}
-
 bool Label::isEmptyValue() const
 {
 	return _column->isEmptyValue(originalValueAsString(false)) || _column->isEmptyValue(label());
 }
 
-std::string Label::originalValueAsString(bool fancyEmptyValue) const
+std::string Label::originalValueAsString(bool fancyEmptyValue, bool ignoreEmpty) const
 {
-	return originalValueAsString(_column, _originalValue, fancyEmptyValue);
+	return originalValueAsString(_column, _originalValue, fancyEmptyValue, ignoreEmpty);
 }
 
-std::string Label::originalValueAsString(const Column * column, const Json::Value & originalValue, bool fancyEmptyValue)
+std::string Label::originalValueAsString(const Column * column, const Json::Value & originalValue, bool fancyEmptyValue, bool ignoreEmpty)
 {
 	switch(originalValue.type())
 	{
@@ -267,7 +285,7 @@ std::string Label::originalValueAsString(const Column * column, const Json::Valu
 		return std::to_string(originalValue.asInt());
 
 	case Json::realValue:
-		return column->doubleToDisplayString(originalValue.asDouble(), fancyEmptyValue);
+		return column->doubleToDisplayString(originalValue.asDouble(), fancyEmptyValue, ignoreEmpty);
 
 	case Json::stringValue:
 		return originalValue.asString();

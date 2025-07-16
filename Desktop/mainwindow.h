@@ -54,6 +54,7 @@
 #include "widgets/filemenu/filemenu.h"
 #include "data/workspacemodel.h"
 #include "utilities/languagemodel.h"
+#include "gui/jaspConfiguration/jaspconfiguration.h"
 
 using namespace std;
 
@@ -90,6 +91,7 @@ class MainWindow : public QObject
 	Q_PROPERTY(QString		contactUrlBugs		READ contactUrlBugs											CONSTANT							)
 	Q_PROPERTY(QString		contactText			READ contactText											NOTIFY contactTextChanged			)
 	Q_PROPERTY(QString		questionsUrl		READ questionsUrl											CONSTANT							)
+	Q_PROPERTY(bool			hadFatalError		READ hadFatalError											NOTIFY hadFatalErrorChanged			)
 
 	friend class FileMenu;
 public:
@@ -127,7 +129,9 @@ public:
 	const QString 		contactUrlBugs()		const;
 	const QString 		contactText()			const;
 	const QString		questionsUrl()			const { return "https://forum.cogsci.nl/index.php?p=/categories/jasp-bayesfactor"; }
-
+	bool				startDetached(const QString & applicationPath, const QStringList & args) const; ///< Makes sure no pipes are connected
+	bool				hadFatalError() const;
+	
 public slots:
 	void setImageBackgroundHandler(QString value);
 	void plotPPIChangedHandler(int ppi, bool wasUserAction);
@@ -141,7 +145,6 @@ public slots:
 	void setContactVisible(bool newContactVisible);
 	void setCommunityVisible(bool newCommunityVisible);
 	void setDefaultWorkspaceEmptyValues();
-	void resetVariableTypes();
 
 	void showRCommander();
 
@@ -152,6 +155,7 @@ public slots:
 	void showAbout();
 	void showContact();
 	void showCommunity();
+	void fatalError();
 
 	void saveKeyPressed();
 	void saveAsKeyPressed();
@@ -163,6 +167,7 @@ public slots:
 	void zoomResetKeyPressed();	
 	void undo();
 	void redo();
+	void openURLFile(QString fileURLPath);
 
 	QObject * loadQmlData(QString data, QUrl url);
 
@@ -170,8 +175,8 @@ public slots:
 
 	static QString	versionString();
 
-	void	openFolderExternally(QDir folder);
-	void	showLogFolder();
+	void	openFolderExternally(QDir folder) const;
+	void	showLogFolder() const;
 
 	void	setDownloadNewJASPUrl(QString downloadNewJASPUrl);
 
@@ -248,6 +253,8 @@ signals:
 	void resizeData(int row, int col);
 	void qmlLoadedChanged();
 
+	void hadFatalErrorChanged();
+	
 private slots:
 	void resultsPageLoaded();
 	void analysisResultsChangedHandler(Analysis* analysis);
@@ -261,7 +268,6 @@ private slots:
 	void analysisAdded(Analysis *analysis);
 	void resendResultsToWebEngine();
 
-	void fatalError();
 	void closeVariablesPage();
 	void showProgress();
 	void hideProgress();
@@ -279,6 +285,7 @@ private slots:
 	void onDataModeChanged(bool dataMode);
 	void printQmlWarnings(const QList<QQmlError> &warnings);
 	void setQmlImportPaths();
+	void loadModulesFromUserConfiguration(configState state);
 
 private:
 	void _analysisSaveImageHandler(Analysis* analysis, QString options);
@@ -324,6 +331,7 @@ private:
 	Reporter					*	_reporter				= nullptr;
 	CodePagesWindows			*	_windowsWorkaroundCPs	= nullptr;
 	WorkspaceModel				*	_workspaceModel			= nullptr;
+	JASPConfiguration			*   _jaspConfiguration      = nullptr;
 
 	QSettings						_settings;
 
@@ -351,7 +359,8 @@ private:
 									_welcomePageVisible		= true,
 									_checkAutomaticSync		= false,
 									_contactVisible			= false,
-									_communityVisible		= false;
+									_communityVisible		= false,
+									_hadFatalError			= false;
 									
 	QFont							_defaultFont;
 };

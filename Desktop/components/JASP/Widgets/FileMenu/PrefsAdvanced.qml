@@ -1,15 +1,12 @@
-import QtQuick			2.12
-import QtQuick.Controls 2.12
-import JASP.Widgets		1.0
-import JASP.Controls	1.0
+import QtQuick
+import QtQuick.Controls
+import JASP.Widgets
+import JASP.Controls
 
-ScrollView
+PrefsScrollView
 {
 	id:						scrollPrefs
-	focus:					true
-	onActiveFocusChanged:	if(activeFocus) rememberModulesSelected.forceActiveFocus();
-	Keys.onLeftPressed:		resourceMenu.forceActiveFocus();
-
+	
 	Column
 	{
 		width:			scrollPrefs.width
@@ -37,8 +34,8 @@ ScrollView
 				checked:			preferencesModel.modulesRemember
 				onCheckedChanged:	preferencesModel.modulesRemember = checked
 				toolTip:			qsTr("Continue where you left of the next time JASP starts.\nEnabling this option makes JASP remember which Modules you've enabled.")
-				
-				KeyNavigation.tab:		cranRepoUrl
+				focus:				true
+				KeyNavigation.tab:	cranRepoUrl
 			}
 
 			Item
@@ -164,7 +161,7 @@ ScrollView
 			{	
 				id:					cleanModulesFolder
 				text:				qsTr("Clear installed modules and packages")
-				toolTip:			qsTr("This will erase the 'renv' and 'Modules' folders in the appdata.")
+                toolTip:			qsTr("This will erase the 'renv', 'Modules' and development Module folders in the appdata.")
 				onClicked:			mainWindow.clearModulesFoldersUser();
 
 				KeyNavigation.tab:		directLibpathDevModEnabled
@@ -172,6 +169,7 @@ ScrollView
 			}
 		}
 
+		
 		PrefsGroupRect
 		{
 			id:					editDeveloperFolder
@@ -182,13 +180,13 @@ ScrollView
 			CheckBox
 			{
 				id:					directLibpathDevModEnabled
-				label:				qsTr("Enable direct libpath mode")
+				label:				qsTr("Enable renv mode") //We should really remove the old way and this checkbox
 				checked:			preferencesModel.directLibpathEnabled
 				onCheckedChanged:	preferencesModel.directLibpathEnabled = checked
 				toolTip:			qsTr("Load modules from a binary in an R-library instead of installing it from sources.")
 				visible:			preferencesModel.developerMode
 
-				KeyNavigation.tab:	editDeveloperFolder
+				KeyNavigation.tab:	browseDeveloperFolderButton
 			}
 
 
@@ -243,7 +241,7 @@ ScrollView
 				RectangularButton
 				{
 					id:						directLibPathLabel
-					text:					qsTr("Libpath:")
+					text:					qsTr("Project library:")
 					width:					Math.max(directDevModName.implicitWidth, directLibPathLabel.implicitWidth)
 					onClicked:				preferencesModel.browseDeveloperLibPathFolder()
 					activeFocusOnTab:		true
@@ -312,7 +310,7 @@ ScrollView
 					text:				preferencesModel.directDevModName
 					onEditingFinished:	preferencesModel.directDevModName = text
 
-					nextEl:				logToFile
+					nextEl:				useConf
 
 					height:				browseDeveloperFolderButton.height
 					anchors
@@ -322,12 +320,120 @@ ScrollView
 						margins:		jaspTheme.generalAnchorMargin
 					}
 
-					KeyNavigation.tab:	logToFile
+					KeyNavigation.tab:	useConf
 					toolTip:			qsTr("Enter the (package)name of the development module you want to load")
 				}
 			}
 		}
 		
+		PrefsGroupRect
+		{
+			title:				qsTr("Configuration file options")
+
+			CheckBox
+			{
+				id:					useConf
+				label:				qsTr("Use a configuration file.")
+				checked:			preferencesModel.useConfigurationFile
+				onCheckedChanged:	preferencesModel.useConfigurationFile = checked
+				toolTip:			qsTr("Use a configuration file.")
+
+				KeyNavigation.tab:		useRemoteConf
+			}
+
+			Column  {
+				visible:	preferencesModel.useConfigurationFile
+				width:		parent.width
+
+				CheckBox
+				{
+					id:					useRemoteConf
+					label:				qsTr("Use remote configuration file.")
+					checked:			preferencesModel.remoteConfiguration
+					onCheckedChanged:	preferencesModel.remoteConfiguration = checked
+					toolTip:			qsTr("Use the remote configuration file pointed to by URL")
+
+					KeyNavigation.tab:		remoteConfURL
+				}
+
+				Item
+				{
+					id:		remoteConfItem
+					width:	parent.width
+					height:	cranRepoUrl.height
+					enabled: preferencesModel.remoteConfiguration
+
+					Label
+					{
+						id:		remoteSettingsLabel
+						text:	qsTr("Configuration URL: ")
+
+						anchors
+						{
+							left:			parent.left
+							verticalCenter:	parent.verticalCenter
+							margins:		jaspTheme.generalAnchorMargin
+						}
+					}
+
+					PrefsTextInput
+					{
+						id:					remoteConfURL
+
+						text:				preferencesModel.remoteConfigurationURL
+						onEditingFinished:	preferencesModel.remoteConfigurationURL = text
+
+						height:				browseDeveloperFolderButton.height
+						anchors
+						{
+							left:			remoteSettingsLabel.right
+							right:			parent.right
+						}
+
+						KeyNavigation.tab:	localconf
+					}
+				}
+
+				Item
+				{
+					id:					localconf
+					//enabled:			!preferencesModel.remoteConfiguration
+					width:				parent.width
+					height:				browseLocalconfButton.height
+
+					RectangularButton
+					{
+						id:					browseLocalconfButton
+						text:				qsTr("Select configuration file")
+						onClicked:			preferencesModel.browseConfigurationFile()
+						anchors.left:		parent.left
+						toolTip:			qsTr("Select configuration file.")
+
+						KeyNavigation.tab:		browseLocalconfFolderText.textInput
+						activeFocusOnTab:		true
+					}
+
+					PrefsTextInput
+					{
+						id:					browseLocalconfFolderText
+
+						text:				preferencesModel.localConfigurationPATH
+						onEditingFinished:	preferencesModel.localConfigurationPATH = text
+						nextEl:				logToFile
+
+						height:				browseLocalconfButton.height
+						anchors
+						{
+							left:			browseLocalconfButton.right
+							right:			parent.right
+							top:			parent.top
+						}
+					}
+				}
+			}
+		}
+
+
 		PrefsGroupRect
 		{
 			id:		loggingGroup
@@ -407,9 +513,22 @@ ScrollView
 				defaultValue:		Math.max(preferencesModel.maxEnginesAdmin, 4)
 				stepSize:			1
 
-				KeyNavigation.tab:	showEnginesWindow
+				KeyNavigation.tab:	engineSandbox
 				activeFocusOnTab:			true
 				text:				qsTr("Maximum number of engines: ")
+			}
+
+			CheckBox
+			{
+				id:					engineSandbox
+				visible:			Qt.platform.os === "windows"
+				enabled:			Qt.platform.os === "windows"
+				label:				qsTr("Sandbox engines")
+				checked:			preferencesModel.engineSandbox
+				onCheckedChanged:	preferencesModel.engineSandbox = checked
+				toolTip:			qsTr("Strengthen security on Windows by isolating Engines running R-code")
+
+				KeyNavigation.tab:		showEnginesWindow
 			}
 
 			RoundedButton

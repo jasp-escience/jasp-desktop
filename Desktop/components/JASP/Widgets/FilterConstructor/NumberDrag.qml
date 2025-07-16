@@ -1,4 +1,4 @@
-import QtQuick 2.0
+import QtQuick
 
 DragGeneric {
 	property real value: 0
@@ -7,6 +7,7 @@ DragGeneric {
 	shownChild: showMe
 	property string __debugName: "NumberDrag"
 
+	
 	Number
 	{
 		id: showMe

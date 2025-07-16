@@ -1,8 +1,7 @@
-import QtQuick				2.11
-import QtQuick.Controls		2.4
-import JASP.Controls		1.0 as JC //He returns!
-import QtQuick.Layouts		1.3
-import JASP					1.0
+import QtQuick
+import QtQuick.Controls as QtC
+import JASP.Controls
+import QtQuick.Layouts
 
 SliderBase
 {
@@ -45,7 +44,7 @@ SliderBase
 			color:		enabled ? jaspTheme.textEnabled : jaspTheme.textDisabled
 		}
 
-		Slider
+		QtC.Slider
 		{
 			id:					control
 			Layout.alignment:	Qt.AlignCenter
@@ -105,7 +104,7 @@ SliderBase
 
 		}
 
-		JC.DoubleField
+		DoubleField
 		{
 			id:					textField
 			value:				control.value

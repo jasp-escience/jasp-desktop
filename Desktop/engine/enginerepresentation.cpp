@@ -23,23 +23,27 @@ void EngineRepresentation::setSlaveProcess(QProcess * slaveProcess)
 	_slaveFinishedConnection = connect(_slaveProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),	this, &EngineRepresentation::processFinished);
 }
 
-EngineRepresentation::~EngineRepresentation()
+void EngineRepresentation::killProcess()
 {
-	Log::log() << "~EngineRepresentation() Engine #" << _channelNumber << std::endl;
-
-
 	if(_slaveProcess && _slaveProcess->state() == QProcess::ProcessState::Running)
 	{
-		_slaveProcess->terminate();
-		_slaveProcess->kill();
+		try { _slaveProcess->terminate(); } catch (...) {}
+		try { _slaveProcess->kill(); } catch (...) {}
 	}
-	
+
 	if(_slaveProcess)
 	{
 		_slaveProcess->setParent(nullptr);
 		_slaveProcess->deleteLater();
 		_slaveProcess = nullptr;
 	}
+}
+
+EngineRepresentation::~EngineRepresentation()
+{
+	Log::log() << "~EngineRepresentation() Engine #" << _channelNumber << std::endl;
+
+	killProcess();
 }
 
 void EngineRepresentation::cleanUpAfterClose(bool forgetAnalyses)
@@ -73,12 +77,21 @@ void EngineRepresentation::cleanUpAfterClose(bool forgetAnalyses)
 		runMeLater->run();
 }
 
-void EngineRepresentation::sendString(std::string str)
+void EngineRepresentation::sendString(const Json::Value & json)
 {
 #ifdef PRINT_ENGINE_MESSAGES
-	Log::log() << "sending to jaspEngine: " << str << "\n" << std::endl;
+	Json::Value printData = json;
+	if (printData.isObject() && printData.isMember("GITHUB_PAT"))
+		printData["GITHUB_PAT"] = "********";
+	
+	Log::log() << "sending to jaspEngine: " << printData << "\n" << std::endl;
 #endif
-	channel()->send(str);
+	channel()->send(json.toStyledString());
+}
+
+void EngineRepresentation::resend()
+{
+	channel()->resend();
 }
 
 
@@ -136,6 +149,7 @@ void EngineRepresentation::handleEngineCrash()
 	}
 
 	case engineState::stopped:
+	case engineState::stopRequested:
 		//It will be resumed manually
 		return;
 
@@ -143,7 +157,8 @@ void EngineRepresentation::handleEngineCrash()
 		return; //It will be resumed by EngineSync::restartKilledEngines()
 
 	default: //If not one of the above then let the engine crash and burn (https://www.youtube.com/watch?v=UtUpXPiSJEg)
-		emit  engineTerminated();
+		Log::log() << "emit  engineTerminated();" << std::endl;
+		emit engineTerminated();
 		return;
 	}
 
@@ -225,7 +240,7 @@ void EngineRepresentation::processReplies()
 		if		(_stopRequested)	sendStopEngine();
 		else if	(_pauseRequested)	sendPauseEngine();
 
-		if(_idleStartSecs == -1)
+		if(_idleStartSecs < 0)
 			_idleStartSecs = Utils::currentSeconds();
 
 		return;
@@ -303,14 +318,14 @@ void EngineRepresentation::processReplies()
 			case engineState::logCfg:				processLogCfgReply();				break;
 			case engineState::settings:				processSettingsReply();				break;
 			case engineState::reloadData:			processReloadDataReply();			break;
-			default:								throw std::logic_error("If you define new engineStates you should add them to the switch in EngineRepresentation::process()!");
+			default:								throw std::logic_error("If you define/send-from-engine new engineStates ("+engineStateToString(typeRequest)+") you should add them to the switch in EngineRepresentation::processReplies()!");
 			}
 	}
 	else if(_engineState == engineState::initializing && !_stopRequested)
 		resumeEngine();
 
 
-	if(!_stopRequested && _analysisAborted && _analysisInProgress && _abortTime + ENGINE_KILLTIME < Utils::currentMillis()) //We wait a second or two before we kill the engine if it does not want to abort.
+	if(!_stopRequested && _analysisAborted && _analysisInProgress && _abortTime >= 0 && _abortTime + ENGINE_KILLTIME < Utils::currentMillis()) //We wait a second or two before we kill the engine if it does not want to abort.
 	{
 		if(jaspEngineStillRunning())
 			killEngine();
@@ -336,7 +351,7 @@ void EngineRepresentation::runScriptOnProcess(RFilterStore * filterStore)
 
 	Log::log() << "sending filter with requestID " << filterStore->requestId << " to engine" << std::endl;
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 void EngineRepresentation::runScriptOnProcess(RFilterByNameStore *filterStore)
@@ -348,7 +363,7 @@ void EngineRepresentation::runScriptOnProcess(RFilterByNameStore *filterStore)
 	json["typeRequest"]		= engineStateToString(_engineState);
 	json["name"]			= filterStore->name.toStdString();
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 void EngineRepresentation::processFilterReply(Json::Value & json)
@@ -418,7 +433,7 @@ void EngineRepresentation::runScriptOnProcess(RScriptStore * scriptStore)
 
 		_lastRequestId			= scriptStore->requestId;
 
-		sendString(json.toStyledString());
+		sendString(json);
 
 		return;
 	}
@@ -463,7 +478,7 @@ void EngineRepresentation::runScriptOnProcess(RComputeColumnStore * computeColum
 
 	_lastCompColName		= json["columnName"].asString();
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 
@@ -709,9 +724,7 @@ void EngineRepresentation::killEngine(bool beCareful)
 			//I want pause and resume all engines to be done in a single function call without returning to the eventloop, so we just disconnect "finished" if we want to kill the engine.
 		disconnect(_slaveProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),	this, &EngineRepresentation::processFinished);
 
-		_slaveProcess->kill();
-		_slaveProcess->deleteLater();
-		_slaveProcess = nullptr;
+		killProcess();
 	}
 
 	EngineRepresentation::processFinished();
@@ -749,7 +762,7 @@ void EngineRepresentation::shutEngineDown()
 	}
 	else
 	{
-		size_t stopTime = Utils::currentMillis();
+		int64_t stopTime = Utils::currentMillis();
 		stopEngine();
 		
 		while(!stopped() && stopTime + ENGINE_KILLTIME > Utils::currentMillis())
@@ -768,7 +781,7 @@ void EngineRepresentation::sendStopEngine()
 
 	Log::log() << "informing engine #" << channelNumber() << " that it ought to stop" << std::endl;
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 void EngineRepresentation::restartEngine(QProcess * jaspEngineProcess)
@@ -782,9 +795,7 @@ void EngineRepresentation::restartEngine(QProcess * jaspEngineProcess)
 		if(jaspEngineStillRunning())
 			shutEngineDown();
 
-		_slaveProcess->kill();
-		_slaveProcess->deleteLater();
-		_slaveProcess = nullptr;
+		killProcess();
 
 		if(_engineState != engineState::killed && _engineState != engineState::stopped)
 			Log::log() << "EngineRepresentation::restartEngine says: Engine already had jaspEngine process that is now replaced!" << std::endl;
@@ -797,7 +808,7 @@ void EngineRepresentation::restartEngine(QProcess * jaspEngineProcess)
 	setState(engineState::initializing);
 }
 
-int EngineRepresentation::idleFor() const
+int64_t EngineRepresentation::idleFor() const
 {
 	return _idleStartSecs >= 0 ? Utils::currentSeconds() - _idleStartSecs : 0;
 }
@@ -805,7 +816,7 @@ int EngineRepresentation::idleFor() const
 bool EngineRepresentation::isBored() const 
 { 
 	
-	return _idleStartSecs != -1 && (_idleStartSecs + ENGINE_BORED_SHUTDOWN < Utils::currentSeconds());
+	return _idleStartSecs >= 0 && (_idleStartSecs + ENGINE_BORED_SHUTDOWN < Utils::currentSeconds());
 }
 
 bool EngineRepresentation::busyWithData() const
@@ -842,12 +853,13 @@ void EngineRepresentation::sendPauseEngine()
 
 	Log::log() << "informing engine #" << channelNumber() << " that it ought to pause for a bit" << std::endl;
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 void EngineRepresentation::resumeEngine(bool setResuming)
 {
-	if(_engineState != engineState::paused && _engineState != engineState::stopped && _engineState != engineState::initializing)
+	
+	if(!(_engineState == engineState::resuming || _engineState == engineState::idle) && _engineState != engineState::paused && _engineState != engineState::stopped && _engineState != engineState::initializing)
 		throw unexpectedEngineReply("Attempt to resume engine #" + std::to_string(channelNumber()) + " made but it isn't paused, initializing or stopped");
 
 	if(setResuming)
@@ -861,7 +873,7 @@ void EngineRepresentation::resumeEngine(bool setResuming)
 
 	Log::log() << "informing engine #" << channelNumber() << " that it may resume." << std::endl;
 
-	sendString(json.toStyledString());
+	sendString(json);
 }
 
 void EngineRepresentation::processEnginePausedReply()
@@ -875,20 +887,27 @@ void EngineRepresentation::processEnginePausedReply()
 void EngineRepresentation::processEngineResumedReply(Json::Value & json)
 {
 	Log::log() << "EngineRepresentation::processEngineResumedReply() for engine #" << channelNumber() << std::endl;
-
-	if(_engineState != engineState::resuming && _engineState != engineState::initializing && _engineState != engineState::reloadData)
-		throw unexpectedEngineReply("Received an unexpected engine #" + std::to_string(channelNumber()) + " resumed reply!");
 	
 	if(json.get("justReloadedData", false))
 		_reloadData = false;
-
-	setState(engineState::idle);
+	
+	if(_engineState != engineState::resuming && _engineState != engineState::initializing && _engineState != engineState::reloadData && _engineState != engineState::idle)
+	{
+	//	throw unexpectedEngineReply("Received an unexpected engine #" + std::to_string(channelNumber()) + " resumed reply (current state is " + engineStateToString(_engineState) +")!");
+		resend();
+	}
+	else
+	{
+		setState(engineState::idle);
+		
+		restartAbortedAnalysis();
+	}
 }
 
 void EngineRepresentation::processEngineStoppedReply()
 {
 	Log::log() << "EngineRepresentation::processEngineStoppedReply() for engine #" << channelNumber() << std::endl;
-	checkIfExpectedReplyType(engineState::stopRequested);
+	//checkIfExpectedReplyType(engineState::stopRequested);
 
 	setState(engineState::stopped);
 
@@ -912,7 +931,7 @@ void EngineRepresentation::runModuleInstallRequestOnProcess(Json::Value request)
 
 	_requestModName	= request["moduleName"].asString();
 
-	sendString(request.toStyledString());
+	sendString(request);
 }
 
 void EngineRepresentation::runModuleLoadRequestOnProcess(Json::Value request)
@@ -923,7 +942,7 @@ void EngineRepresentation::runModuleLoadRequestOnProcess(Json::Value request)
 
 	_requestModName	= request["moduleName"].asString();
 
-	sendString(request.toStyledString());
+	sendString(request);
 }
 
 void EngineRepresentation::processModuleRequestReply(Json::Value & json)
@@ -935,6 +954,7 @@ void EngineRepresentation::processModuleRequestReply(Json::Value & json)
 	moduleStatus moduleRequest	= moduleStatusFromString(json["moduleRequest"].asString());
 	bool succes					= json["succes"].asBool();
 	QString moduleName			= QString::fromStdString(json["moduleName"].asString());
+	QString result				= QString::fromStdString(json["result"].asString());
 	auto getError				= [&](){ return QString::fromStdString(json.get("error", "Unknown error").asString()); };
 
 	if(_requestModName != fq(moduleName))
@@ -944,7 +964,7 @@ void EngineRepresentation::processModuleRequestReply(Json::Value & json)
 	switch(moduleRequest)
 	{
 	case moduleStatus::installNeeded:
-		if(succes)	emit moduleInstallationSucceeded(moduleName);
+		if(succes)	emit moduleInstallationSucceeded(result);
 		else		emit moduleInstallationFailed(moduleName, getError());
 		break;
 
@@ -977,7 +997,7 @@ void EngineRepresentation::sendLogCfg()
 	Json::Value msg		= Log::createLogCfgMsg();
 	msg["typeRequest"]	= engineStateToString(_engineState);
 
-	sendString(msg.toStyledString());
+	sendString(msg);
 }
 
 void EngineRepresentation::processLogCfgReply()
@@ -1078,7 +1098,7 @@ void EngineRepresentation::sendSettings()
 	Json::Value msg			= Json::objectValue;
 	msg["typeRequest"]		= engineStateToString(_engineState);
 	addSettingsToJson(msg);
-	sendString(msg.toStyledString());
+	sendString(msg);
 
 	_settingsChanged = false;
 }
@@ -1094,7 +1114,7 @@ void EngineRepresentation::sendReloadData()
 	Json::Value msg			= Json::objectValue;
 	msg["typeRequest"]		= engineStateToString(_engineState);
 
-	sendString(msg.toStyledString());
+	sendString(msg);
 }
 
 void EngineRepresentation::addSettingsToJson(Json::Value & msg)
@@ -1103,6 +1123,8 @@ void EngineRepresentation::addSettingsToJson(Json::Value & msg)
 	msg["developerMode"]		=	 PreferencesModel::prefs()->developerMode();
 	msg["imageBackground"]		= fq(PreferencesModel::prefs()->plotBackground());
 	msg["languageCode"]			= fq(PreferencesModel::prefs()->languageCode());
+	msg["localeQt"]				= fq(PreferencesModel::prefs()->localeQt().bcp47Name());
+	msg["use1000Seps"]			=	 PreferencesModel::prefs()->useThousandSeparators();
 	msg["GITHUB_PAT"]			= fq(PreferencesModel::prefs()->githubPatResolved());
 	msg["numDecimals"]			=	 PreferencesModel::prefs()->numDecimals();
 	msg["fixedDecimals"]		=	 PreferencesModel::prefs()->fixedDecimals();

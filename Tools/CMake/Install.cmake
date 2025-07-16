@@ -145,6 +145,29 @@ if(APPLE)
 		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/arm64/gfortran/lib/
 	  )
   endif()
+  if(CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+	  install(
+		  FILES ${_R_Framework}/Resources/opt/R/x86_64/gfortran/lib/libgfortran.5.dylib
+		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/x86_64/gfortran/lib/
+	  )
+      install(
+		  FILES ${_R_Framework}/Resources/opt/R/x86_64/gfortran/lib/libgfortran.dylib
+		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/x86_64/gfortran/lib/
+	  )
+      install(
+		  FILES ${_R_Framework}/Resources/opt/R/x86_64/gfortran/lib/libquadmath.0.dylib
+		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/x86_64/gfortran/lib/
+	  )
+      install(
+		  FILES ${_R_Framework}/Resources/opt/R/x86_64/gfortran/lib/libquadmath.dylib
+		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/x86_64/gfortran/lib/
+	  )
+      install(
+		  FILES ${_R_Framework}/Resources/opt/R/x86_64/gfortran/lib/libgcc_s.1.1.dylib
+		  DESTINATION ${JASP_INSTALL_FRAMEWORKDIR}/R.Framework/Resources/opt/R/x86_64/gfortran/lib/
+	  )
+  endif()
+  
 
   # I had to do this manually, since `macdeployqt` misses it.
   # See here: https://bugreports.qt.io/browse/QTBUG-100686
@@ -153,10 +176,15 @@ if(APPLE)
   #install(FILES ${_LIB_BROTLICOMMON} DESTINATION ${JASP_INSTALL_FRAMEWORKDIR})
 
   install(
-    DIRECTORY ${MODULES_BINARY_PATH}/
+    DIRECTORY ${MODULES_BINARY_PATH}/binary_pkgs ${MODULES_BINARY_PATH}/manifests ${MODULES_BINARY_PATH}/module_libs ${MODULES_BINARY_PATH}/Tools
     DESTINATION ${JASP_INSTALL_MODULEDIR}
     REGEX ${FILES_EXCLUDE_PATTERN} EXCLUDE
     REGEX ${FOLDERS_EXCLUDE_PATTERN} EXCLUDE)
+  
+  install(
+    FILES ${MODULES_BINARY_PATH}/modules-settings.json
+    DESTINATION ${JASP_INSTALL_MODULEDIR}
+  )
 
   install(FILES ${CMAKE_BINARY_DIR}/Info.plist
           DESTINATION ${JASP_INSTALL_PREFIX}/Contents)
@@ -201,9 +229,16 @@ if(LINUX)
   install(DIRECTORY ${CMAKE_SOURCE_DIR}/Resources/
           DESTINATION ${JASP_INSTALL_RESOURCEDIR})
 
-  install(DIRECTORY ${MODULES_BINARY_PATH}/
-          DESTINATION ${JASP_INSTALL_MODULEDIR})
+  install(
+    DIRECTORY ${MODULES_BINARY_PATH}/binary_pkgs ${MODULES_BINARY_PATH}/manifests ${MODULES_BINARY_PATH}/module_libs ${MODULES_BINARY_PATH}/Tools
+    DESTINATION ${JASP_INSTALL_MODULEDIR}
+    REGEX ${FILES_EXCLUDE_PATTERN} EXCLUDE
+    REGEX ${FOLDERS_EXCLUDE_PATTERN} EXCLUDE)
 
+  install(
+    FILES ${MODULES_BINARY_PATH}/modules-settings.json
+    DESTINATION ${JASP_INSTALL_MODULEDIR}
+  )
   # we do not need renv-root in an install
   #install(DIRECTORY ${MODULES_RENV_ROOT_PATH}/
   #        DESTINATION ${JASP_INSTALL_PREFIX}/lib64/renv-root)
@@ -276,7 +311,7 @@ if(WIN32)
   # include(InstallRequiredSystemLibraries)
   # install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION .)
 
-  install(TARGETS JASP JASPEngine RUNTIME DESTINATION .)
+  install(TARGETS JASP JASPEngine ContainerFilePermissionChecker RUNTIME DESTINATION .)
 
   set(JASP_QML_FILES "${CMAKE_SOURCE_DIR}/Desktop")
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -341,9 +376,6 @@ if(WIN32)
   configure_file(${CMAKE_SOURCE_DIR}/Tools/windows/RecreateJunctions.cmd.in
                  ${CMAKE_BINARY_DIR}/RecreateJunctions.cmd @ONLY)
 
-  configure_file(${CMAKE_SOURCE_DIR}/Tools/windows/RecursiveJunctionRemover.cmd.in
-  ${CMAKE_BINARY_DIR}/RecursiveJunctionRemover.cmd @ONLY)
-
   #msix stuff
   configure_file(${CMAKE_SOURCE_DIR}/Tools/windows/msix/AppxManifest-store.xml.in
                 ${CMAKE_BINARY_DIR}/AppxManifest-store.xml @ONLY)
@@ -388,24 +420,27 @@ if(WIN32)
           ${RTOOLS_LIBWINPTHREAD_DLL}
           #${RTOOLS_LIBJSONCPP_DLL}
           ${RTOOLS_LIBREADSTAT_DLL}
+          ${RTOOLS_LIBRDATA_DLL}
           ${RTOOLS_ZLIB_DLL}
+          ${RTOOLS_LIBBZ2_DLL}
+          ${RTOOLS_LIBLZMA_DLL}
           ${RTOOLS_LIBICONV_DLL}
           ${_LIB_R_INTERFACE_DLL}
     DESTINATION .)
 
-  install(
-  DIRECTORY ${CMAKE_BINARY_DIR}/Modules/renv-cache
-  DESTINATION Modules/
-  REGEX ${FILES_EXCLUDE_PATTERN} EXCLUDE
-  REGEX ${FOLDERS_EXCLUDE_PATTERN} EXCLUDE)
+	
+	#modules
+	install(
+		DIRECTORY ${MODULES_BINARY_PATH}/binary_pkgs ${MODULES_BINARY_PATH}/manifests ${MODULES_BINARY_PATH}/Tools
+		DESTINATION ${JASP_INSTALL_MODULEDIR}
+		REGEX ${FILES_EXCLUDE_PATTERN} EXCLUDE
+		REGEX ${FOLDERS_EXCLUDE_PATTERN} EXCLUDE)
+	
+	install(
+		FILES ${MODULES_BINARY_PATH}/modules-settings.json
+		DESTINATION ${JASP_INSTALL_MODULEDIR}
+	)
 
-  install(
-    DIRECTORY ${CMAKE_BINARY_DIR}/Modules/Tools/
-    DESTINATION Modules/Tools
-    REGEX ${FILES_EXCLUDE_PATTERN} EXCLUDE
-    REGEX ${FOLDERS_EXCLUDE_PATTERN} EXCLUDE)
-
-  install(CODE "execute_process(COMMAND cmd.exe /C ${CMAKE_BINARY_DIR}/RecursiveJunctionRemover.cmd)")
-endif()
+  endif()
 
 list(POP_BACK CMAKE_MESSAGE_CONTEXT)

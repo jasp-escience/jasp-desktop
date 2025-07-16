@@ -24,6 +24,7 @@
 #include <QAbstractItemModel>
 #include <QQmlContext>
 #include "columntype.h"
+#include "models/term.h"
 
 class VariableInfoProvider;
 class DataSet;
@@ -38,7 +39,7 @@ class VariableInfo : public QObject
 {
 	Q_OBJECT
 public:
-	enum InfoType { VariableType, VariableNames, DataSetRowCount, Labels, DoubleValues, NameRole, DataSetValue, DataSetValues, MaxWidth, SignalsBlocked, DataAvailable, TotalNumericValues, TotalLevels, PreviewScale, PreviewOrdinal, PreviewNominal, DataSetPointer };
+	enum InfoType { VariableType, VariableNames, DataSetRowCount, Labels, DoubleValues, NameRole, DataSetValue, DataSetValues, MaxWidth, SignalsBlocked, DataAvailable, TotalNumericValues, TotalLevels, PreviewScale, PreviewOrdinal, PreviewNominal, DataSetPointer, ColumnDescription };
 	enum IconType { DefaultIconType, DisabledIconType, InactiveIconType, TransformedIconType };
 
 public:
@@ -58,19 +59,18 @@ public:
 	DataSet					*	dataSet();
 
 signals:
-	void namesChanged(		QMap<QString, QString> changedNames);
-	void columnsChanged(	QStringList changedColumns);
-	void columnTypeChanged(	QString colName);
-	void labelsChanged(		QString columnName, QMap<QString, QString> changedLabels);
-	void labelsReordered(	QString columnName);
-	void dataSetChanged();
+	void refresh();
+	void variableNamesChanged(		QMap<QString, QString> changedNames);
 	void filterChanged();
+	void labelsChanged(		QString columnName, QMap<QString, QString> changedLabels);
+	void variablesChanged(	QStringList changedColumns);
+	void dataSetChanged();
 	void rowCountChanged();
+	void labelsReordered(	QString columnName);
+	void variableTypeChanged(Term variable);
 	void dataAvailableChanged();
 
 private:	
-	void _setDataSetInfoInContext();
-
 	VariableInfoProvider *	_provider	= nullptr;
 
 	static VariableInfo *_singleton;
@@ -82,7 +82,6 @@ public:
 	virtual QVariant				provideInfo(VariableInfo::InfoType info, const QString& name = "", int row = 0)			const	= 0;
 	virtual bool					absorbInfo(VariableInfo::InfoType info, const QString& name, int row, QVariant value)			= 0;
 	virtual QAbstractItemModel*		providerModel()																			{ return nullptr;			}
-	virtual QQmlContext*			providerQMLContext()																	const	= 0;
 };
 
 class VariableInfoConsumer

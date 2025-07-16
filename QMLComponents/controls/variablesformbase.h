@@ -26,6 +26,7 @@ class VariablesListBase;
 class VariablesFormBase : public JASPControl
 {
 	Q_OBJECT
+	QML_ELEMENT
 
 	Q_PROPERTY( JASPControl*			availableVariablesList			READ availableVariablesList													NOTIFY availableVariablesListChanged		)
 	Q_PROPERTY( QList<JASPControl*>		allAssignedVariablesList		READ allAssignedVariablesList												NOTIFY allAssignedVariablesListChanged		)
@@ -36,7 +37,6 @@ class VariablesFormBase : public JASPControl
 public:
 	VariablesFormBase(QQuickItem* parent = nullptr);
 
-	bool					infoLabelIsHeader()				const	override	{ return true; }
 	JASPControl*			availableVariablesList()		const;
 	QList<JASPControl*>		allAssignedVariablesList()		const	{ return _allAssignedVariablesList;		}
 	QList<JASPControl*>		allJASPControls()				const	{ return _allJASPControls;				}

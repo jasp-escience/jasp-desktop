@@ -47,9 +47,9 @@ void _moduleLibraryFixer(const std::string & moduleLibraryPath, bool engineCall,
 
 	std::string jaspModuleBinaryPath;
 	std::string jaspModuleName;
-	if (modLibpath.string().find("/Modules/jasp") != std::string::npos) 
+	if (modLibpath.string().find("/Modules/module_libs/jasp") != std::string::npos) 
 	{
-		auto modulePlace = modLibpath.string().find("/Modules/") + 9;
+		auto modulePlace = modLibpath.string().find("/Modules/module_libs/") + 21;
 		auto moduleNameLength = modLibpath.string().find('/', modulePlace);
 
 		jaspModuleName = modLibpath.string().substr(modulePlace, moduleNameLength - modulePlace);
@@ -102,6 +102,16 @@ void _moduleLibraryFixer(const std::string & moduleLibraryPath, bool engineCall,
 				if(printStuff)
 					std::cout << "OTOOL: " << line << std::endl;
 
+
+				const std::string rPrefix = "/Library/Frameworks/R.framework/Versions/";
+				if(line.find(rPrefix) != std::string::npos) {
+					size_t startPos = rPrefix.length();
+					size_t endPos = line.find("/", startPos);
+					std::string rVersionLinked = line.substr(startPos, endPos - startPos);
+					if(rVersionLinked != AppInfo::getRDirName())
+						throw(std::runtime_error("The R Version used in: " + libPath + " is different from the one used by JASP! Please install and use the matching R Version: R-"  + AppInfo::getRVersion()));
+				}
+
 				// Know prefixes to be replaced
 				const std::map<std::string, std::string> prefixes_map = {
 					{"/Library/Frameworks/R.framework/Versions/" + AppInfo::getRDirName() + "/Resources/lib",	framework_resources + "lib"},
@@ -109,8 +119,8 @@ void _moduleLibraryFixer(const std::string & moduleLibraryPath, bool engineCall,
                     {"/usr/local/lib/libjags",										framework_resources + "opt/jags/lib/libjags"},
                     {"/usr/local/lib/libjrmath",									framework_resources + "opt/jags/lib/libjrmath"},
                     {"/usr/local/lib", 												framework_resources + "opt/local/lib"},
-                    {"/opt/gfortran/lib/gcc/x86_64-apple-darwin20.0/12.2.0",		framework_resources + "lib"},
-					{"/opt/gfortran/lib/gcc/aarch64-apple-darwin20.0/12.2.0",		framework_resources + "opt/R/arm64/gfortran/lib"},
+                    {"/opt/gfortran/lib/gcc/x86_64-apple-darwin20.0/14.2.0",		framework_resources + "opt/R/x86_64/gfortran/lib"},
+					{"/opt/gfortran/lib/gcc/aarch64-apple-darwin20.0/14.2.0",		framework_resources + "opt/R/arm64/gfortran/lib"},
 					{"/opt/X11/lib",												framework_resources + "opt/X11/lib"},
 				};
 
@@ -118,21 +128,14 @@ void _moduleLibraryFixer(const std::string & moduleLibraryPath, bool engineCall,
 				std::map<std::string, std::string> ids_to_be_replaced;
 				if(devMod) {
 					ids_to_be_replaced = {
-#ifndef __aarch64__
-					{"libgfortran.dylib",					framework_resources + "opt/local/gfortran/lib/libgfortran.dylib"}
-					,{"libquadmath.dylib",					framework_resources + "opt/local/gfortran/lib/libquadmath.dylib"}
-#endif
+
 						};
 				}
 				else {
 					ids_to_be_replaced = {
-						{"libtbbmalloc.dylib",					"@executable_path/../Modules/" + jaspModuleName + "/RcppParallel/lib/libtbbmalloc.dylib"},
-						{"libtbbmalloc_proxy.dylib",			"@executable_path/../Modules/" + jaspModuleName + "/RcppParallel/lib/libtbbmalloc_proxy.dylib"},
-						{"libtbb.dylib",						"@executable_path/../Modules/" + jaspModuleName + "/RcppParallel/lib/libtbb.dylib"}
-#ifndef __aarch64__
-						,{"libgfortran.dylib",					framework_resources + "opt/local/gfortran/lib/libgfortran.dylib"}
-						,{"libquadmath.dylib",					framework_resources + "opt/local/gfortran/lib/libquadmath.dylib"}
-#endif
+						{"libtbbmalloc.dylib",					"@executable_path/../Modules/module_libs/" + jaspModuleName + "/RcppParallel/lib/libtbbmalloc.dylib"},
+						{"libtbbmalloc_proxy.dylib",			"@executable_path/../Modules/module_libs/" + jaspModuleName + "/RcppParallel/lib/libtbbmalloc_proxy.dylib"},
+						{"libtbb.dylib",						"@executable_path/../Modules/module_libs/" + jaspModuleName + "/RcppParallel/lib/libtbb.dylib"}
 					};
 				}
 

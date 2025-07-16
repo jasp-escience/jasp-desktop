@@ -78,7 +78,7 @@ void ListModelDraggable::moveTerms(const QList<int> &indexes, int dropItemIndex)
 	endResetModel();
 }
 
-Terms ListModelDraggable::addTerms(const Terms& terms, int dropItemIndex, const RowControlsValues&)
+Terms ListModelDraggable::addTerms(const Terms& terms, int dropItemIndex, const Terms::RelatedValuesPerTerm&)
 {
 	if (terms.size() > 0)
 	{
@@ -106,7 +106,7 @@ bool ListModelDraggable::isAllowed(const Term &term) const
 {
 	if (!listView()->allowAnalysisOwnComputedColumns())
 	{
-		if (listView()->form()->isOwnComputedColumn(term.asString()))
+		if (listView()->form()->isOwnComputedColumn(fq(term.value())))
 			return false;
 	}
 

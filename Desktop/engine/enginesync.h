@@ -20,18 +20,8 @@
 #define ENGINESYNC_H
 
 #include <QAbstractListModel>
-/*
-#ifdef __APPLE__
-#include <semaphore.h>
-#else
-#include <boost/interprocess/sync/named_semaphore.hpp>
-#endif
-
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-*/
-
-
 #include "enginerepresentation.h"
+#include <queue>
 
 /// EngineSync is responsible for launching the background
 /// processes, scheduling analyses, and for sending and
@@ -49,6 +39,7 @@ public:
 	~EngineSync();
 
 	void start(int ppi);
+	void killProcessTimer();
 	bool allEnginesInitializing(std::set<EngineRepresentation *> these = {}); ///< If `these` isn't filled all engines are checked
 
 	static EngineSync * singleton() { return _singleton; }
@@ -84,6 +75,7 @@ public slots:
 	void		haveYouTriedTurningItOffAndOnAgain() { stopEngines(); resumeEngines(); } // https://www.youtube.com/watch?v=DPqdyoTpyEs
 	void		killModuleEngine(Modules::DynamicModule * mod);
 	void		killEngine(int channelNumber);
+	void		stopOrKillEngine(int channelNumber);
 	void		enginesPrepareForData();
 	void		enginesReceiveNewData();
 	bool		isModuleInstallRequestActive(const QString & moduleName);
@@ -138,10 +130,6 @@ private:
 	bool		aChannelFree()						const;
 	bool		channelCooledDown(size_t channel)	const;
 
-#ifdef _WIN32 
-	void		fixPATHForWindows(QProcessEnvironment & env);
-#endif
-	
 	size_t		maxEngineCount() const;
 	size_t		enginesIdleSoon() const;
 
@@ -173,7 +161,9 @@ private:
 
 private:
 	static EngineSync				*	_singleton;
-	QTimer							*	_filterRunningResetTimer		= nullptr;
+	QTimer							*	_filterRunningResetTimer		= nullptr,
+									*	_timerProcess					= nullptr,
+									*	_timerBeat						= nullptr;
 	RFilterStore					*	_waitingFilter					= nullptr;
 	bool								_stopProcessing					= false,
 										_dataMode						= false,
@@ -191,7 +181,7 @@ private:
 	std::vector<IPCChannel*>			_channels;						///< Channels are instantiated separately from the engines to avoid boost messing up
 	EngineRepresentation			*	_rCmder				= nullptr;	///< For those special occassions where you just want to shout at R in a more personal manner
 	IPCChannel						*	_rCmderChannel		= nullptr;	///< The channel for shouting at R in a more personal manner
-	std::vector<long>					_engineStopTimes;				///< Here we keep track of how long ago it is an engine shut down, this way we can give it a slight time between closing and starting an engine. To avoid shared memory problems on windows.
+	std::vector<int64_t>				_engineStopTimes;				///< Here we keep track of how long ago it is an engine shut down, this way we can give it a slight time between closing and starting an engine. To avoid shared memory problems on windows.
 
 };
 

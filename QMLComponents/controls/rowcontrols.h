@@ -42,13 +42,17 @@ public:
 			, const QMap<QString, Json::Value>& rowValues);
 
 	void										init(int row, const Term& key, bool isNew);
-	void										setContext(int row, const QString& key);
+	void										setContext(int row, const Term& key);
 	QQmlComponent*								getComponent()								const	{ return _rowComponent; }
 	QQuickItem*									getRowObject()								const	{ return _rowObject;			}
 	const QMap<QString, JASPControl*>&			getJASPControlsMap()						const	{ return _rowJASPControlMap;	}
 	JASPControl*								getJASPControl(const QString& name)					{ return _rowJASPControlMap.contains(name) ? _rowJASPControlMap[name] : nullptr; }
 	bool										addJASPControl(JASPControl* control);
-	void										disconnectControls();
+	void										disconnectAndDeleteControls();
+	bool										initialized()								const	{ return _initialized; }
+
+signals:
+	void										initializedChanged();
 
 private:
 
@@ -60,6 +64,7 @@ private:
 	QMap<QString, JASPControl*>				_rowJASPControlMap;
 	QQmlContext*							_context;
 	QMap<QString, Json::Value>				_initialValues;
+	bool									_initialized	= false;
 };
 
 #endif // ROWCOMPONENTS_H

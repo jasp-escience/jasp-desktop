@@ -54,14 +54,6 @@ msgctxt "InputListView|"
 msgid "New Value"
 msgstr "新建值"
 
-msgctxt "ModelTermsList|"
-msgid "Model Terms"
-msgstr "模型的项"
-
-msgctxt "ModelTermsList|"
-msgid "Add to null model"
-msgstr "添加至空模型"
-
 msgctxt "TableView|"
 msgid "Row #"
 msgstr "行#"
@@ -1154,23 +1146,6 @@ msgctxt "MainPage|"
 msgid "Results"
 msgstr "结果"
 
-msgctxt "ModuleInstaller|"
-msgid "Browse for JASP Module"
-msgstr "浏览 JASP 模块"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module"
-msgstr "选择 JASP 模块"
-
-msgctxt "ModuleInstaller|"
-msgid "<i>Browse for a JASP Module to see more information here</i>"
-msgstr "<i>浏览 JASP 模块，在此处查看更多信息</i>"
-
-#, qt-format
-msgctxt "ModuleInstaller|"
-msgid "<i>%1 is not a (correct) JASP Module!</i>"
-msgstr "<i>%1 不是（正确的）JASP 模块！</i>"
-
 msgctxt "ModulesMenu|"
 msgid "Install Module"
 msgstr "安装模块"
@@ -1855,16 +1830,6 @@ msgstr ""
 "%1"
 
 msgctxt "MainWindow|"
-msgid ""
-"JASP cannot continue and will close.\n"
-"\n"
-"We would be grateful if you could report this error to the JASP team."
-msgstr ""
-"JASP 无法继续并将关闭。\n"
-"\n"
-"如果您能将此错误报告给 JASP 团队，我们将不胜感激。"
-
-msgctxt "MainWindow|"
 msgid "Report"
 msgstr "报告"
 
@@ -2417,10 +2382,6 @@ msgid "Percentage Field"
 msgstr "百分比字段"
 
 msgctxt "TextInputBase|"
-msgid "Integers Field"
-msgstr "整数字段"
-
-msgctxt "TextInputBase|"
 msgid "Doubles Field"
 msgstr "双精度字段"
 
@@ -2434,10 +2395,6 @@ msgstr "添加计算列字段"
 
 msgctxt "TextInputBase|"
 msgid "Formula Field"
-msgstr "公式字段"
-
-msgctxt "TextInputBase|"
-msgid "Formulas Field"
 msgstr "公式字段"
 
 msgctxt "TextInputBase|"
@@ -2597,24 +2554,6 @@ msgid ""
 msgstr ""
 "模块 %1 安装失败，错误信息如下：\n"
 "%2"
-
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid "Cannot install module because %1 does not exist."
-msgstr "无法安装模块，因为 %1 不存在。"
-
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"Cannot install module because it is named '%1' and that name is reserved for "
-"installing the development module.\n"
-"Change the name (in DESCRIPTION and description.json) and try it again. If "
-"you are not the author of this module and do not know how to do this, "
-"contact: %2"
-msgstr ""
-"无法安装模块，因为它被命名为“%1”并且该名称是为安装开发模块保留的。\n"
-"更改名称（在DESCRIPTION 和 description.json 中）并重试。如果您不是该模块的作"
-"者并且不知道如何操作，请联系：%2"
 
 msgctxt "Modules::DynamicModules|"
 msgid "Select a folder"
@@ -2853,10 +2792,6 @@ msgid "Preferred language"
 msgstr "首选语言"
 
 msgctxt "PrefsUI|"
-msgid "Choose language  "
-msgstr "选择语言  "
-
-msgctxt "PrefsUI|"
 msgid "Safe graphics mode"
 msgstr "安全图形模式"
 
@@ -2981,21 +2916,6 @@ msgid "Initializing module %1 failed"
 msgstr "初始化模块 %1 失败"
 
 msgctxt "RibbonModel|"
-msgid "Module missing"
-msgstr "模块缺失"
-
-#, qt-format
-msgctxt "RibbonModel|"
-msgid ""
-"It seems the bundled module %1 wasn't correctly installed, and thus cannot "
-"be loaded.\n"
-"If you installed this version of JASP via an official installer let the JASP "
-"team know."
-msgstr ""
-"预置模块 %1 似乎没有被正确安装，因此无法加载。\n"
-"如果您通过官方安装程序安装了此版本的 JASP，请告知 JASP 团队。"
-
-msgctxt "RibbonModel|"
 msgid "Execute R code in a console"
 msgstr "在控制台执行 R 代码"
 
@@ -3024,10 +2944,6 @@ msgstr "<sup>*</sup>仅 OSF 账户登录，不支持ORCID或机构登录。"
 msgctxt "PrefsAdvanced|"
 msgid "Clear installed modules and packages"
 msgstr "清除已安装的模块和包"
-
-msgctxt "PrefsAdvanced|"
-msgid "This will erase the 'renv' and 'Modules' folders in the appdata."
-msgstr "此操作将删除 appdata 中的“renv”和“Modules”文件夹。"
 
 msgctxt "PrefsData|"
 msgid "<i>On Linux the default spreadsheet editor is always used.</i>"
@@ -3165,18 +3081,6 @@ msgstr "开源组件"
 msgctxt "PrefsUI|"
 msgid "Help us translate or improve JASP in your language"
 msgstr "协助我们翻译或改进 JASP 的语言本地化"
-
-msgctxt "ModuleInstaller|"
-msgid "Install"
-msgstr "安装"
-
-msgctxt "ModuleInstaller|"
-msgid "Press this to install your selected Module"
-msgstr "按此安装您选择的模块"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module to install"
-msgstr "选择要安装的 JASP 模块"
 
 msgctxt "ErrorMessage|"
 msgid "Don't show again"
@@ -3468,12 +3372,6 @@ msgstr "显示引擎"
 msgctxt "Modules::DynamicModules|"
 msgid "Select an exisiting folder"
 msgstr "选择现有文件夹"
-
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"To install a development module you need to select and existing folder, you "
-"selected '$1' but it doesn't exist."
-msgstr "要安装开发模块，您需要选择现有文件夹，您选择的“$1”文件夹不存在。"
 
 msgctxt "AnalysisFormExpander|"
 msgid "Show R syntax"
@@ -4569,7 +4467,7 @@ msgid "JASP Community"
 msgstr "JASP 社区"
 
 msgctxt "Supporters|"
-msgid "Suggest your institution joins the JASP Community"
+msgid "Suggest your institution join the JASP Community"
 msgstr "建议您所在的机构加入　JASP　社区"
 
 #, qt-format
@@ -4729,7 +4627,7 @@ msgstr "添加 %1"
 #, qt-format
 msgctxt "FactorsForm|"
 msgid "Remove last %1"
-msgstr "删除最后 %1"
+msgstr "移除此 %1"
 
 msgctxt "FactorsFormBase|"
 msgid "Factor"
@@ -5246,10 +5144,6 @@ msgctxt "JASPColumn|"
 msgid "Click icon to change column type"
 msgstr "点击图标更改变量类型"
 
-msgctxt "JASPColumn|"
-msgid "Transformed to"
-msgstr "变换为"
-
 msgctxt "TextInputBase|"
 msgid "Column-name-is-free field"
 msgstr "Column-name-is-free 字段"
@@ -5328,10 +5222,6 @@ msgid "Development module"
 msgstr "开发者模块"
 
 msgctxt "PrefsAdvanced|"
-msgid "Enable direct libpath mode"
-msgstr "开启定向libpath模式"
-
-msgctxt "PrefsAdvanced|"
 msgid ""
 "Load modules from a binary in an R-library instead of installing it from "
 "sources."
@@ -5340,10 +5230,6 @@ msgstr "从 R 库中的二进制文件加载模块，而不是从源安装。"
 msgctxt "PrefsAdvanced|"
 msgid "Source folder:"
 msgstr "源文件目录："
-
-msgctxt "PrefsAdvanced|"
-msgid "Libpath:"
-msgstr "库路径："
 
 msgctxt "PrefsAdvanced|"
 msgid "Choose the R library where you installed the development module"
@@ -5380,3 +5266,428 @@ msgstr "设置顶部分析菜单栏的高度尺寸。"
 msgctxt "TabView|"
 msgid "Double click to edit this name"
 msgstr "双击以编辑此名称"
+
+msgctxt "PrefsUI|"
+msgid "Choose language"
+msgstr "选择界面语言"
+
+msgctxt "PrefsUI|"
+msgid "Use an alternative language and territory dependent display for numbers"
+msgstr "以其他语言或区域的格式显示数字"
+
+msgctxt "PrefsUI|"
+msgid "Use the locale specified below for display of numbers and currency."
+msgstr "使用下面指定的区域设置来显示数字格式和货币。"
+
+msgctxt "PrefsUI|"
+msgid "Alt. language"
+msgstr "备选语言"
+
+msgctxt "PrefsUI|"
+msgid "Alt. territory"
+msgstr "备选区域"
+
+msgctxt "JASPColumn|"
+msgid "Column description: "
+msgstr "列说明： "
+
+msgctxt "VariablesList|"
+msgid "Click icon to change column type"
+msgstr "点击图标更改变量类型"
+
+msgctxt "VariablesList|"
+msgid "Column description: "
+msgstr "列说明： "
+
+#, qt-format
+msgctxt "Modules::DynamicModules|"
+msgid ""
+"To install a development module you need to select and existing folder, you "
+"selected '%1' but it doesn't exist."
+msgstr "您需要选择已有文件夹来安装开发模块，您选择了“%1”，但它不存在。"
+
+msgctxt "MainPage|"
+msgid "Remove this note"
+msgstr "删除此注释"
+
+msgctxt "MainWindow|"
+msgid ""
+"No log files are available. To get more information, please turn logging on. "
+"For this: open the file menu (the blue hamburger button left top), navigate "
+"to Advanced Preferences and check the 'Log to file' checkbox."
+msgstr ""
+"当前没有日志文件。要获取更多日志信息，请打开日志记录。您需要：打开文件菜单"
+"（左上角的蓝色菜单按钮），导航到高级首选项并选中“将日志保存到文件”复选框。"
+
+msgctxt "MainWindow|"
+msgid "Please drag and drop these log files into this issue: "
+msgstr "请将这些 .log 文件拖放到 GitHub 评论区（您可能需要先压缩它们）： "
+
+msgctxt "ComputeColumnWindow|"
+msgid "Select a filter to use for this computed column"
+msgstr "选择用于此计算列的筛选器"
+
+msgctxt "LabelEditorWindow|"
+msgid "Remove"
+msgstr "移除"
+
+msgctxt "LabelEditorWindow|"
+msgid "Add new level:"
+msgstr "添加新的水平："
+
+msgctxt "LabelEditorWindow|"
+msgid "Add a level that's missing from the data"
+msgstr "添加数据中缺失的水平"
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Keeping levels, so all levels are passed to the analysis, both filtered out "
+"ones and those added later manually."
+msgstr ""
+"保留水平，因此所有水平都会传递给分析，包括筛选掉的水平和之后手动添加的水平。"
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Dropping levels, so only those levels in the (possibly filtered) data get "
+"sent to the analysis."
+msgstr "丢弃水平，因此只有（可能经过筛选的）数据中的那些水平才会被发送到分析。"
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to reverse order of all labels"
+msgstr "关闭自动排序功能以便对所有标签进行逆序排列"
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels up manually"
+msgstr "关闭自动排序功能以便手动上移标签"
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels down manually"
+msgstr "关闭自动排序功能以便可以手动下移标签"
+
+msgctxt "QObject|"
+msgid "No filter"
+msgstr "无过滤器"
+
+msgctxt "QObject|"
+msgid "Use filter"
+msgstr "使用过滤器"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column compute filter of '%1' from '%2' to '%3'"
+msgstr "将“%1”的列计算过滤器从“%2”更改为“%3”"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column drop levels of '%1' from '%2' to '%3'"
+msgstr "将“%1”的列拖放水平从“%2”更改为“%3”"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Delete label %1 of column '%2'"
+msgstr "删除列‘%2’的标签 %1"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Adding value + label '%1' + '%2' to column '%3'"
+msgstr "正在将值 + 标签“%1”+“%2”添加到列“%3”"
+
+msgctxt "PrefsAdvanced|"
+msgid "Sandbox engines"
+msgstr "启用沙盒化引擎"
+
+msgctxt "PrefsAdvanced|"
+msgid "Strengthen security on Windows by isolating Engines running R-code"
+msgstr "这将通过隔离运行 R 代码的引擎来增强在 Windows 上的安全性"
+
+msgctxt "PrefsUI|"
+msgid "Use thousands separators"
+msgstr "启用千位分隔符"
+
+msgctxt "PrefsUI|"
+msgid "Disable to remove thousands separators from all numbers."
+msgstr "禁用以从所有数字中删除千位分隔符。"
+
+msgctxt "PreferencesModel|"
+msgid "Select a file..."
+msgstr "选择文件..."
+
+msgctxt "PreferencesModel|"
+msgid "Select a folder..."
+msgstr "选择文件夹..."
+
+msgctxt "PreferencesModel|"
+msgid "Select a R-library..."
+msgstr "选择 R 库..."
+
+msgctxt "PreferencesModel|"
+msgid "Safe Graphics mode changed"
+msgstr "安全图形模式已更改"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"You've changed the Safe Graphics mode of JASP, for this option to take "
+"effect you need to restart JASP"
+msgstr "已更改 JASP 的安全图形模式，您需要重新启动 JASP 才能生效"
+
+msgctxt "PreferencesModel|"
+msgid "Text rendering setting changed"
+msgstr "文本渲染设置已更改"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The textrendering setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr "文本渲染设置已更改，只有在重新启动 JASP 后才会完全生效。"
+
+msgctxt "PreferencesModel|"
+msgid "Engine Sandbox setting changed"
+msgstr "沙盒化引擎已更改"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The Engine Sandbox setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr "沙盒化引擎设置已更改，只有在重新启动 JASP 后才会完全生效。"
+
+msgctxt "MessageForwarder|"
+msgid "Sandbox warning"
+msgstr "沙盒警告"
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to save a file outside of the sandbox directory! We will correct "
+"the path to: "
+msgstr "您试图将文件保存在沙盒目录之外！路径已自动更正为： "
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to load a file outside of the sandbox directory! This will fail "
+"please move the file to: "
+msgstr "您试图加载沙盒目录之外的文件！这将失败，请将文件移至： "
+
+msgctxt "MessageForwarder|"
+msgid ""
+"The jasp engine is running in security sandbox mode and only has access to: "
+msgstr "JASP 引擎在安全沙盒模式下运行，只能访问： "
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise mean"
+msgstr "按行计算均值"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise sum"
+msgstr "按行计算总和"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise standard deviation"
+msgstr "按行计算标准差"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise variance"
+msgstr "按行计算方差"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise median"
+msgstr "按行计算中位数"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise minimum"
+msgstr "按行计算极小值"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise maximum"
+msgstr "按行计算极大值"
+
+msgctxt "PrefsAdvanced|"
+msgid "Use a configuration file."
+msgstr "使用配置文件。"
+
+msgctxt "PrefsAdvanced|"
+msgid "Use remote configuration file."
+msgstr "使用来自远程的配置文件。"
+
+msgctxt "PrefsAdvanced|"
+msgid "Use the remote configuration file pointed to by URL"
+msgstr "使用来自远程 URL 的配置文件"
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration URL: "
+msgstr "配置文件URL： "
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file"
+msgstr "选择配置文件"
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file."
+msgstr "选择配置文件。"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise mean"
+msgstr "按行计算均值"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise sum"
+msgstr "按行计算总和"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise standard deviation"
+msgstr "按行计算标准差"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise variance"
+msgstr "按行计算方差"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise median"
+msgstr "按行计算中位数"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise minimum"
+msgstr "按行计算极小值"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise maximum"
+msgstr "按行计算极大值"
+
+msgctxt "PrefsUI|"
+msgid "Should JASP open its window maximized on startup?"
+msgstr "设置在启动 JASP 时最大化窗口显示？"
+
+msgctxt "PrefsAdvanced|"
+msgid ""
+"This will erase the 'renv', 'Modules' and development Module folders in the "
+"appdata."
+msgstr "这将删除 appdata 中的“renv”、“Modules”和开发模块文件夹。"
+
+msgctxt "PrefsAdvanced|"
+msgid "Enable renv mode"
+msgstr "启用 renv 模式"
+
+msgctxt "PrefsAdvanced|"
+msgid "Project library:"
+msgstr "项目库："
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration file options"
+msgstr "配置文件选项"
+
+msgctxt "PrefsUI|"
+msgid "Start maximized"
+msgstr "启动时最大化窗口"
+
+msgctxt "MainWindow|"
+msgid ""
+"JASP had a serious error and cannot calculate anymore.\n"
+"\n"
+"We would be grateful if you could report this error to the JASP team."
+msgstr ""
+"JASP 发生严重错误，无法继续进行。\n"
+"\n"
+"如果您能将此错误报告给 JASP 团队，我们将不胜感激。"
+
+msgctxt "MainWindow|"
+msgid "Salvage"
+msgstr "暂时忽略"
+
+msgctxt "Modules::DynamicModules|"
+msgid "Install complete"
+msgstr "安装完成"
+
+msgctxt "Modules::DynamicModules|"
+msgid "Completed installation of Bundles: "
+msgstr "完成安装绑定包： "
+
+msgctxt "QObject|"
+msgid "Security Sandbox Failure"
+msgstr "安全沙盒故障"
+
+msgctxt "QObject|"
+msgid ""
+"Failed to activate Security Sandbox. Your system does not allow security "
+"sandboxing. Do you wish to continue with out is? (probably fine)"
+msgstr ""
+"无法激活安全沙盒。您的系统不允许安全沙盒。您是否希望继续使用安全沙盒？（可能"
+"无问题）"
+
+msgctxt "QObject|"
+msgid "Continue"
+msgstr "继续"
+
+msgctxt "QObject|"
+msgid "Exit"
+msgstr "退出"
+
+#, qt-format
+msgctxt "ComboBoxBase|"
+msgid "Possible values are: %1"
+msgstr "可能的值有：%1"
+
+#, qt-format
+msgctxt "ImportDataSet|"
+msgid "Originally imported into %1 on %2"
+msgstr "最初自 %2 导入到 %1"
+
+msgctxt "FileEvent|"
+msgid "Loading R Data File"
+msgstr "正在加载 R 数据文件"
+
+msgctxt "RDataImporter|"
+msgid "0 valid columns were read from the file, please check your data file."
+msgstr "从文件中未读取到有效列，请检查您的数据文件。"
+
+msgctxt "MainWindow|"
+msgid "Salvaging"
+msgstr "救援模式"
+
+msgctxt "MainWindow|"
+msgid ""
+"We're very sorry JASP has had a fatal error.\n"
+"To allow you to salvage or recover something out of this mess JASP will stay "
+"partly functional.\n"
+"\n"
+"You can for instance save your current workspace, or try changing a setting "
+"to perhaps prevent the problem next time.\n"
+"\n"
+"Analyses or computed columns and the like will not function anymore until "
+"you restart JASP."
+msgstr ""
+"很抱歉，JASP 出现了致命错误。\n"
+"为了方便您挽救或恢复此问题，JASP 将保持部分功能。\n"
+"\n"
+"例如，您可以保存当前工作区，或尝试更改设置，以便下次避免此类问题再次发生。\n"
+"\n"
+"在您重新启动 JASP 之前，分析或计算列等功能将无法继续运行。"
+
+#, qt-format
+msgctxt "Computer|"
+msgid "R Data files %1"
+msgstr "R 数据文件 %1"
+
+msgctxt "ModelTermsList|"
+msgid "Model Terms"
+msgstr "模型的项"
+
+msgctxt "ModelTermsList|"
+msgid "Add to null model"
+msgstr "添加至空模型"
+
+msgctxt "MainWindow|"
+msgid "Open file"
+msgstr "打开文件"
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "Cannot access file %1"
+msgstr "无法访问文件 %1"
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "File %1 is not found."
+msgstr "没有找到文件 %1 ."
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "JASP does not support this file type %1."
+msgstr "JASP 不支持此文件类型 %1 ."

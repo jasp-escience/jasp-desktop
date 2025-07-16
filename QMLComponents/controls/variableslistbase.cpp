@@ -19,7 +19,6 @@
 #include "variableslistbase.h"
 #include "checkboxbase.h"
 #include "models/listmodeltermsavailable.h"
-#include "models/listmodelinteractionavailable.h"
 #include "models/listmodeltermsassigned.h"
 #include "models/listmodelmeasurescellsassigned.h"
 #include "models/listmodelinteractionassigned.h"
@@ -29,7 +28,6 @@
 #include "boundcontrols/boundcontrollayers.h"
 #include "boundcontrols/boundcontrolterms.h"
 #include "boundcontrols/boundcontrolmultiterms.h"
-#include "utilities/desktopcommunicator.h"
 #include "rowcontrols.h"
 #include "analysisform.h"
 #include "sourceitem.h"
@@ -48,25 +46,9 @@ void VariablesListBase::setUp()
 {
 	JASPListControl::setUp();
 
-	if (listViewType() == ListViewType::RepeatedMeasures)
-	{
-		for (SourceItem* sourceItem : _sourceItems)
-		{
-			ListModelFactorLevels* factorsModel = dynamic_cast<ListModelFactorLevels*>(sourceItem->sourceListModel());
-			if (!factorsModel)
-				addControlError(tr("Source model of %1 must be from a Factor List").arg(name()));
-			else
-			{
-				addDependency(factorsModel->listView());
-				BoundControlMeasuresCells* measuresCellsControl = dynamic_cast<BoundControlMeasuresCells*>(_boundControl);
-				measuresCellsControl->addFactorModel(factorsModel);
-			}
-		}
-	}
-
 	_setRelations();
 
-	ListModelAvailableInterface* availableModel = qobject_cast<ListModelAvailableInterface*>(_draggableModel);
+	ListModelTermsAvailable* availableModel = qobject_cast<ListModelTermsAvailable*>(_draggableModel);
 
 	if (availableModel)
 	{
@@ -74,7 +56,6 @@ void VariablesListBase::setUp()
 		setProperty("sortMenuModel", QVariant::fromValue(sortedMenuModel));
 	}
 
-	_draggableModel->setItemType(property("itemType").toString());
 	JASPControl::DropMode dropMode = JASPControl::DropMode(property("dropMode").toInt());
 	_draggableModel->setDropMode(dropMode);
 
@@ -97,6 +78,22 @@ void VariablesListBase::_setInitialized(const Json::Value &value)
 			assignedModel->initTerms(assignedModel->availableModel()->terms());
 	}
 
+	if (listViewType() == ListViewType::RepeatedMeasures)
+	{
+		for (SourceItem* sourceItem : _sourceItems)
+		{
+			ListModelFactorLevels* factorsModel = dynamic_cast<ListModelFactorLevels*>(sourceItem->sourceListModel());
+			if (!factorsModel)
+				addControlError(tr("Source model of %1 must be from a Factor List").arg(name()));
+			else
+			{
+				BoundControlMeasuresCells* measuresCellsControl = dynamic_cast<BoundControlMeasuresCells*>(_boundControl);
+				measuresCellsControl->addFactorModel(factorsModel);
+			}
+		}
+	}
+
+
 	JASPListControl::_setInitialized(value);
 }
 
@@ -113,12 +110,6 @@ void VariablesListBase::setUpModel()
 	case ListViewType::AvailableVariables:
 		_isBound		= false;
 		_draggableModel = new ListModelTermsAvailable(this);
-		break;
-
-	case ListViewType::AvailableInteraction:
-		_isBound				= false;
-		_termsAreInteractions	= true;
-		_draggableModel			= new ListModelInteractionAvailable(this);
 		break;
 
 	case ListViewType::Layers:
@@ -159,12 +150,7 @@ void VariablesListBase::setUpModel()
 		
 	case ListViewType::Interaction:
 	{
-		_termsAreInteractions = true;
-
-		bool	interactionContainLowerTerms	= property("interactionContainLowerTerms").toBool(),
-				addInteractionsByDefault		= property("addInteractionsByDefault").toBool();
-
-		auto *	termsModel		= new ListModelInteractionAssigned(this, interactionContainLowerTerms, addInteractionsByDefault);
+		auto *	termsModel		= new ListModelInteractionAssigned(this);
 				_boundControl	= new BoundControlTerms(termsModel);
 				_draggableModel = termsModel;
 		break;
@@ -272,9 +258,16 @@ void VariablesListBase::moveItems(QList<int> &indexes, ListModelDraggable* targe
 	if (form()) form()->blockValueChangeSignal(false);
 }
 
+bool VariablesListBase::containsInteractions() const
+{
+	if (_listViewType == ListViewType::Interaction)
+		return true;
+
+	return JASPListControl::containsInteractions();
+}
+
 void VariablesListBase::setDropKeys(const QStringList &dropKeys)
 {
-	Log::log() << "LOG setDropKeys " << name() << ": " << dropKeys.join('/') << std::endl;
 	if (dropKeys != _dropKeys)
 	{
 		_dropKeys = dropKeys;
@@ -323,7 +316,7 @@ void VariablesListBase::_setRelations()
 		ListModel* relatedModel = getRelatedModel();
 		if (relatedModel)
 		{
-			ListModelAvailableInterface* availableModel = dynamic_cast<ListModelAvailableInterface*>(relatedModel);
+			ListModelTermsAvailable* availableModel = dynamic_cast<ListModelTermsAvailable*>(relatedModel);
 			if (!availableModel)
 				addControlError(tr("Wrong kind of source for VariableList %1").arg(name()));
 			else
@@ -331,8 +324,8 @@ void VariablesListBase::_setRelations()
 				assignedModel->setAvailableModel(availableModel);
 				availableModel->addAssignedModel(assignedModel);
 				addDependency(availableModel->listView());
-				setContainsVariables();
-				setContainsInteractions();
+				emit containsVariablesChanged();
+				emit containsInteractionsChanged();
 
 				// When the assigned model is of type interaction or it has multiple columns, then the available model should keep its terms when they are moved to the assigned model
 				if (_listViewType == ListViewType::Interaction || (columns() > 1 && _listViewType != ListViewType::RepeatedMeasures))
@@ -365,7 +358,7 @@ void VariablesListBase::interactionHighOrderHandler(JASPControl* checkBoxControl
 		if (otherTerm == keyTerm)
 			continue;
 
-		RowControls* rowControls = _draggableModel->getRowControls(otherTerm.asQString());
+		RowControls* rowControls = _draggableModel->getRowControls(otherTerm.value());
 		if (!rowControls) continue; // Apparently the controls are not created yet for this row. Does not matter: this function will be called when they are created
 		CheckBoxBase* otherCheckBox = qobject_cast<CheckBoxBase*>(rowControls->getJASPControl(_interactionHighOrderCheckBox));
 		bool otherChecked = otherCheckBox->checked();

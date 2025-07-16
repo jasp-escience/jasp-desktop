@@ -44,6 +44,7 @@ Table of Contents:
       - [Layout.rowSpan](#layoutrowspan)
       - [Layout.columnSpan](#layoutcolumnspan)
   - [Connecting Multiple Components](#connecting-multiple-components)
+  - [Configurable Constants](#configurable-constants)
   - [An Example](#an-example)
     - [1. Specifying Imports](#1-specifying-imports)
     - [2. Adding the Form](#2-adding-the-form)
@@ -884,6 +885,43 @@ Any property can be set with an expression. A title of a Section for example:
 
 </details>
 
+## Configurable Constants
+JASP offers a facility to query constants which may be configured by the user in a configuration file.
+For example we can create a dropdown with two options, high and low.
+Depending on the chosen option we set a PercentField to 100, 50 respectively.
+
+A user or institution may want to change these respective values.
+We can facilitate this using the `getConstant` function.
+Using the `getConstant` function of the `Form` component we can query the configured values
+for constants "high" and "low". 
+The function takes in two arguments, the constant name and a default value returned when the constant is not configured by the user.
+
+Example:
+<details>
+	<summary>Code</summary>
+
+  ```qml
+	DropDown
+	{
+		id:                 cr
+		name:               "cr"
+		indexDefaultValue:  0
+		startValue:         "high"
+		values: [
+			{ label: qsTr("High"),		value: "high"},
+			{ label: qsTr("Low"), 		value: "low"},
+		]
+	}
+
+	PercentField
+	{
+		name:           "crCustom"
+		defaultValue:   form.getConstant(cr.value, cr.value == "high" ? 100 : 50)
+	}
+  ```
+
+</details>
+
 
 ## An Example
 We'll create a simple analysis input panel to show the workflow.
@@ -897,10 +935,10 @@ We can begin actual work on the QML file, first we have to tell the engine where
 	<summary>Code</summary>
 
   ```qml
-  import QtQuick 2.11
-  import QtQuick.Layouts 1.3
-  import JASP.Controls 1.0
-  import JASP.Widgets 1.0
+  import QtQuick
+  import QtQuick.Layouts
+  import JASP.Controls
+  import JASP.Widgets
   ```
 
   If you want to import QML components from another jasp module, you can! 
@@ -914,11 +952,11 @@ In the future, we will require using qualified namespace for the import statemen
 	<summary>Code</summary>
 
   ```qml
-  import QtQuick          2.11
-  import QtQuick.Layouts  1.3
-  import JASP.Controls    1.0 as JC
-  import JASP.Theme	      1.0 as JT
-  import JASP.Widgets     1.0 as JW
+  import QtQuick
+  import QtQuick.Layouts
+  import JASP.Controls    as JC
+  import JASP.Theme	      as JT
+  import JASP.Widgets     as JW
   ```
 </details>
 
@@ -931,10 +969,10 @@ At this point we add a `Form` which will hold all our input components:
 	<summary>Code</summary>
 
   ```qml
-  import QtQuick 2.11
-  import QtQuick.Layouts 1.3
-  import JASP.Controls 1.0
-  import JASP.Widgets 1.0
+  import QtQuick
+  import QtQuick.Layouts
+  import JASP.Controls
+  import JASP.Widgets
 
   Form
   {
@@ -951,10 +989,10 @@ It's now a matter of mixing and matching the previously shown components to crea
 	<summary>Code</summary>
 
   ```qml
-  import QtQuick 2.11
-  import QtQuick.Layouts 1.3
-  import JASP.Controls 1.0
-  import JASP.Widgets 1.0
+  import QtQuick
+  import QtQuick.Layouts
+  import JASP.Controls
+  import JASP.Widgets
 
   Form
   {

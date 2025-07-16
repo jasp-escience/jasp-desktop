@@ -41,10 +41,13 @@
 #include "utils.h"
 #include "appinfo.h"
 #include <iostream>
+#include <cstdlib>
+#include "log.h"
 
 using namespace std;
 
 string Dirs::_reportingDir = "";
+string Dirs::_localAppDataDir = "";
 
 string Dirs::tempDir()
 {
@@ -52,6 +55,23 @@ string Dirs::tempDir()
 
 	if (p != "")
 		return p;
+
+	if(localAppDataDir() == "") { //we are an engine
+#ifdef _WIN32
+        char* buf = nullptr;
+		size_t sz = 0;
+		if(_dupenv_s(&buf, &sz, "JASP_TMP_DIR") == 0 && buf != nullptr) {
+            p = std::string(buf);
+			free(buf);
+			return p;
+		}
+#else 
+        char* buf =  getenv("JASP_TMP_DIR");//safe in unix
+        if(buf) {
+            return std::string(buf);
+        }
+#endif
+    }
 
 	string dir;
 	std::filesystem::path pa;
@@ -65,23 +85,11 @@ string Dirs::tempDir()
 		dir = reportingDir() + "/jaspTemp/";
 		pa  = dir;
 	}
-	else
-	{
-
-#ifdef _WIN32
-		char buffer[MAX_PATH];
-		if ( ! SUCCEEDED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, buffer)))
-			throw Exception("App Data directory could not be retrieved");
-
-		dir = std::string(buffer);
-		dir += "/JASP/temp";
-#else
-
-		dir = string(getpwuid(getuid())->pw_dir);
-		dir += "/.JASP/temp";
-#endif
-
-		pa = dir;
+	else if(localAppDataDir() != "")
+		pa = localAppDataDir() + "/temp/";
+	else {
+		pa = "./";
+		Log::log() <<"Local Appdata Dir not defined!" << std::endl;
 	}
 
 	if (!std::filesystem::exists(pa))
@@ -97,7 +105,7 @@ string Dirs::tempDir()
 		}
 	}
 
-	p = std::filesystem::path(dir).generic_string();
+	p = pa.generic_string();
 
 	return p;
 }

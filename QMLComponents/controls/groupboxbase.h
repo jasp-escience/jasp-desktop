@@ -24,11 +24,10 @@
 class GroupBoxBase : public JASPControl
 {
 	Q_OBJECT
+	QML_ELEMENT
 
 public:
 	GroupBoxBase(QQuickItem* parent = nullptr);
-
-	bool infoLabelIsHeader()	const	override;
 
 };
 

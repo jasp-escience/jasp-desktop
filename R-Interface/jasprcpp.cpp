@@ -16,19 +16,21 @@
 //
 
 #include "jasprcpp.h"
-#include <fstream>
-#include "tempfiles.h"
+#include <Rinternals.h>
+#ifndef JASP_NO_RINSIDE
+#include "RInside.h"
+#endif
 
-static const	std::string NullString			= "null";
-static			std::string lastErrorMessage	= "";
+static const	std::string		NullString			= "null";
+static			std::string		lastErrorMessage	= "";
 
-RInside							*rinside;
 ReadDataSetCB					readDataSetCB;
 ReadADataSetFilterCB			readDataSetRequestedCB;
 RunCallbackCB					runCallbackCB;
 ReadADataSetCB					readFullDataSetCB,
 								readFullFilteredDataSetCB,
-								readFilterDataSetCB;
+								readFilterDataSetCB,
+								readCompColDataSetCB;
 ReadDataColumnNamesCB			readDataColumnNamesCB;
 RequestTempFileNameCB			requestTempFileNameCB,
 								requestSpecificFileNameCB;
@@ -42,7 +44,8 @@ CreateColumn					dataSetCreateColumn;
 DeleteColumn					dataSetDeleteColumn;
 GetColumnType					dataSetGetColumnType;
 SetColumnDataAndType			dataSetColumnDataAndType;
-GetColumnAnalysisId				dataSetGetColumnAnalysisId;
+GetColumnAnalysisId				dataSetGetColumnAnalysisId,
+								dataSetGetColumnOriginalIndex;
 
 EnDecodeDef						encodeColumnName,
 								decodeColumnName,
@@ -54,6 +57,7 @@ ShouldEnDecodeDef				shouldEncodeColumnName,
 								shouldDecodeColumnName;
 
 getColNames						getAllColumnNames;
+RequestStringRBridge			computedColumnFilterCB;
 
 static logFlushDef				_logFlushFunction		= nullptr;
 static logWriteDef				_logWriteFunction		= nullptr;
@@ -62,6 +66,7 @@ static pollMessagesFuncDef		_pollMessagesFunction	= nullptr;
 static systemDef				_systemFunc				= nullptr;
 static libraryFixerDef			_libraryFixerFunc		= nullptr;
 static std::string				_R_HOME = "";
+static bool						_insideJASP				= true;
 
 bool shouldCrashSoon = false; //Simply here to allow a developer to force a crash
 
@@ -69,12 +74,61 @@ bool shouldCrashSoon = false; //Simply here to allow a developer to force a cras
 //Might not be necessary anymore due to the active codepage being set to utf8 now
 extern char * R_TempDir;
 
+// Code from RInside.cpp
+int __parseEval(const std::string & line, SEXP & ans)
+{
+//#ifdef PRINT_ENGINE_MESSAGES
+	//jaspRCPP_logString("parseEval: " + line + "\n");
+//#endif
+	ParseStatus status;
+	SEXP cmdSexp, cmdexpr = R_NilValue;
+	int i, errorOccurred;
+
+	PROTECT(cmdSexp = Rf_allocVector(STRSXP, 1));
+	SET_STRING_ELT(cmdSexp, 0, Rf_mkChar(line.c_str()));
+
+	cmdexpr = PROTECT(R_ParseVector(cmdSexp, -1, &status, R_NilValue));
+	if (status == PARSE_OK)
+	{
+		// Loop is needed here as EXPSEXP might be of length > 1
+		for(i = 0; i < Rf_length(cmdexpr); i++){
+			ans = R_tryEval(VECTOR_ELT(cmdexpr, i),  Rcpp::Environment::global_env(), &errorOccurred);
+			if (errorOccurred) {
+				UNPROTECT(2);
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+SEXP _parseEval(const std::string &line)
+{
+	SEXP ans;
+	int rc = __parseEval(line, ans);
+	if (rc != 0) {
+		throw std::runtime_error(std::string("Error evaluating: ") + line);
+	}
+	return ans;
+}
+
+void _parseEvalQNT(const std::string &line)
+{
+	try {
+		SEXP ans;
+		__parseEval(line, ans);
+	} catch (...) {
+	}
+}
+
 extern "C" {
 void STDCALL jaspRCPP_init(const char* buildYear, const char* version, RBridgeCallBacks* callbacks,
 	sendFuncDef sendToDesktopFunction, pollMessagesFuncDef pollMessagesFunction,
 	logFlushDef logFlushFunction, logWriteDef logWriteFunction, systemDef systemFunc,
-	libraryFixerDef libraryFixerFunc, const char* resultFont, const char * tempDir, const char * initFriendlyFunctionsRCode)
+	libraryFixerDef libraryFixerFunc, const char* resultFont, const char * tempDir, const char * initFriendlyFunctionsRCode, bool insideJasp)
 {
+	_insideJASP = insideJasp;
+
 	_logFlushFunction		= logFlushFunction;
 	_logWriteFunction		= logWriteFunction;
 	_sendToDesktop			= sendToDesktopFunction;
@@ -82,14 +136,17 @@ void STDCALL jaspRCPP_init(const char* buildYear, const char* version, RBridgeCa
 	_systemFunc				= systemFunc;
 	_libraryFixerFunc		= libraryFixerFunc;
 
-	jaspRCPP_logString("Creating RInside.\n");
+#ifndef JASP_NO_RINSIDE
+	if (_insideJASP)
+		new RInside();
+#endif
 
-	rinside = new RInside();
+	auto rEnvironment = Rcpp::Environment::global_env();
 	R_TempDir = (char*)tempDir;
 	
-	RInside &rInside = rinside->instance();
 
 	requestJaspResultsFileSourceCB				= callbacks->requestJaspResultsFileSourceCB;
+	dataSetGetColumnOriginalIndex				= callbacks->dataSetGetColumnOriginalIndex;
 	dataSetGetColumnAnalysisId					= callbacks->dataSetGetColumnAnalysisId;
 	dataSetColumnDataAndType					= callbacks->dataSetColumnAsDataAndType;
 	requestSpecificFileNameCB					= callbacks->requestSpecificFileNameCB;
@@ -97,13 +154,15 @@ void STDCALL jaspRCPP_init(const char* buildYear, const char* version, RBridgeCa
 	requestStateFileSourceCB					= callbacks->requestStateFileSourceCB;
 	readDataSetDescriptionCB					= callbacks->readDataSetDescriptionCB;
 	readDataSetRequestedCB						= callbacks->readDataSetRequestedCB;
+	computedColumnFilterCB						= callbacks->computedColumnFilter;
 	requestTempRootNameCB						= callbacks->requestTempRootNameCB;
 	requestTempFileNameCB						= callbacks->requestTempFileNameCB;
 	readDataColumnNamesCB						= callbacks->readDataColumnNamesCB;
 	dataSetGetColumnType						= callbacks->dataSetGetColumnType;
+	readCompColDataSetCB						= callbacks->readCompColDataSetCB;
+	readFilterDataSetCB							= callbacks->readFilterDataSetCB;
 	dataSetCreateColumn							= callbacks->dataSetCreateColumn;
 	dataSetDeleteColumn							= callbacks->dataSetDeleteColumn;
-	readFilterDataSetCB							= callbacks->readFilterDataSetCB;
 	readFullDataSetCB							= callbacks->readFullDataSetCB;
 	dataSetRowCount								= callbacks->dataSetRowCount;
 	runCallbackCB								= callbacks->runCallbackCB;
@@ -118,69 +177,70 @@ void STDCALL jaspRCPP_init(const char* buildYear, const char* version, RBridgeCa
 	decodeColumnName							= callbacks->decoder;
 
 	// TODO: none of this should pollute the global environment.
-	rInside[".setLog"]							= Rcpp::InternalFunction(&jaspRCPP_setLog);
-	rInside[".setRError"]						= Rcpp::InternalFunction(&jaspRCPP_setRError);
-	rInside[".crashPlease"]						= Rcpp::InternalFunction(&jaspRCPP_crashPlease);
-	rInside[".setRWarning"]						= Rcpp::InternalFunction(&jaspRCPP_setRWarning);
-	rInside[".runSeparateR"]					= Rcpp::InternalFunction(&jaspRCPP_RunSeparateR);
-	rInside[".returnString"]					= Rcpp::InternalFunction(&jaspRCPP_returnString);
-	rInside[".columnIsScale"]					= Rcpp::InternalFunction(&jaspRCPP_columnIsScale);
-	rInside[".callbackNative"]					= Rcpp::InternalFunction(&jaspRCPP_callbackSEXP);
-	rInside[".decodeColTypes"]					= Rcpp::InternalFunction(&jaspRCPP_decodeColumnTypeRcpp);
-	rInside[".dataSetRowCount"]					= Rcpp::InternalFunction(&jaspRCPP_dataSetRowCount);
-	rInside[".returnDataFrame"]					= Rcpp::InternalFunction(&jaspRCPP_returnDataFrame);
-	rInside[".columnIsOrdinal"]					= Rcpp::InternalFunction(&jaspRCPP_columnIsOrdinal);
-	rInside[".columnIsNominal"]					= Rcpp::InternalFunction(&jaspRCPP_columnIsNominal);
-	rInside[".encodeColNamesLax"]				= Rcpp::InternalFunction(&jaspRCPP_encodeAllColumnNames);
-	rInside[".decodeColNamesLax"]				= Rcpp::InternalFunction(&jaspRCPP_decodeAllColumnNames);
-	rInside[".encodeColNamesStrict"]			= Rcpp::InternalFunction(&jaspRCPP_encodeColumnNameRcpp);
-	rInside[".decodeColNamesStrict"]			= Rcpp::InternalFunction(&jaspRCPP_decodeColumnNameRcpp);
-	rInside[".setColumnDataAsScale"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsScale);
-	rInside[".readFullDatasetToEnd"]			= Rcpp::InternalFunction(&jaspRCPP_readFullDataSet);
-	rInside[".allColumnNamesDataset"]			= Rcpp::InternalFunction(&jaspRCPP_allColumnNamesDataset);
-	rInside[".readDatasetToEndNative"]			= Rcpp::InternalFunction(&jaspRCPP_readDataSetSEXP);
-	rInside[".readFilterDatasetToEnd"]			= Rcpp::InternalFunction(&jaspRCPP_readFilterDataSet);
-	rInside[".setColumnDataAsOrdinal"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsOrdinal);
-	rInside[".setColumnDataAsNominal"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsNominal);
-	rInside[".readDataSetHeaderNative"]			= Rcpp::InternalFunction(&jaspRCPP_readDataSetHeaderSEXP);
-	rInside[".createCaptureConnection"]			= Rcpp::InternalFunction(&jaspRCPP_CreateCaptureConnection);
-	rInside[".postProcessLibraryModule"]		= Rcpp::InternalFunction(&jaspRCPP_postProcessLocalPackageInstall);
-	rInside[".requestTempFileNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestTempFileNameSEXP);
-	rInside[".requestTempRootNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestTempRootNameSEXP);
-	rInside[".readDataSetRequestedNative"]		= Rcpp::InternalFunction(&jaspRCPP_readDataSetRequested);
-	rInside[".requestStateFileNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestStateFileNameSEXP);
-	rInside[".readFullFilteredDatasetToEnd"]	= Rcpp::InternalFunction(&jaspRCPP_readFullFilteredDataSet);
-	rInside[".requestSpecificFileNameNative"]	= Rcpp::InternalFunction(&jaspRCPP_requestSpecificFileNameSEXP);
+	rEnvironment[".setLog"]							= Rcpp::InternalFunction(&jaspRCPP_setLog);
+	rEnvironment[".setRError"]						= Rcpp::InternalFunction(&jaspRCPP_setRError);
+	rEnvironment[".crashPlease"]					= Rcpp::InternalFunction(&jaspRCPP_crashPlease);
+	rEnvironment[".setRWarning"]					= Rcpp::InternalFunction(&jaspRCPP_setRWarning);
+	rEnvironment[".runSeparateR"]					= Rcpp::InternalFunction(&jaspRCPP_RunSeparateR);
+	rEnvironment[".returnString"]					= Rcpp::InternalFunction(&jaspRCPP_returnString);
+	rEnvironment[".columnIsScale"]					= Rcpp::InternalFunction(&jaspRCPP_columnIsScale);
+	rEnvironment[".callbackNative"]					= Rcpp::InternalFunction(&jaspRCPP_callbackSEXP);
+	rEnvironment[".decodeColTypes"]					= Rcpp::InternalFunction(&jaspRCPP_decodeColumnTypeRcpp);
+	rEnvironment[".dataSetRowCount"]				= Rcpp::InternalFunction(&jaspRCPP_dataSetRowCount);
+	rEnvironment[".returnDataFrame"]				= Rcpp::InternalFunction(&jaspRCPP_returnDataFrame);
+	rEnvironment[".columnIsOrdinal"]				= Rcpp::InternalFunction(&jaspRCPP_columnIsOrdinal);
+	rEnvironment[".columnIsNominal"]				= Rcpp::InternalFunction(&jaspRCPP_columnIsNominal);
+	rEnvironment[".encodeColNamesLax"]				= Rcpp::InternalFunction(&jaspRCPP_encodeAllColumnNames);
+	rEnvironment[".decodeColNamesLax"]				= Rcpp::InternalFunction(&jaspRCPP_decodeAllColumnNames);
+	rEnvironment[".encodeColNamesStrict"]			= Rcpp::InternalFunction(&jaspRCPP_encodeColumnNameRcpp);
+	rEnvironment[".decodeColNamesStrict"]			= Rcpp::InternalFunction(&jaspRCPP_decodeColumnNameRcpp);
+	rEnvironment[".setColumnDataAsScale"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsScale);
+	rEnvironment[".readFullDatasetToEnd"]			= Rcpp::InternalFunction(&jaspRCPP_readFullDataSet);
+	rEnvironment[".allColumnNamesDataset"]			= Rcpp::InternalFunction(&jaspRCPP_allColumnNamesDataset);
+	rEnvironment[".readDatasetToEndNative"]			= Rcpp::InternalFunction(&jaspRCPP_readDataSetSEXP);
+	rEnvironment[".readFilterDatasetToEnd"]			= Rcpp::InternalFunction(&jaspRCPP_readFilterDataSet);
+	rEnvironment[".readCompColDatasetToEnd"]		= Rcpp::InternalFunction(&jaspRCPP_readCompColDataSet);
+	rEnvironment[".setColumnDataAsOrdinal"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsOrdinal);
+	rEnvironment[".setColumnDataAsNominal"]			= Rcpp::InternalFunction(&jaspRCPP_setColumnDataAsNominal);
+	rEnvironment[".readDataSetHeaderNative"]		= Rcpp::InternalFunction(&jaspRCPP_readDataSetHeaderSEXP);
+	rEnvironment[".createCaptureConnection"]		= Rcpp::InternalFunction(&jaspRCPP_CreateCaptureConnection);
+	rEnvironment[".postProcessLibraryModule"]		= Rcpp::InternalFunction(&jaspRCPP_postProcessLocalPackageInstall);
+	rEnvironment[".requestTempFileNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestTempFileNameSEXP);
+	rEnvironment[".requestTempRootNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestTempRootNameSEXP);
+	rEnvironment[".readDataSetRequestedNative"]		= Rcpp::InternalFunction(&jaspRCPP_readDataSetRequested);
+	rEnvironment[".requestStateFileNameNative"]		= Rcpp::InternalFunction(&jaspRCPP_requestStateFileNameSEXP);
+	rEnvironment[".readFullFilteredDatasetToEnd"]	= Rcpp::InternalFunction(&jaspRCPP_readFullFilteredDataSet);
+	rEnvironment[".requestSpecificFileNameNative"]	= Rcpp::InternalFunction(&jaspRCPP_requestSpecificFileNameSEXP);
 	
 	jaspRCPP_logString("Creating Output sink.\n");
-	rInside[".outputSink"]						= jaspRCPP_CreateCaptureConnection();
+	rEnvironment[".outputSink"]						= jaspRCPP_CreateCaptureConnection();
 
-	rInside.parseEvalQNT("sink(.outputSink); print('.outputSink initialized!'); sink();");
-	Rcpp::RObject sinkObj = rInside[".outputSink"];
+	_parseEvalQNT("sink(.outputSink); print('.outputSink initialized!'); sink();");
+	Rcpp::RObject sinkObj = rEnvironment[".outputSink"];
 	//jaspRCPP_logString(sinkObj.isNULL() ? "sink is null\n" : !sinkObj.isObject() ? " sink is not object\n" : sinkObj.isS4() ? "sink is s4\n" : "sink is obj but not s4\n");
 
-	rInside.parseEvalQNT("sink(.outputSink); print(.libPaths()); sink();");
-
+	_parseEvalQNT("sink(.outputSink); print(.libPaths()); sink();");
 	// initialize everything unrelated to jaspBase
 	static const char *baseCitationFormat	= "JASP Team (%s). JASP (Version %s) [Computer software].";
 	char baseCitation[200];
 	snprintf(baseCitation, 200, baseCitationFormat, buildYear, version);
-	rInside[".baseCitation"]	= baseCitation;
-	rInside[".jaspVersion"]		= version;
 
-	rInside[".baseCitation"]					= baseCitation;
-	rInside[".numDecimals"]						= 3;
-	rInside[".fixedDecimals"]					= false;
-	rInside[".normalizedNotation"]				= true;
-	rInside[".exactPValues"]					= false;
-	rInside[".resultFont"]						= "Arial";
-	rInside[".imageBackground"]					= "transparent";
-	rInside[".ppi"]								= 300;
+	rEnvironment[".baseCitation"]	= baseCitation;
+	rEnvironment[".jaspVersion"]		= version;
+
+	rEnvironment[".baseCitation"]					= baseCitation;
+	rEnvironment[".numDecimals"]					= 3;
+	rEnvironment[".fixedDecimals"]					= false;
+	rEnvironment[".normalizedNotation"]				= true;
+	rEnvironment[".exactPValues"]					= false;
+	rEnvironment[".resultFont"]						= "Arial";
+	rEnvironment[".imageBackground"]				= "transparent";
+	rEnvironment[".ppi"]							= 300;
 
 	jaspRCPP_parseEvalQNT("library(methods)");
 	
 	jaspRCPP_logString("Loading friendly R functions for computed columns and filters.");
-	jaspRCPP_parseEvalQNT(initFriendlyFunctionsRCode);
+	jaspRCPP_parseEvalQNT(initFriendlyFunctionsRCode, false, false);
 
 	_R_HOME = jaspRCPP_parseEvalStringReturn("R.home('')");
 	jaspRCPP_logString("jaspRCPP_init is done, R_HOME is: " + _R_HOME + "\n");
@@ -189,7 +249,6 @@ void STDCALL jaspRCPP_init(const char* buildYear, const char* version, RBridgeCa
 
 void STDCALL jaspRCPP_init_jaspBase()
 {
-
 	jaspRCPP_logString("Start initializing jaspBase\n");
 
 	//XPtr doesnt like it if it can't run a finalizer so here are some dummy variables:
@@ -199,6 +258,7 @@ void STDCALL jaspRCPP_init_jaspBase()
 	static createColumnFuncDef		_createColumnFuncDef		= jaspRCPP_createColumn;
 	static deleteColumnFuncDef		_deleteColumnFuncDef		= jaspRCPP_deleteColumn;
 	static getColumnAnIdFuncDef		_getColumnAnIdFuncDef		= jaspRCPP_getColumnAnalysisId;
+	static getColumnAnIdFuncDef		_getColumnIndexFuncDef		= jaspRCPP_getColumnOriginalIndex;
 	static setColumnDataFuncDef		_setColumnDataAsScale		= jaspRCPP_setColumnDataAsScale;
 	static setColumnDataFuncDef		_setColumnDataAsOrdinal		= jaspRCPP_setColumnDataAsOrdinal;
 	static setColumnDataFuncDef		_setColumnDataAsNominal		= jaspRCPP_setColumnDataAsNominal;
@@ -208,32 +268,33 @@ void STDCALL jaspRCPP_init_jaspBase()
 	static enDecodeFuncDef			_encodeColumnName			= jaspRCPP_encodeColumnName;
 	static enDecodeFuncDef			_decodeColumnName			= jaspRCPP_decodeColumnName;
 
-	RInside &rInside = rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside[".logString"]						= Rcpp::XPtr<logFuncDef>(			& _logFuncDef);
-	rInside[".createColumn"]					= Rcpp::XPtr<createColumnFuncDef>(	& _createColumnFuncDef);
-	rInside[".deleteColumn"]					= Rcpp::XPtr<deleteColumnFuncDef>(	& _deleteColumnFuncDef);
-	rInside[".getColumnType"]					= Rcpp::XPtr<getColumnTypeFuncDef>(	& _getColumnTypeFuncDef);
-	rInside[".getColumnExists"]					= Rcpp::XPtr<getColumnExistsFDef>(	& _getColumnExistsFuncDef);
-	rInside[".getColumnAnalysisId"]				= Rcpp::XPtr<getColumnAnIdFuncDef>(	& _getColumnAnIdFuncDef);
-	rInside[".sendToDesktopFunction"]			= Rcpp::XPtr<sendFuncDef>(			&  _sendToDesktop);
-	rInside[".pollMessagesFunction"]			= Rcpp::XPtr<pollMessagesFuncDef>(	&  _pollMessagesFunction);
-
-	rInside[".setColumnDataAsScalePtr"]			= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsScale);
-	rInside[".setColumnDataAsOrdinalPtr"]		= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsOrdinal);
-	rInside[".setColumnDataAsNominalPtr"]		= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsOrdinal);
-	rInside[".shouldEncodeColName"]				= Rcpp::XPtr<shouldEnDecodeFuncDef>(& _shouldEncodeColumnName);
-	rInside[".shouldDecodeColName"]				= Rcpp::XPtr<shouldEnDecodeFuncDef>(& _shouldDecodeColumnName);
-	rInside[".encodeColName"]					= Rcpp::XPtr<enDecodeFuncDef>(		& _encodeColumnName);
-	rInside[".decodeColName"]					= Rcpp::XPtr<enDecodeFuncDef>(		& _decodeColumnName);
+	rEnvironment[".logString"]						= Rcpp::XPtr<logFuncDef>(			& _logFuncDef);
+	rEnvironment[".createColumn"]					= Rcpp::XPtr<createColumnFuncDef>(	& _createColumnFuncDef);
+	rEnvironment[".deleteColumn"]					= Rcpp::XPtr<deleteColumnFuncDef>(	& _deleteColumnFuncDef);
+	rEnvironment[".getColumnType"]					= Rcpp::XPtr<getColumnTypeFuncDef>(	& _getColumnTypeFuncDef);
+	rEnvironment[".getColumnExists"]				= Rcpp::XPtr<getColumnExistsFDef>(	& _getColumnExistsFuncDef);
+	rEnvironment[".getColumnAnalysisId"]			= Rcpp::XPtr<getColumnAnIdFuncDef>(	& _getColumnAnIdFuncDef);
+	rEnvironment[".getColumnOriginalIndex"]			= Rcpp::XPtr<getColumnAnIdFuncDef>(	& _getColumnIndexFuncDef);
+	rEnvironment[".sendToDesktopFunction"]			= Rcpp::XPtr<sendFuncDef>(			&  _sendToDesktop);
+	rEnvironment[".pollMessagesFunction"]			= Rcpp::XPtr<pollMessagesFuncDef>(	&  _pollMessagesFunction);
+	rEnvironment[".setColumnDataAsScalePtr"]		= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsScale);
+	rEnvironment[".setColumnDataAsOrdinalPtr"]		= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsOrdinal);
+	rEnvironment[".setColumnDataAsNominalPtr"]		= Rcpp::XPtr<setColumnDataFuncDef>(	& _setColumnDataAsOrdinal);
+	rEnvironment[".shouldEncodeColName"]			= Rcpp::XPtr<shouldEnDecodeFuncDef>(& _shouldEncodeColumnName);
+	rEnvironment[".shouldDecodeColName"]			= Rcpp::XPtr<shouldEnDecodeFuncDef>(& _shouldDecodeColumnName);
+	rEnvironment[".encodeColName"]					= Rcpp::XPtr<enDecodeFuncDef>(		& _encodeColumnName);
+	rEnvironment[".decodeColName"]					= Rcpp::XPtr<enDecodeFuncDef>(		& _decodeColumnName);
 
 	//Pass a whole bunch of pointers to jaspBase
-	jaspRCPP_parseEvalQNT("jaspBase:::setColumnFuncs(		.setColumnDataAsScalePtr, .setColumnDataAsOrdinalPtr, .setColumnDataAsNominalPtr, .getColumnType, .getColumnAnalysisId, .createColumn, .deleteColumn, .getColumnExists, .encodeColName, .decodeColName, .shouldEncodeColName, .shouldDecodeColName)");
+	jaspRCPP_parseEvalQNT("jaspBase:::setColumnFuncs(		.setColumnDataAsScalePtr, .setColumnDataAsOrdinalPtr, .setColumnDataAsNominalPtr, .getColumnType, .getColumnAnalysisId, .getColumnOriginalIndex, .createColumn, .deleteColumn, .getColumnExists, .encodeColName, .decodeColName, .shouldEncodeColName, .shouldDecodeColName)");
 	jaspRCPP_parseEvalQNT("jaspBase:::setJaspLogFunction(	.logString					)");
 	jaspRCPP_parseEvalQNT("jaspBase:::setSendFunc(			.sendToDesktopFunction)");
 	jaspRCPP_parseEvalQNT("jaspBase:::setPollMessagesFunc(	.pollMessagesFunction)");
 	jaspRCPP_parseEvalQNT("jaspBase:::setBaseCitation(		.baseCitation)");
-	jaspRCPP_parseEvalQNT("jaspBase:::setInsideJasp()");
+	if (_insideJASP)
+		jaspRCPP_parseEvalQNT("jaspBase:::setInsideJasp()");
 	jaspRCPP_parseEvalQNT("jaspBase:::registerFonts()");
 
 	//Load it
@@ -248,19 +309,21 @@ void STDCALL jaspRCPP_init_jaspBase()
 
 void STDCALL jaspRCPP_junctionHelper(bool collectNotRestore, const char * modulesFolder, const char * linkFolder, const char * junctionsFilePath)
 {
-	rinside = new RInside();
-	RInside &rInside = rinside->instance();
+#ifndef JASP_NO_RINSIDE
+	new RInside();
+#endif
+	auto rEnvironment = Rcpp::Environment::global_env();
 	
 	std::cout << "RInside created, now about to " << (collectNotRestore ? "collect" :  "recreate") << " Modules junctions in renv-cache" << std::endl;
 	
-	rinside->parseEvalQNT("source('Modules/Tools/symlinkTools.R')");
-	rInside["modulesFolder"] = modulesFolder;
-	rInside["symFolder"] = linkFolder;
-	rInside["junctionsFilePath"] = junctionsFilePath;
-	rinside->parseEvalQNT(".libPaths( c( paste0( modulesFolder, 'Tools/junction_bootstrap_library' )  , .libPaths() ) )");
+	_parseEvalQNT("source('Modules/Tools/symlinkTools.R')");
+	rEnvironment["modulesFolder"] = modulesFolder;
+	rEnvironment["symFolder"] = linkFolder;
+	rEnvironment["junctionsFilePath"] = junctionsFilePath;
+	_parseEvalQNT(".libPaths( c( paste0( modulesFolder, 'Tools/junction_bootstrap_library' )  , .libPaths() ) )");
 	
-	if(collectNotRestore)	rinside->parseEvalQNT("collectAndStoreJunctions(modulesFolder)");
-	else					rinside->parseEvalQNT("restoreModulesIfNeeded( modulesFolder, symFolder, junctionsFilePath)");
+	if(collectNotRestore)	_parseEvalQNT("collectAndStoreJunctions(modulesFolder)");
+	else					_parseEvalQNT("restoreModulesIfNeeded( modulesFolder, symFolder, junctionsFilePath)");
 }
 
 void STDCALL jaspRCPP_purgeGlobalEnvironment()
@@ -291,44 +354,49 @@ void _setJaspResultsInfo(int analysisID, int analysisRevision, bool developerMod
 
 void STDCALL jaspRCPP_setDecimalSettings(int numDecimals, bool fixedDecimals, bool normalizedNotation, bool exactPValues)
 {
-	RInside &rInside			= rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside[".numDecimals"]			= numDecimals;
-	rInside[".fixedDecimals"]		= fixedDecimals;
-	rInside[".normalizedNotation"]	= normalizedNotation;
-	rInside[".exactPValues"]		= exactPValues;
+	rEnvironment[".numDecimals"]		= numDecimals;
+	rEnvironment[".fixedDecimals"]		= fixedDecimals;
+	rEnvironment[".normalizedNotation"]	= normalizedNotation;
+	rEnvironment[".exactPValues"]		= exactPValues;
 }
 
 void STDCALL jaspRCPP_setFontAndPlotSettings(const char * resultFont, const int ppi, const char* imageBackground)
 {
-	RInside &rInside			= rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside[".resultFont"]			= resultFont;
-	rInside[".imageBackground"]		= imageBackground;
-	rInside[".ppi"]					= ppi;
+	rEnvironment[".resultFont"]				= resultFont;
+	rEnvironment[".imageBackground"]		= imageBackground;
+	rEnvironment[".ppi"]					= ppi;
 
-    // sometimes jaspBase is not available
-    jaspRCPP_parseEvalQNT("try(jaspBase:::registerFonts())");
+	// sometimes jaspBase is not available, check this using https://stackoverflow.com/a/38082613
+	std::string result = jaspRCPP_parseEvalStringReturn("if (nzchar(system.file(package = \"jaspBase\"))) \"ok\" else \"not ok\"");
+	if (result == "ok")
+		jaspRCPP_parseEvalQNT("jaspBase:::registerFonts()");
+	else
+		jaspRCPP_logString("jaspBase unavailable, did not call jaspBase:::registerFonts()\n");
 }
 
 const char* STDCALL jaspRCPP_runModuleCall(const char* name, const char* title, const char* moduleCall, const char* dataKey, const char* options,
 										   const char* stateKey, int analysisID, int analysisRevision, bool developerMode, bool preloadData)
 {
-	RInside &rInside			= rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside["name"]					= name;
-	rInside["title"]				= title;
-	rInside["options"]				= options;
-	rInside["dataKey"]				= dataKey;
-	rInside["stateKey"]				= stateKey;
-	rInside["moduleCall"]			= moduleCall;
-	rInside["preloadData"]			= preloadData;
-	rInside["resultsMeta"]			= "null";
-	rInside["requiresInit"]			= false;
+	rEnvironment["name"]				= name;
+	rEnvironment["title"]				= title;
+	rEnvironment["options"]				= options;
+	rEnvironment["dataKey"]				= dataKey;
+	rEnvironment["stateKey"]			= stateKey;
+	rEnvironment["moduleCall"]			= moduleCall;
+	rEnvironment["preloadData"]			= preloadData;
+	rEnvironment["resultsMeta"]			= "null";
+	rEnvironment["requiresInit"]		= false;
 	
 	_setJaspResultsInfo(analysisID, analysisRevision, developerMode);
 
 	static std::string str;
+
 	try
 	{
 		SEXP results = jaspRCPP_parseEval("jaspBase::runJaspResults(name=name, title=title, dataKey=dataKey, options=options, stateKey=stateKey, functionCall=moduleCall, preloadData=preloadData)", true);
@@ -338,7 +406,7 @@ const char* STDCALL jaspRCPP_runModuleCall(const char* name, const char* title, 
 	}
 	catch(std::runtime_error & e)
 	{
-		rInside["errorJaspResultsCrash"] = e.what();
+		rEnvironment["errorJaspResultsCrash"] = e.what();
 		jaspRCPP_parseEvalQNT("jaspBase:::sendFatalErrorMessage(name=name, title=title, msg=errorJaspResultsCrash);");
 	}
 
@@ -378,7 +446,9 @@ int STDCALL jaspRCPP_runFilter(const char * filterCode, bool ** arrayPointer)
 	jaspRCPP_logString("jaspRCPP_runFilter runs: \n\"" + std::string(filterCode) + "\"\n" );
 
 	jaspRCPP_resetErrorMsg();
-	rinside->instance()[".filterCode"] = filterCode;
+
+	auto rEnvironment = Rcpp::Environment::global_env();
+	rEnvironment[".filterCode"] = filterCode;
 
 	const std::string filterTryCatch(
 		"returnVal = 'null'; \n"
@@ -434,12 +504,12 @@ void STDCALL jaspRCPP_freeArrayPointer(bool ** arrayPointer)
 
 const char* STDCALL jaspRCPP_saveImage(const char * data, const char *type, const int height, const int width)
 {
-	RInside &rInside = rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside["plotName"]				= data;
-	rInside["format"]				= type;
-	rInside["height"]				= height;
-	rInside["width"]				= width;
+	rEnvironment["plotName"]			= data;
+	rEnvironment["format"]				= type;
+	rEnvironment["height"]				= height;
+	rEnvironment["width"]				= width;
 
 	static std::string staticResult;
 	staticResult = jaspRCPP_parseEvalStringReturn("jaspBase:::saveImage(plotName, format, height, width)", true);
@@ -449,10 +519,10 @@ const char* STDCALL jaspRCPP_saveImage(const char * data, const char *type, cons
 const char* STDCALL jaspRCPP_editImage(const char * name, const char * optionsJson, int analysisID)
 {
 
-	RInside &rInside = rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside[".editImgOptions"]		= optionsJson;
-	rInside[".analysisName"]		= name;
+	rEnvironment[".editImgOptions"]		= optionsJson;
+	rEnvironment[".analysisName"]		= name;
 
 	_setJaspResultsInfo(analysisID, 0, false);
 
@@ -466,9 +536,9 @@ const char* STDCALL jaspRCPP_editImage(const char * name, const char * optionsJs
 void STDCALL jaspRCPP_rewriteImages(const char * name, int analysisID)
 {
 
-	RInside &rInside = rinside->instance();
+	auto rEnvironment = Rcpp::Environment::global_env();
 
-	rInside[".analysisName"]		= name;
+	rEnvironment[".analysisName"]		= name;
 
 	_setJaspResultsInfo(analysisID, 0, false);
 
@@ -487,7 +557,9 @@ const char*	STDCALL jaspRCPP_evalComputedColumn(const char *rCode, const char * 
 	//jaspRCPP_logString(std::string("jaspRCPP_evalComputedColumn runs: \n\"") + rCode + "\"\nand \""+setColumnCode+"\"\n" );
 
 	lastErrorMessage = "";
-	rinside->instance()[".rCode"] = rCode;
+	auto rEnvironment = Rcpp::Environment::global_env();
+
+	rEnvironment[".rCode"] = rCode;
 	const std::string rCodeTryCatch(""
 		"returnVal = NULL;	"
 		"tryCatch("
@@ -501,18 +573,18 @@ const char*	STDCALL jaspRCPP_evalComputedColumn(const char *rCode, const char * 
 	{
 		try
 		{
-			rinside->instance()[".calcedVals"]	= Rcpp::RObject(jaspRCPP_parseEval(rCodeTryCatch,	false, false));
+			rEnvironment[".calcedVals"]	= Rcpp::RObject(jaspRCPP_parseEval(rCodeTryCatch,	false, false));
 		}
 		catch(std::runtime_error e)
 		{
 			jaspRCPP_setErrorMsg(e.what());	
 			staticResult						=	NullString;
-			rinside->instance()[".calcedVals"]	=	NULL;
+			rEnvironment[".calcedVals"]	=	NULL;
 		}
 		
 		staticResult = jaspRCPP_parseEvalStringReturn(setColumnCode,	false, false);
 		
-		rinside->instance()[".calcedVals"]	=	NULL;
+		rEnvironment[".calcedVals"]	=	NULL;
 		
 	}
 	catch(...)
@@ -532,11 +604,12 @@ const char*	STDCALL jaspRCPP_evalRCode(const char *rCode, bool setWd) {
 	jaspRCPP_logString(std::string("jaspRCPP_evalRCode runs: \n\"") + rCode + "\"\n" );
 
 	lastErrorMessage = "";
-	rinside->instance()[".rCode"] = rCode;
+	auto rEnvironment = Rcpp::Environment::global_env();
+	rEnvironment[".rCode"] = rCode;
 	const std::string rCodeTryCatch(""
 		"returnVal = 'null';	"
 		"tryCatch("
-		"    suppressWarnings({	returnVal <- eval(parse(text=.rCode))     }),	"
+		"    suppressWarnings({	returnVal <- eval(parse(text=.rCode)); }),	"
 		"    error	= function(e) { .setRError(  paste0(toString(e$message), '\n', paste0(sys.calls()[sys.nframe():2], collapse='\n'))) } 	"
 		")"
 		"; returnVal	");
@@ -545,6 +618,11 @@ const char*	STDCALL jaspRCPP_evalRCode(const char *rCode, bool setWd) {
 	try
 	{
 		staticResult = jaspRCPP_parseEvalStringReturn(rCodeTryCatch, setWd);
+	}
+	catch(std::exception& e)
+	{
+		jaspRCPP_logString(std::string("Error when running code ") + rCodeTryCatch + ": " + e.what() + "\n");
+		staticResult = NullString;
 	}
 	catch(...)
 	{
@@ -577,7 +655,9 @@ const char*	STDCALL jaspRCPP_evalRCodeCommander(const char *rCode)
 	_logWriteFunction			= __cmderLogWrite;
 
 	lastErrorMessage = "";
-	rinside->instance()[".rCode"] = rCode;
+
+	auto rEnvironment = Rcpp::Environment::global_env();
+	rEnvironment[".rCode"] = rCode;
 	const std::string rCodeTryCatch(""
 		"withCallingHandlers("															"\n"
 		"  { "																			"\n"
@@ -772,6 +852,12 @@ columnType jaspRCPP_getColumnType(std::string columnName)
 int jaspRCPP_getColumnAnalysisId(std::string columnName)
 {
 	return dataSetGetColumnAnalysisId(columnName.c_str()); // columnName decoded in rbridge
+}
+
+
+int jaspRCPP_getColumnOriginalIndex(std::string columnName)
+{
+	return dataSetGetColumnOriginalIndex(columnName.c_str()); // columnName decoded in rbridge
 }
 
 std::string jaspRCPP_createColumn(std::string columnName)
@@ -999,6 +1085,17 @@ Rcpp::DataFrame jaspRCPP_readFilterDataSet()
 	return jaspRCPP_convertRBridgeColumns_to_DataFrame(colResults, colMax);
 }
 
+Rcpp::DataFrame jaspRCPP_readCompColDataSet()
+{
+	size_t			colMax		= 0;
+	RBridgeColumn * colResults	= readCompColDataSetCB(&colMax);
+
+	if(colMax == 0)
+		return Rcpp::DataFrame();
+
+	return jaspRCPP_convertRBridgeColumns_to_DataFrame(colResults, colMax);
+}
+
 Rcpp::DataFrame jaspRCPP_readDataSetSEXP(SEXP columns, SEXP columnsAsNumeric, SEXP columnsAsOrdinal, SEXP columnsAsNominal, SEXP allColumns)
 {
 	size_t				colMax				= 0;
@@ -1108,8 +1205,8 @@ Rcpp::IntegerVector jaspRCPP_makeFactor(Rcpp::IntegerVector v, char** levels, in
 	if(v.size() == 0)
 		return v;
 
-	static Rcpp::Function droplevels("droplevels");
-	return droplevels(Rcpp::_["x"] = v);
+
+	return v;
 }
 
 void jaspRCPP_crashPlease() { shouldCrashSoon = true; }
@@ -1166,8 +1263,8 @@ void jaspRCPP_setWorkingDirectory()
 {
 	std::string root = requestTempRootNameCB();
 	std::string code = "setwd(\"" + root + "\");";
-	rinside->parseEvalQNT(__sinkMe(code));
-	rinside->parseEvalQNT("sink();"); //Back to normal!
+	_parseEvalQNT(__sinkMe(code));
+	_parseEvalQNT("sink();"); //Back to normal!
 }
 
 void jaspRCPP_parseEvalQNT(const std::string & code, bool setWd, bool preface)
@@ -1178,21 +1275,21 @@ void jaspRCPP_parseEvalQNT(const std::string & code, bool setWd, bool preface)
 	if(preface)	
 		jaspRCPP_parseEvalPreface(code);
 	
-	rinside->parseEvalQNT(__sinkMe());
-	rinside->parseEvalQNT(code);
+	_parseEvalQNT(__sinkMe());
+	_parseEvalQNT(code);
 	jaspRCPP_logString("\n");
-	rinside->parseEvalQNT("sink();"); //Back to normal!
+	_parseEvalQNT("sink();"); //Back to normal!
 }
 
 std::string jaspRCPP_parseEvalStringReturn(const std::string & code, bool setWd, bool preface)
 {
-	RInside::Proxy res = jaspRCPP_parseEval(code, setWd, preface);
+	SEXP res = jaspRCPP_parseEval(code, setWd, preface);
 	
 	return Rf_isString(res) ? Rcpp::as<std::string>(res) : NullString;
 }
 
 
-RInside::Proxy jaspRCPP_parseEval(const std::string & code, bool setWd, bool preface)
+SEXP jaspRCPP_parseEval(const std::string & code, bool setWd, bool preface)
 {
 	if (setWd)
 		jaspRCPP_setWorkingDirectory();
@@ -1200,11 +1297,11 @@ RInside::Proxy jaspRCPP_parseEval(const std::string & code, bool setWd, bool pre
 	if(preface)	
 		jaspRCPP_parseEvalPreface(code);
 	
-	rinside->parseEvalQNT(__sinkMe());
-	RInside::Proxy returnthis = rinside->parseEval(code); //Not throwing is nice actually! Well, unless you want to hear about missing modules etc...
+	_parseEvalQNT(__sinkMe());
+	SEXP returnthis = _parseEval(code); //Not throwing is nice actually! Well, unless you want to hear about missing modules etc...
 	jaspRCPP_logString("\n");
 
-	rinside->parseEvalQNT("sink();"); //back to normal!
+	_parseEvalQNT("sink();"); //back to normal!
 
 	return returnthis;
 }
@@ -1333,3 +1430,4 @@ SEXP jaspRCPP_CreateCaptureConnection()
 	UNPROTECT(1);
 	return rc;
 }
+

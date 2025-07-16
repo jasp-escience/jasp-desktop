@@ -48,15 +48,13 @@ public:
 		ColumnPreviewRole,
 		ColumnRealTypeRole,
 		ColumnTypeIconRole,
+		ColumnDescriptionRole,
 		ColumnTypeDisabledIconRole,
 		RowComponentRole,
-		ValueRole,
 		VirtualRole,
 		DeletableRole
     };
 	typedef QMap<QString, RowControls*>							RowControlMap;
-	typedef QMap<QString, QMap<QString, Json::Value> >			RowControlsValues;
-	typedef QMapIterator<QString, QMap<QString, Json::Value> >	RowControlsValuesIterator;
 
 	ListModel(JASPListControl* listView);
 	
@@ -72,34 +70,32 @@ public:
 	virtual Terms					filterTerms(const Terms& terms, const QStringList& filters);
 			bool					needsSource()												const		{ return _needsSource;			}
 			void					setNeedsSource(bool needs)												{ _needsSource = needs;			}
-	virtual QString					getItemType(const Term& term)								const		{ return _itemType; }
-			void					setItemType(QString type)												{ _itemType = type; }
 			void					addControlError(const QString& error)						const;
 	virtual void					refresh();
-	virtual void					initTerms(const Terms &terms, const RowControlsValues& allValuesMap = RowControlsValues(), bool reInit = false);
+			virtual void			initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap = {}, bool reInit = false);
 			Terms					getSourceTerms();
-			ListModel*				getSourceModelOfTerm(const Term& term);
 			void					setColumnsUsedForLabels(const QStringList& columns)						{ _columnsUsedForLabels = columns; }
 			void					setRowComponent(QQmlComponent* rowComponents);
 	virtual void					setUpRowControls();
-	const RowControlMap	&			getAllRowControls()											const		{ return _rowControlsMap;				}
-	RowControlsValues				getTermsWithComponentValues()								const;
-	RowControls*					getRowControls(const QString& key)							const		{ return _rowControlsMap.value(key);	}
-	virtual JASPControl	*			getRowControl(const QString& key, const QString& name)		const;
+	const RowControlMap	&			getAllRowControls()												const		{ return _rowControlsMap;				}
+	Terms::RelatedValuesPerTerm		getTermsWithComponentValues()									const;
+	RowControls*					getRowControls(const QString& key)								const		{ return _rowControlsMap.value(key);	}
+	virtual JASPControl	*			getRowControl(const QString& key, const QString& name)			const;
 	virtual bool					addRowControl(const QString& key, JASPControl* control);
-			QStringList				allLevels(const Terms& terms)								const;
+			QStringList				allLevels(const Terms& terms)									const;
 			void					setVariableType(int index, columnType type);
-			columnType				getVariableType(	const QString& name)					const;
-			Json::Value				getVariableTypes(bool onlyChanged = false)					const;
+			columnType				getVariableType(	const QString& name)						const;
+			QString					getVariableDescription(	const QString& name)					const;
+			Json::Value				getVariableTypes(bool onlyChanged = false)						const;
 			Json::Value				getVariableTypes(const Terms& terms, bool onlyChanged = false)	const;
-			columnType				getVariableRealType(const QString& name)					const;
-			QString					getVariablePreview(	const QString& name)					const;
-			QStringList				getUsedTypes()												const;
+			columnType				getVariableRealType(const QString& name)						const;
+			QString					getVariablePreview(	const QString& name)						const;
+			QStringList				getUsedTypes()													const;
 
-			Terms					checkTermsTypes(const Terms& terms)							const;
-			Terms					checkTermsTypes(const std::vector<Term>& terms)				const;
-	virtual Terms					termsFromIndexes(	const QList<int>& indexes)				const;
-	virtual QList<int>				indexesFromTerms(	const Terms		& terms)				const;
+			Terms					checkTermsTypes(const Terms& terms)								const;
+			Terms					checkTermsTypes(const std::vector<Term>& terms)					const;
+	virtual Terms					termsFromIndexes(	const QList<int>& indexes)					const;
+	virtual QList<int>				indexesFromTerms(	const Terms		& terms)					const;
 
 
 	Q_INVOKABLE int					searchTermWith(QString searchString);
@@ -112,29 +108,28 @@ public:
 
 signals:
 			void termsChanged();		// Used to signal all kinds of changes in the model. Do not call it directly
-			void namesChanged(QMap<QString, QString> map);
-			void columnTypeChanged(Term term);
+			void variableNamesChanged(QMap<QString, QString> map);
+			void variableTypeChanged(Term term);
 			void labelsChanged(QString columnName, QMap<QString, QString> = {});
 			void labelsReordered(QString columnName);
 			void filterChanged();
-			void columnsChanged(QStringList columns);
+			void variablesChanged(QStringList columns);
 			void selectedItemsChanged();
-			void oneTermChanged(const QString& oldName, const QString& newName);
+			void keyTermChanged(const QString& oldName, const QString& newName);
 
 public slots:	
 	virtual void sourceTermsReset();
-	virtual void sourceNamesChanged(QMap<QString, QString> map);
-	virtual bool sourceColumnTypeChanged(Term sourceTerm);
+	virtual void sourceVariableNamesChanged(QMap<QString, QString> map);
+	virtual bool sourceVariableTypeChanged(Term sourceTerm);
 	virtual bool sourceLabelsChanged(QString columnName, QMap<QString, QString> changedLabels = {});
 	virtual bool sourceLabelsReordered(QString columnName);
-	virtual void sourceColumnsChanged(QStringList columns);
+	virtual void sourceVariablesChanged(QStringList columns);
 
 			void dataChangedHandler(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles = QVector<int>());
 
 protected:
 			void	_setTerms(const Terms& terms);
 			void	_setTerms(const Terms& terms, const Terms& parentTerms);
-			void	_setTerms(const std::vector<Term>& terms);
 			void	_removeTerms(const Terms& terms);
 			void	_removeTerm(int index);
 			void	_removeTerm(const Term& term);
@@ -146,17 +141,16 @@ protected:
 			Term	_checkTermType(const Term& terms)					const;
 			void	_setAllowedType(Term& term)							const;
 
-			QString							_itemType;
 			bool							_needsSource			= true;
 			QMap<QString, RowControls* >	_rowControlsMap;
 			QQmlComponent *					_rowComponent			= nullptr;
-			RowControlsValues				_rowControlsValues;
+			Terms::RelatedValuesPerTerm		_rowControlsValues;
 			QList<BoundControl *>			_rowControlsConnected;
 			QList<int>						_selectedItems;
 			QStringList						_columnsUsedForLabels;
 
 private:
-			void	_initTerms(const Terms &terms, const RowControlsValues& allValuesMap, bool initRowControls = true);
+			void	_initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap, bool initRowControls = true);
 			void	_connectSourceControls(SourceItem* sourceItem);
 
 			JASPListControl*				_listView = nullptr;

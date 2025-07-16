@@ -19,6 +19,8 @@ class QmlUtils : public QObject
 public:
 	explicit QmlUtils(QObject *parent = nullptr);
 
+	static void setGlobalPropertiesInQMLContext(QQmlContext * ctxt);
+
 #ifdef linux
 // Functions for qml cache bug workaround on linux
 public:
@@ -26,6 +28,7 @@ public:
 private:
 	static QDir generateQMLCacheDir();
 #endif
+
 
 public slots:
 	QString		encodeAllColumnNames(	const QString	& str);
@@ -38,6 +41,5 @@ public slots:
 
 QObject * instantiateQml(							const QUrl 	& filePath, const std::string & moduleName,																		QQmlContext * ctxt = nullptr);
 QObject * instantiateQml(const QString 	& qmlTxt, 	const QUrl & url, 		const std::string & moduleName, const std::string & whatAmILoading, const std::string & filename, 	QQmlContext * ctxt = nullptr);
-
 
 #endif // QMLUTILS_H

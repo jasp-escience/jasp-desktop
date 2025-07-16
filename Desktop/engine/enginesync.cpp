@@ -17,29 +17,23 @@
 //
 
 #include "enginesync.h"
-
 #include <QApplication>
-#include <QFile>
 #include <QFileInfo>
+#include <QFile>
 #include <QDir>
-
-
-//#include <boost/interprocess/shared_memory_object.hpp>
-//#include <boost/interprocess/mapped_region.hpp>
-
+#include "log.h"
+#include "dirs.h"
+#include "utils.h"
+#include "timers.h"
+#include "tempfiles.h"
 #include <json/json.h>
 #include "processinfo.h"
-#include "common.h"
-#include "appinfo.h"
 #include "utilities/qutils.h"
-#include "utils.h"
-#include "tempfiles.h"
-#include "timers.h"
-#include "gui/preferencesmodel.h"
 #include "utilities/appdirs.h"
-#include "log.h"
+#include "analysis/analyses.h"
+#include "gui/preferencesmodel.h"
 #include "utilities/processhelper.h"
-#include "dirs.h"
+#include "utilities/wincontainermanager.h"
 
 using namespace boost::interprocess;
 
@@ -266,7 +260,7 @@ EngineRepresentation * EngineSync::createNewEngine(bool addToEngines, int overri
 		connect(engine,						&EngineRepresentation::moduleLoadingFailed,				this,					&EngineSync::moduleLoadingFailed										);
 		connect(engine,						&EngineRepresentation::logCfgReplyReceived,				this,					&EngineSync::logCfgReplyReceived										);
 		connect(engine,						&EngineRepresentation::plotEditorRefresh,				this,					&EngineSync::plotEditorRefresh											);
-		connect(engine,						&EngineRepresentation::requestEngineRestartAfterCrash,	this,					&EngineSync::restartEngineAfterCrash									);
+		connect(engine,						&EngineRepresentation::requestEngineRestartAfterCrash,	this,					&EngineSync::restartEngineAfterCrash,			Qt::QueuedConnection	);
 		connect(engine,						&EngineRepresentation::registerForModule,				this,					&EngineSync::registerEngineForModule									);
 		connect(engine,						&EngineRepresentation::unregisterForModule,				this,					&EngineSync::unregisterEngineForModule									);
 		connect(engine,						&EngineRepresentation::moduleHasEngine,					this,					&EngineSync::moduleHasEngine											);
@@ -311,18 +305,19 @@ void EngineSync::start(int )
 	for(size_t s=0;s < _engineStopTimes.size(); s++)
 		_engineStopTimes[s] = -1;
 
-	//We start with a single engine. Later we can start more if necessary and allowed by the user. This one engine can run filters etc and it can be assigned to a particular module.
-	//Once it is assigned to a module it won't be possible to use it for another module until it is restarted.
-	createNewEngine();
+	_timerProcess	= new QTimer(this);
+	_timerBeat		= new QTimer(this);
 
-	QTimer	*timerProcess	= new QTimer(this),
-			*timerBeat		= new QTimer(this);
+	connect(_timerProcess,	&QTimer::timeout, this, &EngineSync::process,				Qt::QueuedConnection);
+	connect(_timerBeat,		&QTimer::timeout, this, &EngineSync::heartbeatTempFiles,	Qt::QueuedConnection);
 
-	connect(timerProcess,	&QTimer::timeout, this, &EngineSync::process,				Qt::QueuedConnection);
-	connect(timerBeat,		&QTimer::timeout, this, &EngineSync::heartbeatTempFiles,	Qt::QueuedConnection);
+	_timerProcess->start(100);
+	_timerBeat->start(50);
+}
 
-	timerProcess->start(50);
-	timerBeat->start(50);
+void EngineSync::killProcessTimer()
+{
+	_timerProcess->stop();
 }
 
 void EngineSync::restartEngines()
@@ -341,6 +336,8 @@ void EngineSync::restartEngines()
 
 void EngineSync::restartEngineAfterCrash(EngineRepresentation * engine)
 {
+	Log::log() << "restartEngineAfterCrash(" << engine->channelNumber() << ")" << std::endl;
+	
 	engine->restartEngine(startSlaveProcess(engine->channelNumber()));
 	logCfgRequest();
 }
@@ -430,19 +427,23 @@ void EngineSync::process()
 
 	processSettingsChanged();
 	
-	if(!anEngineIsLoadingData)
+	if(!anEngineIsLoadingData || !_engines.size())
 		processFilterScript();
 		
 	processLogCfgRequests();
 
 	if(_stopProcessing || _dataMode || _filterRunning)
 	{
-		processComputedColumnQueue();
+		bool needEngine = processComputedColumnQueue();
+		
+		if(needEngine)
+			createNewEngine();
+		
 		return;
 	}
 
-	if(_engines.size() == 0)
-		startExtraEngines();
+	//if(_engines.size() == 0)
+	//	startExtraEngines();
 	
 	//So we try to distribute some work to each engine as below:
 	stringset	notEnoughIdlesForScript		=	processRCodeQueue();
@@ -506,6 +507,11 @@ void EngineSync::process()
 	// This will make it seem smoother to the user, because they will have to wait less for data loading
 	if(enginesStartableCount() > 0)
 		startExtraEngines();*/
+	
+	//There seem to be some scenarios where engines get stuck in a paused state, this doesn't seem right and if we manage to get all the way down here we can probably try and resume them
+	for(auto * engine : _engines)
+		if(engine->paused())
+			engine->resumeEngine();
 }
 
 int EngineSync::sendFilter(const QString & generatedFilter, const QString & filter)
@@ -576,11 +582,14 @@ void EngineSync::processFilterScript()
 	JASPTIMER_SCOPE(EngineSync::processFilterScript);
 
 	//First we make sure nothing else is running before we ask the engine to run the filter
-	if(!_dataMode && !_filterRunning)
+	if(!_engines.size() || (!_dataMode && !_filterRunning))
 	{
 		pauseEngines();
-		_filterRunning = true;	
+		_filterRunning = true;
 		resumeEngines();
+		
+		if(!_engines.size())
+			createNewEngine();
 	}
 	else //So previous loop we made sure nothing else is running by switching to data editing mode or not having analyses
 	{
@@ -748,33 +757,18 @@ stringset EngineSync::processDynamicModules()
 
 	try
 	{
-		stringset	wantToRunInstall	= DynMods::dynMods()->modulesNeedingPackagesInstalled(),
-					stillWantTo			= {};
-		
-		for(const std::string & mod : wantToRunInstall)
+		stringset	wantToRunInstall	= DynMods::dynMods()->moduleBundlesNeedingInstall();
+		if(wantToRunInstall.size() > 0)
 		{
-			if(moduleHasEngine(mod))
-			{
-				auto * engine = _moduleEngines[mod];
-
-				if(engine->analysisInProgress())
-					engine->killEngine();
-
-				if(engine->idle())
-					engine->runModuleInstallRequestOnProcess(DynMods::dynMods()->getJsonForPackageInstallationRequest(mod));
-			}
-			else
-				for(auto & engine : _engines)
-					if(engine->idle() && engine->runsUtility()) //We don't care if the engine is meant for some module or other. We restart afterwards anyway
-					{
-						registerEngineForModule(engine, mod);
-						engine->runModuleInstallRequestOnProcess(DynMods::dynMods()->getJsonForPackageInstallationRequest(mod));
-					}
-					else
-						stillWantTo.insert(mod);
+			for(auto & engine : _engines)
+				if(engine->idle() && engine->runsUtility()) //We don't care if the engine is meant for some module or other. We restart afterwards anyway
+				{
+					engine->runModuleInstallRequestOnProcess(DynMods::dynMods()->getJsonForBundleInstallRequest());
+					return {};
+				}
 		}
 		
-		return stillWantTo;
+		return wantToRunInstall;
 	}
 	catch(Modules::ModuleException & e)	{ Log::log() << "Exception thrown in processDynamicModules: " <<  e.what() << std::endl;	}
 	catch(std::exception & e)			{ Log::log() << "Exception thrown in processDynamicModules: " << e.what() << std::endl;		}
@@ -886,9 +880,8 @@ size_t EngineSync::enginesStartableCount() const
 	size_t enginesPossible = maxEngineCount() - _engines.size();
 
 	//But perhaps they have to cool down for a bit.
-
-	for(long engineStopTime : _engineStopTimes)
-		if(engineStopTime != -1 && ( engineStopTime + ENGINE_COOLDOWN > Utils::currentMillis() ) && enginesPossible > 0)
+	for(int64_t engineStopTime : _engineStopTimes)
+		if(engineStopTime >= 0 && ( engineStopTime + ENGINE_COOLDOWN > Utils::currentMillis() ) && enginesPossible > 0)
 			enginesPossible--;
 
 	return enginesPossible;
@@ -896,7 +889,7 @@ size_t EngineSync::enginesStartableCount() const
 
 bool EngineSync::channelCooledDown(size_t channel) const
 {
-	return _engineStopTimes[channel] == -1 || _engineStopTimes[channel] + ENGINE_COOLDOWN < Utils::currentMillis();
+	return _engineStopTimes[channel] < 0 || _engineStopTimes[channel] + ENGINE_COOLDOWN < Utils::currentMillis();
 }
 
 bool EngineSync::channelFree(size_t channel) const
@@ -954,37 +947,23 @@ void EngineSync::startExtraEngines(size_t num)
 }
 
 
-#ifdef _WIN32 
-///Overwrites the PATH with a simple clean one
-void EngineSync::fixPATHForWindows(QProcessEnvironment & env)
-{
-	const QString R_ARCH =
-#ifdef _WIN64
-		"x64";
-#else
-		"i386";
-#endif
-	
-	env.insert("PATH", AppDirs::programDir().absolutePath() + ";" + QDir(AppDirs::rHome()).absoluteFilePath("bin") + ";" + QDir(AppDirs::rHome()).absoluteFilePath("bin/" + R_ARCH)); // + rtoolsInPath); 
 
-	Log::log() << "Windows PATH was changed to: '" << env.value("PATH", "???") << "'" << std::endl;
-}
-#endif 
+
 
 //Should this function go to EngineRepresentation?
 QProcess * EngineSync::startSlaveProcess(int channel)
 {
 	JASPTIMER_SCOPE(EngineSync::startSlaveProcess);
+	
+	Log::log(false) << "\n\n###########################################################################################\n" 
+					<< "#######         Engine #" << channel << " (re)started at " << Log::getLocalTime() 
+					<< "\n\n###########################################################################################\n" 
+					<< std::endl;
+	
 	QDir programDir			= AppDirs::programDir();
 	QString engineExe		= programDir.absoluteFilePath("JASPEngine");
 	QProcessEnvironment env = ProcessHelper::getProcessEnvironmentForJaspEngine();
 
-#ifndef JASP_DEBUG
-#ifdef _WIN32
-	fixPATHForWindows(env);
-#endif
-#endif
-	
 	env.insert("GITHUB_PAT", PreferencesModel::prefs()->githubPatResolved());
 
 	QStringList args;
@@ -996,31 +975,16 @@ QProcess * EngineSync::startSlaveProcess(int channel)
 	QProcess *slave = new QProcess(this);
 	slave->setProcessChannelMode(QProcess::ForwardedChannels);
 	slave->setProcessEnvironment(env);
-	slave->setWorkingDirectory(QFileInfo( QCoreApplication::applicationFilePath() ).absoluteDir().absolutePath());
+	slave->setWorkingDirectory(programDir.absolutePath());
+	
+	EngineSync::channel(channel)->touchHeartbeat();
 
 #ifdef _WIN32
-	/*
-	On Windows, QProcess uses the Win32 API function CreateProcess to
-	start child processes.In some casedesirable to fine-tune
-	the parameters that are passed to CreateProcess.
-	This is done by defining a CreateProcessArgumentModifier function and passing it
-	to setCreateProcessArgumentsModifier
-
-	bInheritHandles [in]
-	If this parameter is TRUE, each inheritable handle in the calling process
-	is inherited by the new process. If the parameter is FALSE, the handles
-	are not inherited.
-	*/
-
-	slave->setCreateProcessArgumentsModifier([] (QProcess::CreateProcessArguments *args)
-	{
-#ifndef QT_DEBUG
-		args->inheritHandles = false;
-#endif
-	});
-#endif
-
+	if(!WinContainerManager::launchSandboxedEngine(slave, engineExe, args))
+		slave->start(engineExe, args);
+#else
 	slave->start(engineExe, args);
+#endif
 
 	return slave;
 }
@@ -1045,7 +1009,7 @@ void EngineSync::heartbeatTempFiles()
 
 void EngineSync::stopEngines()
 {	
-	auto timeout = QDateTime::currentSecsSinceEpoch() + 10;
+	int64_t timeout = Utils::currentMillis() + ENGINE_KILLTIME;
 	
 	_stopProcessing = true;
 
@@ -1053,7 +1017,7 @@ void EngineSync::stopEngines()
 		e->stopEngine();
 
 	while(!allEnginesStopped())
-		if(timeout < QDateTime::currentSecsSinceEpoch())
+		if(timeout < Utils::currentMillis())
 		{
 			Log::log() << "Waiting for engine to reply stopRequest took longer than timeout, killing it/them.." << std::endl;
 			for(EngineRepresentation * e : _engines)
@@ -1084,7 +1048,7 @@ void EngineSync::pauseEngines(bool unloadData)
 	for(EngineRepresentation * e : _engines)
 		e->pauseEngine(unloadData);
 
-	long tryTill = Utils::currentMillis() + ENGINE_KILLTIME;
+	int64_t tryTill = Utils::currentMillis() + ENGINE_KILLTIME;
 
 	while(!allEnginesPaused() && tryTill >= Utils::currentMillis())
 		for (auto * engine : _engines)
@@ -1105,9 +1069,6 @@ void EngineSync::startStoppedEngine(EngineRepresentation * engine)
 
 void EngineSync::resumeEngines()
 {
-	if(_dataMode)
-		return;
-	
 	JASPTIMER_SCOPE(EngineSync::resumeEngines);
 
 	Log::log() << "EngineSync::resumeEngines()" << std::endl;
@@ -1118,8 +1079,12 @@ void EngineSync::resumeEngines()
 	_stopProcessing = false;
 	
 	while(!allEnginesResumed())
-		for (auto * engine : _engines)
+		for(EngineRepresentation * engine : _engines)
+		{
 			engine->processReplies();
+			if(!engine->jaspEngineStillRunning())
+				startStoppedEngine(engine);
+		}
 }
 
 bool EngineSync::allEnginesStopped(std::set<EngineRepresentation *> these)
@@ -1174,7 +1139,8 @@ void EngineSync::enginesPrepareForData()
 {
 	JASPTIMER_SCOPE(EngineSync::enginesPrepareForData);
 
-	/*
+	Log::log() << "EngineSync::enginesPrepareForData!" << std::endl;
+	
 	//make sure we process any received messages first.
 	for(auto * engine : _engines)
 		engine->processReplies();
@@ -1182,25 +1148,27 @@ void EngineSync::enginesPrepareForData()
 	std::set<EngineRepresentation *> pauseOrKillThese;
 
 	for(EngineRepresentation * e : _engines)
-		if(e->busyWithData())
+		if(!e->idle())
 		{
 			pauseOrKillThese.insert(e);
 			e->pauseEngine(true);
 		}
 
-	long tryTill = Utils::currentMillis() + ENGINE_KILLTIME;
+	//int64_t tryTill = Utils::currentMillis() + ENGINE_KILLTIME;
 
-	while(!allEnginesPaused(pauseOrKillThese) && tryTill >= Utils::currentMillis())
-		for (auto * engine : pauseOrKillThese)
-			engine->processReplies();
+	//while(!allEnginesPaused(pauseOrKillThese) && tryTill >= Utils::currentMillis())
+	//	for (auto * engine : pauseOrKillThese)
+	//		engine->processReplies();
 
-	for (auto * engine : pauseOrKillThese)
-		if(!engine->paused())
-			engine->killEngine();*/
+	//for (auto * engine : pauseOrKillThese)
+	//	if(!engine->paused())
+	//		engine->killEngine();
 }
 
 void EngineSync::enginesReceiveNewData()
 {
+	Log::log() << "EngineSync::enginesReceiveNewData!" << std::endl;
+	
 	emit reloadData();
 }
 
@@ -1295,6 +1263,28 @@ void EngineSync::killEngine(int channelNumber)
 		{
 			if(!engine->killed())
 				engine->killEngine();
+			return;
+		}
+}
+
+void EngineSync::stopOrKillEngine(int channelNumber)
+{
+	for(auto * engine : _engines)
+		if(engine->channelNumber() == channelNumber)
+		{
+			if(!engine->stopped())
+				engine->stopEngine();
+			
+			int64_t theTimeIsNow = Utils::currentSeconds();
+			
+			while(Utils::currentSeconds() - theTimeIsNow < 10 && !engine->stopped())
+			{
+				engine->processReplies();	
+			}
+			
+			if(!engine->stopped() && !engine->killed())
+				engine->killEngine();
+			
 			return;
 		}
 }

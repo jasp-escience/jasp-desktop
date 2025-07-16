@@ -6,14 +6,16 @@
 
 class Importer;
 
-typedef std::vector<ImportColumn *> ImportColumns;
+typedef std::vector	<ImportColumn *> ImportColumns;
+typedef std::set	<ImportColumn *> ImportColumnSet;
 
 ///
 /// Base class for all data during import
 /// It has some utility functions and defines the interface that is used to convert all this to the "real" dataset in memory in JASP
 /// It stores ImportColumn and can be used to iterate over these.
-class ImportDataSet
+class ImportDataSet : public QObject
 {
+	Q_OBJECT
 
 public:
 											ImportDataSet(Importer* importer);
@@ -38,6 +40,8 @@ public:
 	void									clear();
 	void									erase(ImportColumns::iterator it);
 	void									buildDictionary();
+	
+	ImportColumns						&	columns() { return _columns; }
 
 
 protected:
@@ -45,6 +49,7 @@ protected:
 	Importer							*	_importer;
 	ImportColumns							_columns;
 	std::map<std::string, ImportColumn*>	_nameToColMap;
+	int										_rowsCountedByBuildDictionary = -1;
 };
 
 #endif // IMPORTDATASET_H

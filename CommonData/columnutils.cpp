@@ -16,8 +16,31 @@ using namespace std;
 using namespace boost::posix_time;
 using namespace boost;
 
+std::string				ColumnUtils::_decimalPoint			= ".";
+std::string				ColumnUtils::_currentQLocaleId		= "C";
+ColumnUtils::toDoubleF	ColumnUtils::_extraStringToDouble;
+ColumnUtils::toIntF		ColumnUtils::_extraStringToInt;
+ColumnUtils::doubleF	ColumnUtils::_alternativeDoubleToString;
+ColumnUtils::currencyF	ColumnUtils::_alternativeCurrencyToString;
+
+
+void ColumnUtils::setAlternativeDoubleToString(doubleF newDoubleFunc, currencyF newCurrencyFunc)
+{
+	_alternativeDoubleToString		= newDoubleFunc;
+	_alternativeCurrencyToString	= newCurrencyFunc;
+}
+
+void ColumnUtils::setExtraStringToNumber(toDoubleF newDoubleFunc, toIntF newIntFunc)
+{
+	_extraStringToDouble	= newDoubleFunc;
+	_extraStringToInt		= newIntFunc;
+}
+
 bool ColumnUtils::getIntValue(const string &value, int &intValue)
 {
+	if(_extraStringToInt && _extraStringToInt(value, intValue))
+		return true;
+
 	try
 	{
 		intValue = boost::lexical_cast<int>(value);
@@ -30,20 +53,14 @@ bool ColumnUtils::getIntValue(const string &value, int &intValue)
 
 bool ColumnUtils::isIntValue(const string &value)
 {
-	try
-	{
-		boost::lexical_cast<int>(value);
-		return true;
-	}
-	catch (...)	{}
-
-	return false;
+	int dummy;
+	return getIntValue(value, dummy);
 }
 
 bool ColumnUtils::getIntValue(const double &value, int &intValue)
 {
 	JASPTIMER_SCOPE(ColumnUtils::getIntValue);
-	
+
 	try
 	{
 		double intPart;
@@ -62,22 +79,37 @@ bool ColumnUtils::getIntValue(const double &value, int &intValue)
 	return false;
 }
 
-bool ColumnUtils::getDoubleValue(const string &value, double &doubleValue)
+bool ColumnUtils::getDoubleValue(const string &value, double &doubleValue, bool useLocale)
 {
+	JASPTIMER_SCOPE(ColumnUtils::getDoubleValue);
+
 	doubleValue = EmptyValues::missingValueDouble;
-	
+
 	if(value == "∞" || value == "-∞")
 	{
 		doubleValue = std::numeric_limits<double>::infinity() * (value == "-∞" ? -1 : 1);
 		return true;
 	}
+
+	if(useLocale && _extraStringToDouble && _extraStringToDouble(value, doubleValue))
+		return true;
 	
 	try
 	{
-		doubleValue = boost::lexical_cast<double>(deEuropeaniseForImport(value));
+		doubleValue = boost::lexical_cast<double>((value));
 		return true;
 	}
-	catch (...) {}
+	catch (...) // If it failed try to "deEuropeanise it"
+	{
+		try
+		{
+			doubleValue = boost::lexical_cast<double>(deEuropeaniseForImport(value));
+			return true;
+		}
+		catch (...) 
+		{
+		}
+	}
 
 	return false;
 }
@@ -99,6 +131,14 @@ bool ColumnUtils::isDoubleValue(const string &value)
 {
 	static double last;
 	return getDoubleValue(value, last);
+}
+
+string ColumnUtils::doubleToLocale(const std::string &value)
+{
+	double dbl;
+	if(getDoubleValue(value, dbl))
+		return doubleToString(dbl);
+	return value;
 }
 
 
@@ -210,25 +250,36 @@ std::string ColumnUtils::deEuropeaniseForImport(std::string value)
 	return value;
 }
 
-std::string ColumnUtils::doubleToStringMaxPrec(double dbl)
+std::string ColumnUtils::doubleToStringMaxPrec(double dbl, bool sepas)
 {
 	constexpr auto max_precision{std::numeric_limits<long double>::digits10 + 1};
-	return 	doubleToString(dbl, max_precision);
+	return 	doubleToString(dbl, sepas, max_precision);
 }
 
-std::string ColumnUtils::doubleToString(double dbl, int precision)
+string ColumnUtils::currencyString(double money, const std::string &symbol, bool sepas)
+{
+	if(!_alternativeCurrencyToString)
+		return doubleToString(money, sepas);
+	
+	return _alternativeCurrencyToString(money, symbol, sepas);
+}
+
+std::string ColumnUtils::doubleToString(double dbl, bool sepas, int precision)
 {
 	JASPTIMER_SCOPE(ColumnUtils::doubleToString);
 	
 	if (dbl > std::numeric_limits<double>::max())		return "∞";
 	if (dbl < std::numeric_limits<double>::lowest())	return "-∞";
 	
+	if(_alternativeDoubleToString)
+		return _alternativeDoubleToString(dbl, precision, sepas); //Use QString for translations
+	
 	std::stringstream conv; //Use this instead of std::to_string to make sure there are no trailing zeroes (and to get full precision)
+	
 	conv << std::setprecision(precision);
 	conv << dbl;
 	return conv.str();
 }
-
 
 // hex should be 4 hexadecimals characters
 std::string ColumnUtils::_convertEscapedUnicodeToUTF8(std::string hex)

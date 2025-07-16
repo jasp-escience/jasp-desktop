@@ -19,13 +19,13 @@
 import QtQuick
 import QtQuick.Controls as QtControls
 import QtQuick.Layouts
-import JASP
+import JASP.Controls
 
 ComponentsListBase
 {
 	id						: tabView
 	background				: rectangleItem
-	implicitWidth 			: parent.width
+	implicitWidth 			: parent ? parent.width : 0
 	implicitHeight			: itemStack.y + itemStack.height
 	shouldStealHover		: false
 	innerControl			: itemTabBar
@@ -35,10 +35,13 @@ ComponentsListBase
 	controlType				: JASPControl.TabView
 	focusOnTab				: false
 	Layout.columnSpan		: (parent && parent.hasOwnProperty('columns')) ? parent.columns : 1
-	preferredWidth			: parent.width
+	preferredWidth			: parent ? parent.width : 0
 	preferredHeight			: implicitHeight
+	newItemLabel			: newItemValue
+	optionKeyLabel			: (values != null && values.length > 0 && values[0].hasOwnProperty("label")) ? "keyLabel" : ""
 
 	property alias	label				: tabView.title
+	property alias	newItemName			: tabView.newItemValue		// For backward compatibility
 	property bool	showAddIcon			: addItemManually
 	property bool	showRemoveIcon		: addItemManually
 	property bool	tabNameEditable		: addItemManually
@@ -132,7 +135,7 @@ ComponentsListBase
 					value				: model.name
 					fieldWidth			: parent.width
 					fieldHeight			: parent.height
-					onEditingFinished	: tabView.nameChanged(index, displayValue)
+					onEditingFinished	: tabView.keyValueChanged(index, displayValue)
 
 					onActiveFocusChanged: if (!activeFocus) visible = false
 				}
@@ -280,10 +283,12 @@ ComponentsListBase
 			topMargin	: 2 * preferencesModel.uiScale
 			left		: parent.left
 			right		: parent.right
+			leftMargin	: 1 // Remove border line
+			rightMargin	: 1
 		}
 
 		currentIndex		: itemTabBar.currentIndex
-		onCurrentIndexChanged: height = Qt.binding( function() { return rep.itemAt(currentIndex).height; });
+		onCurrentIndexChanged: height = Qt.binding( function() { return currentIndex >= 0 ? rep.itemAt(currentIndex).height : 0; });
 
 		Repeater
 		{
@@ -294,10 +299,14 @@ ComponentsListBase
 				id:	tabViewWrapper
 				property var rowComponentItem: model.rowComponent
 
-				width	: rowComponentItem ? rowComponentItem.width : 0
+				width	: itemStack.width
 				height	: rowComponentItem ? rowComponentItem.height : 0
 
-				Component.onCompleted: rowComponentItem.parent = tabViewWrapper
+				Component.onCompleted:
+				{
+					rowComponentItem.parent = tabViewWrapper
+					rowComponentItem.width = Qt.binding(function() {return itemStack.width})
+				}
 			}
 		}
 	}

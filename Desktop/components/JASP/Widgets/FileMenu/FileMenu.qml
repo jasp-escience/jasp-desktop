@@ -1,10 +1,10 @@
-import QtQuick 2.11
-import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.3
-
-import JASP.Controls 1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import JASP.Widgets
+import JASP.Controls
 import JASP
-import FileOperation 1.0
+import FileOperation
 
 FocusScope
 {
@@ -74,6 +74,32 @@ FocusScope
 			border.width:	1
 			border.color:	jaspTheme.uiBorder
 			anchors.fill:	actionMenu
+		}
+		
+		ScrollMoreIndicator
+		{
+			anchors
+			{
+				top:		parent.top
+				left:		actionMenu.left
+				right:		actionMenu.right
+			}
+			
+			upsideDown:	true
+			extraSpace:	actionMenu.contentY
+		}
+		
+		ScrollMoreIndicator
+		{
+			anchors
+			{
+				left:		actionMenu.left
+				right:		actionMenu.right
+				bottom:		parent.bottom
+			}
+			
+			upsideDown:	false
+			extraSpace:	actionMenu.contentHeight - (actionMenu.contentY + actionMenu.height)
 		}
 
 		Flickable
@@ -180,6 +206,32 @@ FocusScope
 			border.width:	1
 			border.color:	jaspTheme.uiBorder
 			anchors.fill:	resourceMenu
+		}
+		
+		ScrollMoreIndicator
+		{
+			anchors
+			{
+				top:		parent.top
+				left:		resourceMenu.left
+				right:		resourceMenu.right
+			}
+			
+			upsideDown:	true
+			extraSpace:	resourceMenu.contentY
+		}
+		
+		ScrollMoreIndicator
+		{
+			anchors
+			{
+				left:		resourceMenu.left
+				right:		resourceMenu.right
+				bottom:		parent.bottom
+			}
+			
+			upsideDown:	false
+			extraSpace:	resourceMenu.contentHeight - (resourceMenu.contentY + resourceMenu.height)
 		}
 
 
@@ -355,9 +407,11 @@ FocusScope
 			{
 				id:						showSelectedSubScreen
 				anchors.fill:			parent
+				anchors.margins:		parent.border.width
 				source:					resourceScreen.currentQML === "" && resourceScreen.x > resourceScreen.desiredX ? resourceScreen.previousQML : resourceScreen.currentQML
 				Keys.onLeftPressed:		resourceMenu.forceActiveFocus()
 				Keys.onEscapePressed:	resourceMenu.forceActiveFocus()
+				clip:					true
 			}
 		}
 

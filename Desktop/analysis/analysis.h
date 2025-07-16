@@ -64,6 +64,7 @@ public:
 
 	Q_INVOKABLE	QString	fullHelpPath(QString helpFileName);
 	Q_INVOKABLE void	duplicateMe();
+	Q_INVOKABLE QString generateWrapper();
 
 	bool				needsRefresh()				const	override;
 	bool				wasUpgraded()				const	override	{ return _wasUpgraded; }
@@ -90,11 +91,16 @@ public:
 	void				setEditOptionsOfPlot(	const std::string & uniqueName, const Json::Value & editOptions);
 	bool				checkAnalysisEntry();
 
+	QVariant			getConstant(const QString& key, const QVariant& defaultValue) const override;
+	QVariant			getConstant(const QString& key, const QVariant& defaultValue, const QString& module, const QString& analysis) const override;
+	bool				optionLocked(const QString& name) const override;
+
 	const	Json::Value		&	results()			const				{ return _results;							}
 	const	Json::Value		&	userData()			const				{ return _userData;							}
 	const	std::string		&	name()				const	override	{ return _name;								}
 	const	std::string		&	qml()				const				{ return _qml;								}
 	const	std::string		&	title()				const	override	{ return _title;							}
+	const	std::string		&	titleDefault()		const	override	{ return _titleDefault;						}
 	const	std::string		&	rfile()				const				{ return _rfile;							}
 	const	std::string		&	module()			const	override	{ return _moduleData->dynamicModule()->name();	}
 			size_t				id()				const				{ return _id;								}
@@ -167,7 +173,6 @@ signals:
 	void					userDataChangedSignal(	Analysis * analysis);
 	void					imageChanged();
 	void					rSourceChanged(QString optionName);
-	void					optionsChanged();
 
 	Column				*	requestComputedColumnCreation(		const std::string & columnName, Analysis * analysis);
 	bool					requestColumnCreation(				const std::string & columnName, Analysis * source, columnType type);
@@ -179,7 +184,7 @@ signals:
 
 	void					createFormWhenYouHaveAMoment(QQuickItem* parent = nullptr);
 	void					analysisInitialized();
-	
+	void					userModifiedSomething();
 
 public slots:
 	void					setDynamicModule(	Modules::DynamicModule * module);

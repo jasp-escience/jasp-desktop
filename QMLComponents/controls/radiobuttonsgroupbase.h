@@ -28,7 +28,8 @@ class RadioButtonBase;
 class RadioButtonsGroupBase : public JASPControl, public BoundControlBase
 {
 	Q_OBJECT
-	
+	QML_ELEMENT
+
 	Q_PROPERTY( QString					value			READ value										NOTIFY valueChanged			)
 	Q_PROPERTY( RadioButtonBase*		checkedButton	READ checkedButton								NOTIFY valueChanged			)
 	Q_PROPERTY( QList<RadioButtonBase*>	buttons			READ buttons									NOTIFY buttonsChanged		)
@@ -41,6 +42,7 @@ public:
 	Json::Value createJson()								const	override;
 	void		bindTo(const Json::Value& value)					override;
 	void		setUp()												override;
+	QString		generateDoxygenHelp()						const	override;
 
 	void registerRadioButton(RadioButtonBase* button);
 	void unregisterRadioButton(RadioButtonBase* button);
@@ -52,6 +54,9 @@ public:
 
 	QString	defaultValue()	const	{ return _defaultValue; }
 	void	setDefaultValue(const QString& defaultValue);
+
+public slots:
+	Q_INVOKABLE void unregisterAll();
 
 signals:
 	void valueChanged();

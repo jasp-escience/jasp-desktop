@@ -11,6 +11,11 @@ if (UNIX)
 add_compile_options(-Werror=return-type)
 endif()
 
+if(WIN32)
+  add_compile_options(/utf-8)  #Make sure to compile in utf-8 on the locale code page.
+endif()
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(APPLE)
 
@@ -53,12 +58,12 @@ endif()
 
 project(
   JASP
-  VERSION 0.19.3.0 # <major>[.<minor>[.<patch>[.<tweak>]]]
+  VERSION 0.95.0.0 # <major>[.<minor>[.<patch>[.<tweak>]]]
   LANGUAGES CXX C
   HOMEPAGE_URL "http://jasp-stats.org/"
   DESCRIPTION "A fresh way to do statistics")
 
-#needed for R-Interface and QMLComponents for them to build stuff porperly when *inside* JASP
+#needed for R-Interface and QMLComponents for them to build stuff properly when *inside* JASP
 add_definitions(-DBUILDING_JASP)
 set(BUILDING_JASP TRUE)
 
@@ -93,6 +98,13 @@ include(Config)
 # ------ Conan Dependency Manager
 
 include(Conan)
+# Conan set the CMAKE_MSVC_RUNTIME_LIBRARY to MultiThreadedDLL (this adds the /MD flag, cf conan_toolchain.cmake)
+# But on debug mode it does not set it to the MultiThreadedDebugDLL (/MDd): this can lead to a crash if a library uses a Qt function in a static method, as in DynamicRuntimeInfo)
+if(WIN32 AND (CMAKE_MSVC_RUNTIME_LIBRARY STREQUAL "$<$<CONFIG:Debug>:MultiThreadedDLL>"))
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>")
+	message(STATUS "CMAKE_MSVC_RUNTIME_LIBRARY is set to ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+endif()
+
 
 # ------ JASP Config
 
@@ -127,11 +139,36 @@ if(WIN32)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL
       ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+  message(CHECK_START "Setting path to libR-Interface.dll")
+  set(_LIB_R_INTERFACE_DLL
+	  "${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll"
+	  CACHE STRING "Path to libR-Interface.dll")
+  set(_LIB_R_INTERFACE_NORINSIDE_DLL
+          "${CMAKE_BINARY_DIR}/R-Interface/libR-InterfaceNoRInside.dll"
+          CACHE STRING "Path to libR-InterfaceNoRInside.dll" FORCE)
+  message(STATUS "  ${_LIB_R_INTERFACE_DLL}")
+  message(STATUS "  ${_LIB_R_INTERFACE_NORINSIDE_DLL}")
+
+  message(CHECK_START "Setting path to libR-Interface.dll.a")
+  set(_LIB_R_INTERFACE_STATIC_DLL_A
+	  "${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll.a"
+	  CACHE STRING "Path to libR-Interface.dll.a")
+  set(_LIB_R_INTERFACE_NORINSIDE_STATIC_DLL_A
+          "${CMAKE_BINARY_DIR}/R-Interface/libR-InterfaceNoRInside.dll.a"
+          CACHE STRING "Path to libR-InterfaceNoRInside.dll.a" FORCE)
+  message(STATUS "  ${_LIB_R_INTERFACE_STATIC_DLL_A}")
+  message(STATUS "  ${_LIB_R_INTERFACE_NORINSIDE_STATIC_DLL_A}")
+
+  message(STATUS "libR-Interface will be build if it is missing.")
+
+
 endif()
 
 add_subdirectory(Common)
 add_subdirectory(CommonData)
 add_subdirectory(QMLComponents)
+add_subdirectory(SyntaxInterface)
 
 if(NOT WIN32)
   add_subdirectory(R-Interface)
@@ -144,7 +181,9 @@ else()
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/R-Interface
     BYPRODUCTS ${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll
                ${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll.a
-    COMMAND
+			   ${CMAKE_BINARY_DIR}/R-Interface/libR-InterfaceNoRInside.dll
+			   ${CMAKE_BINARY_DIR}/R-Interface/libR-InterfaceNoRInside.dll.a
+	COMMAND
       ${CMAKE_COMMAND} -G "MinGW Makefiles" -S . -B
       ${CMAKE_BINARY_DIR}/R-Interface "-DRTOOLS_PATH:PATH=${RTOOLS_PATH}"
       "-DCMAKE_C_COMPILER:PATH=${RTOOLS_C_COMPILER}"

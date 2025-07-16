@@ -19,7 +19,6 @@
 #include "listmodel.h"
 #include "controls/jasplistcontrol.h"
 #include "analysisform.h"
-#include "boundcontrols/boundcontrolterms.h"
 #include "controls/rowcontrols.h"
 #include "controls/sourceitem.h"
 #include "log.h"
@@ -35,8 +34,8 @@ ListModel::ListModel(JASPListControl* listView)
 	connect(this,	&ListModel::rowsMoved,				this,	&ListModel::termsChanged);
 	connect(this,	&ListModel::rowsInserted,			this,	&ListModel::termsChanged);
 	connect(this,	&ListModel::dataChanged,			this,	&ListModel::dataChangedHandler);
-	connect(this,	&ListModel::namesChanged,			this,	&ListModel::termsChanged);
-	connect(this,	&ListModel::columnTypeChanged,		this,	&ListModel::termsChanged);
+	connect(this,	&ListModel::variableNamesChanged,	this,	&ListModel::termsChanged);
+	connect(this,	&ListModel::variableTypeChanged,	this,	&ListModel::termsChanged);
 }
 
 QHash<int, QByteArray> ListModel::roleNames() const
@@ -51,12 +50,12 @@ QHash<int, QByteArray> ListModel::roleNames() const
 		roles[SelectableRole]				= "selectable";
 		roles[ColumnTypeRole]				= "columnType";
 		roles[ColumnPreviewRole]			= "preview";
+		roles[ColumnDescriptionRole]		= "description";
 		roles[ColumnRealTypeRole]			= "columnRealType";
 		roles[ColumnTypeIconRole]			= "columnTypeIcon";
 		roles[ColumnTypeDisabledIconRole]	= "columnTypeDisabledIcon";
 		roles[NameRole]						= "name";
 		roles[RowComponentRole]				= "rowComponent";
-		roles[ValueRole]					= "value";
 		roles[VirtualRole]					= "virtual";
 		roles[DeletableRole]				= "deletable";
 
@@ -77,12 +76,12 @@ void ListModel::addControlError(const QString &error) const
 	_listView->addControlError(error);
 }
 
-void ListModel::initTerms(const Terms &terms, const RowControlsValues& allValuesMap, bool)
+void ListModel::initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap, bool)
 {
 	_initTerms(terms, allValuesMap, true);
 }
 
-void ListModel::_initTerms(const Terms &terms, const RowControlsValues& allValuesMap, bool initRowControls)
+void ListModel::_initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap, bool initRowControls)
 {
 	beginResetModel();
 	if (initRowControls)
@@ -151,7 +150,7 @@ void ListModel::_connectSourceControls(SourceItem* sourceItem)
 	for (const QString & controlName : sourceItem->usedControls())
 		for (const Term & term : terms)
 		{
-			JASPControl * control = sourceModel->getRowControl(term.asQString(), controlName);
+			JASPControl * control = sourceModel->getRowControl(term.value(), controlName);
 			if (control)
 			{
 				BoundControl * boundControl = control->boundControl();
@@ -179,19 +178,6 @@ Terms ListModel::getSourceTerms()
 	return termsAvailable;
 }
 
-ListModel *ListModel::getSourceModelOfTerm(const Term &term)
-{
-	ListModel* result = nullptr;
-
-	listView()->applyToAllSources([&](SourceItem *sourceItem, const Terms& terms)
-	{
-		if (terms.contains(term))
-			result = sourceItem->sourceListModel();
-	});
-
-	return result;
-}
-
 void ListModel::setRowComponent(QQmlComponent* rowComponent)
 {
 	_rowComponent = rowComponent;
@@ -202,39 +188,43 @@ void ListModel::setUpRowControls()
 	if (_rowComponent == nullptr)
 		return;
 
-	QStringList keys;
 	int row = 0;
 	for (const Term& term : terms())
 	{
-		const QString& key = term.asQString();
-		keys.append(key);
-		if (!_rowControlsMap.contains(key))
+		if (!_rowControlsMap.contains(term.value()))
 		{
-			bool hasOptions = _rowControlsValues.contains(key);
-			RowControls* rowControls = new RowControls(this, _rowComponent, _rowControlsValues[key]);
-			_rowControlsMap[key] = rowControls;
+			bool hasOptions = _rowControlsValues.contains(term.value());
+			RowControls* rowControls = new RowControls(this, _rowComponent, _rowControlsValues[term.value()]);
+			_rowControlsMap[term.value()] = rowControls;
 			rowControls->init(row, term, !hasOptions);
 		}
 		else
-			_rowControlsMap[key]->setContext(row, key);
+			_rowControlsMap[term.value()]->setContext(row, term);
 		row++;
 	}
 
+	QStringList removedKeys;
 	for (const QString& key : _rowControlsMap.keys())
-		if (!keys.contains(key))
+		if (!terms().containsValue(key))
+		{
 			// If some row controls are not used anymore, if they use some sources, they must be disconnected from these sources
 			// If a source changes and emits a signal, these controls should not be activated (cf. https://github.com/jasp-stats/jasp-test-release/issues/1786)
-			_rowControlsMap[key]->disconnectControls();
+			_rowControlsMap[key]->disconnectAndDeleteControls();
+			removedKeys.append(key);
+		}
+
+	for (const QString& key : removedKeys)
+		_rowControlsMap.remove(key);
 }
 
-ListModel::RowControlsValues ListModel::getTermsWithComponentValues() const
+Terms::RelatedValuesPerTerm ListModel::getTermsWithComponentValues() const
 {
-	RowControlsValues result;
+	Terms::RelatedValuesPerTerm result;
 
 	for (const Term& term : _terms)
 	{
 		QMap<QString, Json::Value> componentValues;
-		RowControls* rowControls = _rowControlsMap.value(term.asQString());
+		RowControls* rowControls = _rowControlsMap.value(term.value());
 		if (rowControls)
 		{
 			const QMap<QString, JASPControl*>& controlsMap = rowControls->getJASPControlsMap();
@@ -249,7 +239,7 @@ ListModel::RowControlsValues ListModel::getTermsWithComponentValues() const
 			}
 		}
 
-		result[term.asQString()] = componentValues;
+		result[term.value()] = componentValues;
 	}
 
 	return result;
@@ -300,16 +290,21 @@ void ListModel::setVariableType(int ind, columnType type)
 
 	Term newTerm = term;
 	newTerm.setType(type);
-	sourceColumnTypeChanged(newTerm);
+	sourceVariableTypeChanged(newTerm);
 }
 
-columnType ListModel::getVariableType(const QString& name) const
+columnType ListModel::getVariableType(const QString& value) const
 {
-	int i = terms().indexOf(name);
+	int i = terms().indexOfValue(value);
 	if (i >= 0)
 		return terms().at(i).type();
 
-	return (columnType)requestInfo(VariableInfo::VariableType, name).toInt();
+	return (columnType)requestInfo(VariableInfo::VariableType, value).toInt();
+}
+
+QString ListModel::getVariableDescription(const QString &name) const
+{
+	return requestInfo(VariableInfo::ColumnDescription, name).toString();
 }
 
 columnType ListModel::getVariableRealType(const QString& name) const
@@ -356,7 +351,7 @@ int ListModel::searchTermWith(QString searchString)
 		{
 			size_t index = (size_t(startIndex) + i) % myTerms.size();
 			const Term& term = myTerms.at(index);
-			if (term.asQString().toLower().startsWith(searchStringLower))
+			if (term.label().toLower().startsWith(searchStringLower))
 			{
 				result = int(index);
 				break;
@@ -446,7 +441,7 @@ void ListModel::selectAllItems()
 
 void ListModel::sourceTermsReset()
 {
-	_initTerms(getSourceTerms(), RowControlsValues(), false);
+	_initTerms(getSourceTerms(), Terms::RelatedValuesPerTerm(), false);
 }
 
 int ListModel::rowCount(const QModelIndex &) const
@@ -494,19 +489,22 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
 	switch (role)
 	{
 	case Qt::DisplayRole:
-	case ListModel::NameRole:			return QVariant(term.asQString());
-	case ListModel::SelectableRole:		return !term.asQString().isEmpty() && term.isDraggable();
+	case ListModel::NameRole:			return term.label();
+	case ListModel::SelectableRole:		return !term.value().isEmpty() && term.isDraggable();
 	case ListModel::SelectedRole:		return _selectedItems.contains(row);
 	case ListModel::TypeRole:			return listView()->containsVariables() ? "variable" : "";
-	
+
 	case ListModel::RowComponentRole:
 	{
-		QString termStr = term.asQString();
+		QString termStr = term.value();
 		return _rowControlsMap.contains(termStr) ? QVariant::fromValue(_rowControlsMap[termStr]->getRowObject()) : QVariant();
 	}
 		
 	case ListModel::ColumnPreviewRole:
-		return (!listView()->containsVariables() || term.size() != 1) ? "" : getVariablePreview(term.asQString());
+		return (!listView()->containsVariables() || term.size() != 1) ? "" : getVariablePreview(term.value());
+		
+	case ListModel::ColumnDescriptionRole:
+		return (!listView()->containsVariables() || term.size() != 1) ? "" : getVariableDescription(term.value());
 	
 	case ListModel::ColumnTypeRole:
 	case ListModel::ColumnRealTypeRole:
@@ -516,8 +514,8 @@ QVariant ListModel::data(const QModelIndex &index, int role) const
 			return "";
 		else
 		{
-			columnType	colType		= getVariableType(term.asQString()),
-						colRealType = getVariableRealType(term.asQString());
+			columnType	colType		= getVariableType(term.value()),
+						colRealType = getVariableRealType(term.value());
 			
 			switch(role)
 			{
@@ -559,7 +557,7 @@ Terms ListModel::filterTerms(const Terms& terms, const QStringList& filters)
 		Terms controlTerms;
 		for (const Term& term : result)
 		{
-			RowControls* rowControls = _rowControlsMap.value(term.asQString());
+			RowControls* rowControls = _rowControlsMap.value(term.value());
 			if (rowControls)
 			{
 				JASPControl* control = rowControls->getJASPControl(useThisControl);
@@ -602,7 +600,7 @@ QStringList	ListModel::allLevels(const Terms& terms) const
 {
 	QStringList result;
 	for (const Term& term : terms)
-		result.append(requestInfo(VariableInfo::Labels, term.asQString()).toStringList());
+		result.append(requestInfo(VariableInfo::Labels, term.value()).toStringList());
 
 	return result;
 }
@@ -612,7 +610,7 @@ Terms ListModel::termsEx(const QStringList &filters)
 	return filterTerms(terms(), filters);
 }
 
-void ListModel::sourceNamesChanged(QMap<QString, QString> map)
+void ListModel::sourceVariableNamesChanged(QMap<QString, QString> map)
 {
 	QMap<QString, QString>	changedNamesMap;
 	QSet<int>				changedIndexes;
@@ -637,10 +635,10 @@ void ListModel::sourceNamesChanged(QMap<QString, QString> map)
 	}
 
 	if (changedNamesMap.size() > 0)
-		emit namesChanged(changedNamesMap);
+		emit variableNamesChanged(changedNamesMap);
 }
 
-bool ListModel::sourceColumnTypeChanged(Term sourceTerm)
+bool ListModel::sourceVariableTypeChanged(Term sourceTerm)
 {
 	bool change = false;
 	for (int i = 0; i < _terms.size(); i++)
@@ -664,8 +662,8 @@ bool ListModel::sourceColumnTypeChanged(Term sourceTerm)
 			term.setTypes(types);
 			QModelIndex ind = index(i, 0);
 
-			emit dataChanged(ind, ind, {ListModel::ColumnTypeRole, ListModel::ColumnTypeIconRole, ListModel::ColumnTypeDisabledIconRole});
-			emit columnTypeChanged(term);
+			emit dataChanged(ind, ind, {ListModel::ColumnTypeRole, ListModel::ColumnTypeIconRole, ListModel::ColumnTypeDisabledIconRole, ListModel::ColumnPreviewRole});
+			emit variableTypeChanged(term);
 
 			change = true;
 		}
@@ -691,18 +689,18 @@ bool ListModel::sourceLabelsChanged(QString columnName, QMap<QString, QString> c
 			while (it.hasNext())
 			{
 				it.next();
-				if (terms().contains(it.key()))
+				if (terms().containsValue(it.key()))
 				{
 					change = true;
 					newChangedValues[it.key()] = it.value();
 				}
 			}
-			sourceNamesChanged(newChangedValues);
+			sourceVariableNamesChanged(newChangedValues);
 		}
 	}
 	else
 	{
-		change = terms().contains(columnName);
+		change = terms().containsValue(columnName);
 		if (change)
 			emit labelsChanged(columnName, changedLabels);
 	}
@@ -720,7 +718,7 @@ bool ListModel::sourceLabelsReordered(QString columnName)
 	}
 	else
 	{
-		change = terms().contains(columnName);
+		change = terms().containsValue(columnName);
 		if (change)
 			emit labelsReordered(columnName);
 	}
@@ -728,7 +726,7 @@ bool ListModel::sourceLabelsReordered(QString columnName)
 	return change;
 }
 
-void ListModel::sourceColumnsChanged(QStringList columns)
+void ListModel::sourceVariablesChanged(QStringList columns)
 {
 	QStringList changedColumns;
 
@@ -736,7 +734,7 @@ void ListModel::sourceColumnsChanged(QStringList columns)
 	{
 		if (_columnsUsedForLabels.contains(column))
 			sourceLabelsChanged(column);
-		else if (terms().contains(column))
+		else if (terms().containsValue(column))
 			changedColumns.push_back(column);
 	}
 
@@ -744,10 +742,10 @@ void ListModel::sourceColumnsChanged(QStringList columns)
 	{
 		for (const QString& col : changedColumns)
 		{
-			int i = terms().indexOf(col);
+			int i = terms().indexOfValue(col);
 			emit dataChanged(index(1,0), index(i,0));
 		}
-		emit columnsChanged(changedColumns);
+		emit variablesChanged(changedColumns);
 
 		if (listView()->isBound())
 			listView()->form()->refreshAnalysis();
@@ -765,13 +763,6 @@ void ListModel::_setTerms(const Terms &terms, const Terms& parentTerms)
 	_terms.removeParent();
 	_setTerms(terms);
 	_terms.setSortParent(parentTerms);
-}
-
-void ListModel::_setTerms(const std::vector<Term> &terms)
-{
-	checkTermsTypes(terms);
-	_terms.set(terms);
-	setUpRowControls();
 }
 
 void ListModel::_setTerms(const Terms &terms)

@@ -23,49 +23,72 @@ if(USE_CONAN)
 
   message(STATUS "  ${CMAKE_BUILD_TYPE}")
   set(CONAN_COMPILER_RUNTIME "dynamic")
-  set(CONAN_RESULT_FILE "conanbuild.bat") #for windows
 
+
+  # We use our own recipe with some patches to cook up a functional version of freexl, so get the recipe:
+  message(STATUS "Cloning private freexl dependency")
+  set(FREEXL_VERSION "2.0.99.cci.20250526")
+  FetchContent_Declare(
+    freexl
+    GIT_REPOSITORY   https://github.com/jasp-stats/conan-recipes.git
+    GIT_TAG          e02cefc5a37684749a20d31500fc54468383e30a
+  )
+  FetchContent_MakeAvailable(freexl)
+
+  # Configure Conan for windows
   if(WIN32)
+    set(CONAN_RESULT_FILE "conanbuild.bat") #for windows
 
     message(STATUS "  ${CONAN_COMPILER_RUNTIME}")
 
+    if(freexl_POPULATED)
+      message(STATUS "Compiling freexl dependency ${freexl_SOURCE_DIR}")
+      execute_process(
+          COMMAND_ECHO STDOUT
+          WORKING_DIRECTORY ${freexl_SOURCE_DIR}/freexl
+          COMMAND
+          conan create ${freexl_SOURCE_DIR}/freexl --version=${FREEXL_VERSION}
+          -s build_type=${CMAKE_BUILD_TYPE}
+          -c tools.cmake.cmaketoolchain:generator=${CMAKE_GENERATOR}
+          -s compiler.runtime=${CONAN_COMPILER_RUNTIME} --build=missing
+          --test-missing
+      )
+    else()
+      message(CHECK_FAIL "build freexl failed")
+    endif()
+    file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/_deps/)
+    
     execute_process(
       COMMAND_ECHO STDOUT
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
       COMMAND
-      conan install ${CONAN_FILE_PATH} --output-folder=${CMAKE_BINARY_DIR}/conan_build
+      conan install ${CONAN_FILE_PATH} --output-folder=${CMAKE_BINARY_DIR}/_conan_build
       -s build_type=${CMAKE_BUILD_TYPE}
+      -c tools.cmake.cmaketoolchain:generator=${CMAKE_GENERATOR}
       -s compiler.runtime=${CONAN_COMPILER_RUNTIME} --build=missing)
-
+  
+      # configure conan for apple
   elseif(APPLE)
 
     set(CONAN_RESULT_FILE "conanbuild.sh")
+    
+    # We set CC and CCX to nothing because that was the only difference between running conan in a terminal (where it worked) and in qt creator (where it did not)
+    # They were set to bona fide looking xtools stuff but apparently this was too much for conan.
 
-    if(CROSS_COMPILING)
-
-      execute_process(
+    execute_process(
+      COMMAND_ECHO STDOUT
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      COMMAND zsh -c -l "export CC=\"\"; export CCX=\"\"; conan create ${freexl_SOURCE_DIR}/freexl --version=${FREEXL_VERSION} -s build_type=${CMAKE_BUILD_TYPE} -s os.version=${CMAKE_OSX_DEPLOYMENT_TARGET} --build=missing --test-missing")    
+    file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/_deps/)    
+    
+    execute_process(
         COMMAND_ECHO STDOUT
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMAND
-          conan install ${CONAN_FILE_PATH} -s build_type=${CMAKE_BUILD_TYPE} -s
-          os.version=${CMAKE_OSX_DEPLOYMENT_TARGET} -s
-          arch=${CONAN_ARCH} -s arch_build=${CONAN_ARCH} --build=missing -of ${CMAKE_BINARY_DIR}/conan_build)
-
-    else()
-
-      execute_process(
-        COMMAND_ECHO STDOUT
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMAND
-          conan install ${CONAN_FILE_PATH} -s build_type=${CMAKE_BUILD_TYPE} -s
-          os.version=${CMAKE_OSX_DEPLOYMENT_TARGET}
-          --build=missing -of ${CMAKE_BINARY_DIR}/conan_build)
-
-    endif()
-
+        COMMAND zsh -c -l "export CC=\"\"; export CCX=\"\"; conan install ${CONAN_FILE_PATH} -s build_type=${CMAKE_BUILD_TYPE} -s os.version=${CMAKE_OSX_DEPLOYMENT_TARGET} --build=missing -of ${CMAKE_BINARY_DIR}/_conan_build")
+        
   endif()
 
-  if(EXISTS ${CMAKE_BINARY_DIR}/conan_build/${CONAN_RESULT_FILE})
+  if(EXISTS ${CMAKE_BINARY_DIR}/_conan_build/${CONAN_RESULT_FILE})
     message(CHECK_PASS "successful")
   else()
     message(CHECK_FAIL "unsuccessful")
@@ -75,7 +98,7 @@ if(USE_CONAN)
     )
   endif()
 
-  include(${CMAKE_BINARY_DIR}/conan_build/conan_toolchain.cmake)
+  include(${CMAKE_BINARY_DIR}/_conan_build/conan_toolchain.cmake)
 
 endif()
 

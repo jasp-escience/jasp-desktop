@@ -39,14 +39,13 @@ RibbonModel::RibbonModel() : QAbstractListModel(DynamicModules::dynMods())
 	connect(DynamicModules::dynMods(), &DynamicModules::dynamicModuleReplaced,		this, &RibbonModel::dynamicModuleReplaced					);
 	connect(DynamicModules::dynMods(), &DynamicModules::dynamicModuleChanged,		this, &RibbonModel::dynamicModuleChanged					);
 	connect(PreferencesModel::prefs(), &PreferencesModel::languageCodeChanged,		this, &RibbonModel::refreshButtons							);
+	connect(DataSetPackage::pkg(),	   &DataSetPackage::setDataMode,				this, &RibbonModel::setDataMode								);
 }
 
 void RibbonModel::loadModules(std::vector<std::string> commonModulesToLoad, std::vector<std::string> extraModulesToLoad)
 {
-	DynamicModules::dynMods()->initializeInstalledModules();	
-	DynamicModules::dynMods()->insertCommonModuleNames(std::set<std::string>(commonModulesToLoad.begin(), commonModulesToLoad.end()));
-
 	addSpecialRibbonButtonsEarly();
+	DynamicModules::dynMods()->insertCommonModuleNames(std::set<std::string>(commonModulesToLoad.begin(), commonModulesToLoad.end()));
 
 	auto loadModulesFromBundledOrUserData = [&](bool common)
 	{
@@ -64,12 +63,7 @@ void RibbonModel::loadModules(std::vector<std::string> commonModulesToLoad, std:
 						//Check if the module pkg actually exists in the module library and otherwise show a friendly warning instead of confusing stuff about icons: https://github.com/jasp-stats/INTERNAL-jasp/issues/1287
 						if(!QFileInfo::exists(tq(moduleLibrary + "/" + moduleName)))
 						{
-							Log::log() << "Module " << moduleName << " is missing!\nLooked at: '" << tq(moduleLibrary + "/" + moduleName) << " and it cant be loaded because it isnt there" << std::endl;
-							
-							MessageForwarder::showWarning(
-								tr("Module missing"), 
-								tr(	"It seems the bundled module %1 wasn't correctly installed, and thus cannot be loaded.\n"
-									"If you installed this version of JASP via an official installer let the JASP team know.").arg(tq(moduleName)));
+                            continue; //user installed module
 						}
 						else
 							DynamicModules::dynMods()->initializeModuleFromDir(moduleLibrary, true, common);
@@ -90,6 +84,7 @@ void RibbonModel::loadModules(std::vector<std::string> commonModulesToLoad, std:
 	
 	loadModulesFromBundledOrUserData(true);
 	loadModulesFromBundledOrUserData(false);
+	DynamicModules::dynMods()->initializeInstalledModules();
 	
 	for(const std::string & modName : DynamicModules::dynMods()->moduleNames())
 		if(!isModuleName(modName)) //Was it already added from commonModulesToLoad or extraModulesToLoad?

@@ -1,16 +1,13 @@
-import QtQuick			2.12
-import QtQuick.Controls 2.12
-import QtQuick.Layouts	1.3 as L
-import JASP.Widgets		1.0
-import JASP.Controls	1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts	as L
+import JASP.Widgets
+import JASP.Controls
 
-ScrollView
+PrefsScrollView
 {
 	id:						scrollPrefs
-	focus:					true
-	onActiveFocusChanged:	if(activeFocus) interfaceFonts.forceActiveFocus();
-	Keys.onLeftPressed:		resourceMenu.forceActiveFocus();
-	hoverEnabled:			false
+	
 
 	function resetMe()
 	{
@@ -80,7 +77,7 @@ ScrollView
 				}
 			}
 
-			GroupBox
+			Group
 			{
 				width:			parent.width
 				
@@ -95,7 +92,7 @@ ScrollView
 					placeholderText:		qsTr("default: %1").arg(defaultInterfaceFont.fontInfo.family)
 					startValue:				preferencesModel.interfaceFont
 					onValueChanged: 		preferencesModel.interfaceFont = (currentIndex <= 0 ? "" : value)
-
+					focus:					true
 					KeyNavigation.tab:		codeFonts
 				}
 			
@@ -185,13 +182,96 @@ ScrollView
 			DropDown
 			{
 				id:							languages
-				label:						qsTr("Choose language  ")
+				label:						qsTr("Choose language")
 				source:						languageModel
 				startValue: 				languageModel.currentLanguage
 				onValueChanged: 			languageModel.currentLanguage = value
 
-				KeyNavigation.tab: 			altnavcheckbox
+				KeyNavigation.tab: 			useThousandsSeparator
 				
+			}
+			
+			CheckBox
+			{
+				id:							useThousandsSeparator
+				label:						qsTr("Use thousands separators")
+				checked:					languageModel.useThousandSeps
+				onCheckedChanged:			languageModel.useThousandSeps = checked
+				toolTip:					qsTr("Disable to remove thousands separators from all numbers.")
+				
+				KeyNavigation.tab:			useAlternativeLocale
+			}
+			
+			CheckBox
+			{
+				id:							useAlternativeLocale
+				label:						qsTr("Use an alternative language and territory dependent display for numbers")
+				checked:					languageModel.useAlternativeLocale
+				onCheckedChanged:			languageModel.useAlternativeLocale = checked
+				toolTip:					qsTr("Use the locale specified below for display of numbers and currency.") //dates and times will have to be added later
+				
+				KeyNavigation.tab:			alternativeLocaleTerritory
+			}
+			
+			RowLayout
+			{
+				spacing:		jaspTheme.generalAnchorMargin
+				
+				Group
+				{
+					enabled:					languageModel.useAlternativeLocale
+					
+					DropDown
+					{
+						id:							alternativeLocaleLanguage
+						label:						qsTr("Alt. language")
+						values:		 				languageModel.altLanguages
+						startValue:				 	languageModel.currentAltLanguage
+						onValueChanged:				if(value != "") languageModel.currentAltLanguage = value
+						addEmptyValue:				false
+						KeyNavigation.tab:			alternativeLocaleTerritory
+						control.width:				Math.max(alternativeLocaleLanguage.control.implicitWidth, alternativeLocaleTerritory.control.implicitWidth)
+					}
+					
+					DropDown
+					{
+						id:							alternativeLocaleTerritory
+						label:						qsTr("Alt. territory")
+						values:		 				languageModel.altTerritories
+						startValue:				 	languageModel.currentAltTerritory
+						value:						languageModel.currentAltTerritory
+						onValueChanged:				if(value != "") languageModel.currentAltTerritory = value
+						addEmptyValue:				false
+						KeyNavigation.tab:			altnavcheckbox
+						control.width:				Math.max(alternativeLocaleLanguage.control.implicitWidth, alternativeLocaleTerritory.control.implicitWidth)
+					}
+					
+				}
+				
+				Item{ width: jaspTheme.generalAnchorMargin}
+				
+				Rectangle
+				{
+					implicitWidth:		exampleFormattingText.implicitWidth
+					implicitHeight:		exampleFormattingText.implicitHeight
+					
+					color:				jaspTheme.white
+					border.width:		1
+					border.color:		jaspTheme.borderColor
+					radius:				jaspTheme.borderRadius
+					
+					Text
+					{
+						id:					exampleFormattingText
+		
+						text:				languageModel.exampleFormatting
+						color:				jaspTheme.textEnabled
+						font.pixelSize:		Math.round(12 * preferencesModel.uiScale)
+						font.family:		preferencesModel.interfaceFont
+						wrapMode:			Text.WordWrap
+						padding:			jaspTheme.itemPadding
+					}
+				}
 			}
 			
 
@@ -311,7 +391,19 @@ ScrollView
 				onCheckedChanged:	preferencesModel.safeGraphics = checked
 				toolTip:			qsTr("Switches to a \"safer\" mode for graphics aka software rendering.\nIt will make your interface slower but if you have some problems (weird glitches, cannot see results or anything even) might fix them.\nAnalyses will still be just as fast though.")
 				
-				KeyNavigation.tab:			disableAnimations
+				KeyNavigation.tab:	startMaximized
+
+			}
+			
+			CheckBox
+			{
+				id:					startMaximized
+				label:				qsTr("Start maximized")
+				checked:			preferencesModel.startMaximized
+				onCheckedChanged:	preferencesModel.startMaximized = checked
+				toolTip:			qsTr("Should JASP open its window maximized on startup?")
+				
+				KeyNavigation.tab:	disableAnimations
 
 			}
 

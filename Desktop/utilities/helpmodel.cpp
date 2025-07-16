@@ -18,15 +18,15 @@ HelpModel::HelpModel(QObject * parent) : QObject(parent)
 
 void HelpModel::runJavaScript(QString renderFunc, QString content)
 {
-#ifdef JASP_DEBUG
-	Log::log() << "Help is sending content: '" << content << "'" << std::endl;
-#endif
+//#ifdef JASP_DEBUG
+//	Log::log() << "Help is sending content: '" << content << "'" << std::endl;
+//#endif
 
-	content.replace("\\", "\\\\");  //The order here is important, replace the escaped escape characters first. Helps with latex, see: https://github.com/jasp-stats/INTERNAL-jasp/issues/2530
-	content.replace("\"", "\\\"");
-	content.replace("\r\n", "\\n");
-	content.replace("\r", "\\n");
-	content.replace("\n", "\\n");
+	content.replace("\\",	"\\\\"	);  //The order here is important, replace the escaped escape characters first. Helps with latex, see: https://github.com/jasp-stats/INTERNAL-jasp/issues/2530
+	content.replace("\"",	"\\\""	);
+	content.replace("\r\n", "\\n"	);
+	content.replace("\r",	"\\n"	);
+	content.replace("\n",	"\\n"	);
 
 
 
@@ -163,8 +163,11 @@ void HelpModel::showOrToggleParticularPageForAnalysis(Analysis * analysis, QStri
 	{
 		_analysis = analysis;
 		emit analysisChanged();
-		
-		if((loadHelpContent(pagePath, false, renderFunc, contentMD) || loadHelpContent(pagePath, true, renderFunc, contentMD)) && renderFunc == "window.render")
+
+		if((loadHelpContent(pagePath, false, renderFunc, contentMD)
+			 || loadHelpContent(pagePath, true, renderFunc, contentMD)
+			 || (!helpPage.isEmpty() && loadHelpContent(helpPage, true, renderFunc, contentMD)))
+			&& renderFunc == "window.render")
 		{
 			//If we get here the file exists and it is a markdown file.
 			setMarkdown(contentMD);

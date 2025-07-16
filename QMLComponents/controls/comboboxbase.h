@@ -22,20 +22,21 @@
 #include "jasplistcontrol.h"
 #include "boundcontrols/boundcontrolbase.h"
 #include "models/listmodel.h"
-#include "models/listmodellabelvalueterms.h"
+#include "models/listmodeltermsavailable.h"
 #include <QMap>
 
 class ComboBoxBase : public JASPListControl, public BoundControlBase
 {
 	Q_OBJECT
+	QML_ELEMENT
 
-	Q_PROPERTY( int					currentIndex				READ currentIndex				WRITE setCurrentIndex		NOTIFY currentIndexChanged			)
-	Q_PROPERTY( QString				currentText					READ currentText				WRITE setCurrentText		NOTIFY currentTextChanged			)
-	Q_PROPERTY( QString				currentValue				READ currentValue				WRITE setCurrentValue		NOTIFY currentValueChanged			)
-	Q_PROPERTY( QString				startValue					READ startValue					WRITE setStartValue			NOTIFY startValueChanged			)
-	Q_PROPERTY( QString				currentColumnType			READ currentColumnType										NOTIFY currentColumnTypeChanged		)
-	Q_PROPERTY( QString				currentColumnTypeIcon		READ currentColumnTypeIcon									NOTIFY currentColumnTypeIconChanged	)
-	Q_PROPERTY( QString				longestValue				READ longestValue											NOTIFY longestValueChanged			)
+	Q_PROPERTY( int					currentIndex				READ currentIndex				WRITE setCurrentIndex			NOTIFY currentIndexChanged			)
+	Q_PROPERTY( QString				currentText					READ currentLabel				WRITE setCurrentLabel			NOTIFY currentLabelChanged			)
+	Q_PROPERTY( QString				currentValue				READ currentValue				WRITE setCurrentValue			NOTIFY currentValueChanged			)
+	Q_PROPERTY( QString				startValue					READ startValue					WRITE setStartValue				NOTIFY startValueChanged			)
+	Q_PROPERTY( QString				currentColumnType			READ currentColumnType											NOTIFY currentColumnTypeChanged		)
+	Q_PROPERTY( QString				currentColumnTypeIcon		READ currentColumnTypeIcon										NOTIFY currentColumnTypeIconChanged	)
+	Q_PROPERTY( QString				longestValue				READ longestValue												NOTIFY longestValueChanged			)
 
 public:
 	ComboBoxBase(QQuickItem* parent = nullptr);
@@ -46,24 +47,25 @@ public:
 	void				setUp()												override;
 	ListModel*			model()										const	override	{ return _model;				}
 	void				setUpModel()										override;
-	QString				helpMD(int depth = 0)						const	override;
-	bool				hasInfo()									const	override;
+	QString				generateMDHelp(int depth = 0)				const	override;
+	QString				generateDoxygenHelp()						const	override;
+	bool				hasInfoSomewhere()									const	override;
 	void				setBoundValue(const Json::Value &value, bool emitChanges = true)	override;
 
-	const QString&		currentText()								const				{ return _currentText;			}
+	const QString&		currentLabel()								const				{ return _currentLabel;			}
 	const QString&		currentValue()								const				{ return _currentValue;			}
 	const QString&		startValue()								const				{ return _startValue;			}
 	const QString&		currentColumnType()							const				{ return _currentColumnType;	}
 	const QString&		currentColumnTypeIcon()						const				{ return _currentColumnTypeIcon;}
 	int					currentIndex()								const				{ return _currentIndex;			}
-	QString				longestValue()								const				{ return _longestValue;			}
+	QString				longestValue()								const				{ return _longestLabel;			}
 
-	std::vector<std::string> usedVariables()						const	override;
+	stringvec			usedVariables()								const	override;
 	bool				encodeValue()								const	override	{ return containsVariables();	}
 
 
 signals:
-	void currentTextChanged();
+	void currentLabelChanged();
 	void currentValueChanged();
 	void startValueChanged();
 	void currentColumnTypeChanged();
@@ -76,7 +78,7 @@ protected slots:
 	void termsChangedHandler()				override;
 	void setCurrentIndex(int index);
 	void setCurrentValue(QString value);
-	void setCurrentText(QString text);
+	void setCurrentLabel(QString label);
 	void activatedSlot(int index);
 
 	GENERIC_SET_FUNCTION(StartValue,	_startValue,	startValueChanged,	QString	)
@@ -85,8 +87,8 @@ protected:
 	bool _checkLevelsConstraints()			override;
 
 
-	ListModelLabelValueTerms*	_model					= nullptr;
-	QString						_currentText,
+	ListModelTermsAvailable*	_model					= nullptr;
+	QString						_currentLabel,
 								_currentValue,
 								_startValue,
 								_currentColumnType,
@@ -94,7 +96,7 @@ protected:
 								_currentColumnTypeIcon;
 	std::string					_unusedInitialValue;
 	int							_currentIndex			= -1;
-	QString						_longestValue;
+	QString						_longestLabel;
 
 	int	 _getStartIndex()											const;
 	void _resetItemWidth();

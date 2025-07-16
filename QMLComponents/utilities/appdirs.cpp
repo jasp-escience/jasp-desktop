@@ -74,12 +74,16 @@ QString AppDirs::userModulesDir()
 	return path;
 }
 
+QString AppDirs::userModulesLibDir()
+{
+    return AppDirs::userModulesDir() + "/module_libs/";
+}
+
 QString AppDirs::bundledModulesDir()
 {
 	static QString folder;
 #ifdef _WIN32
-	auto env = DynamicRuntimeInfo::getInstance()->getRuntimeEnvironment();
-	bool useAppdata =  env != DynamicRuntimeInfo::MSIX;
+	bool useAppdata =  DynamicRuntimeInfo::getInstance()->getRuntimeEnvironment() != RuntimeEnvironment::MSIX;
 	folder = useAppdata ? programDir().absoluteFilePath("Modules") + '/' : appData(false) + "/BundledJASPModules_" + QString(AppInfo::version.asString(4).c_str()) + "_" + QString(AppInfo::gitCommit.substr(0, 7).c_str()) + "_" + QString(AppInfo::builddate.c_str()).replace(":", "-").replace(" ", "") + "/";
 #elif __APPLE__
 	 folder = programDir().absoluteFilePath("../Modules/");
@@ -94,19 +98,29 @@ QString AppDirs::bundledModulesDir()
 	return folder;
 }
 
+QString AppDirs::bundledModulesLibDir()
+{
+	return AppDirs::bundledModulesDir() + "/module_libs/";
+}
+
 QString AppDirs::processPath(const QString & path)
 {
-#ifdef _WIN32
-	return QString::fromStdWString(Utils::getShortPathWin(path.toStdWString()));
-#else
 	return path;
-#endif
 }
 
 
 QString AppDirs::documents()
 {
 	return processPath(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
+}
+
+QString AppDirs::sandboxedDocuments()
+{
+	const QString name = "JASP_Sandbox";
+	QDir res(AppDirs::documents());
+	res.mkdir(name);
+	res.cd(name);
+	return res.absolutePath();
 }
 
 QString AppDirs::logDir()	
@@ -128,6 +142,16 @@ QString AppDirs::appData(bool roaming)
 		return processPath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 	else
 		return processPath(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
+}
+
+QString AppDirs::RtmpDir() {
+	QString tmp = appData(false) + "/R_TMP_DIR/";
+	QDir tmpDir(tmp);
+
+	if(!tmpDir.exists())
+		tmpDir.mkpath(".");
+	
+	return tmpDir.absolutePath();
 }
 
 /**
@@ -222,3 +246,13 @@ QString AppDirs::renvCacheLocations()
     return dynamicCache + separator + staticCache;
 	
 }
+
+#ifdef __APPLE__
+QString AppDirs::devModulePatchDir()
+{
+	QString path = appData();
+	path += "/_DevModulePatchDir/";
+
+	return path;
+}
+#endif

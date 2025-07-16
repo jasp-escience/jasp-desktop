@@ -1,22 +1,22 @@
 #include "dynamicruntimeinfo.h"
-#include "json/json.h"
 #include "appinfo.h"
 #include "appdirs.h"
 #include "log.h"
 #include "utilities/qutils.h"
-
 #include <fstream>
 #include <chrono>
+#include "dirs.h"
 
 
-DynamicRuntimeInfo* DynamicRuntimeInfo::_instance = nullptr;
-const std::string DynamicRuntimeInfo::staticInfoFileName = "staticRuntimeInfo.json";
-const std::string DynamicRuntimeInfo::dynamicInfoFileName = "dynamicRuntimeInfo.json";
+DynamicRuntimeInfo* DynamicRuntimeInfo::_instance			= nullptr;
+const std::string DynamicRuntimeInfo::staticInfoFileName	= "staticRuntimeInfo.json";
+const std::string DynamicRuntimeInfo::dynamicInfoFileName	= "dynamicRuntimeInfo.json";
 
 DynamicRuntimeInfo *DynamicRuntimeInfo::getInstance()
 {
     if(!_instance)
         _instance = new DynamicRuntimeInfo();
+
     return _instance;
 }
 
@@ -24,63 +24,33 @@ bool DynamicRuntimeInfo::bundledModulesInitialized()
 {
 	bool res = true;
 
-	if(_environment == RuntimeEnvironment::MSI || _environment == RuntimeEnvironment::MSIX || _environment == RuntimeEnvironment::ZIP)
+	RuntimeEnvironment environment = getRuntimeEnvironment();
+	if(environment == RuntimeEnvironment::MSI || environment == RuntimeEnvironment::MSIX || environment == RuntimeEnvironment::ZIP)
 		res = _bundledModulesInitializedSet
-			  && _initializedByCommit == AppInfo::gitCommit
-			  && _initializedByBuildDate == AppInfo::builddate
-			  && _initializedForRVersion == AppInfo::getRVersion()
+			  && _initializedByCommit		== AppInfo::gitCommit
+			  && _initializedByBuildDate	== AppInfo::builddate
+			  && _initializedForRVersion	== AppInfo::getRVersion()
 			  && _initializedForJaspVersion == AppInfo::version.asString(4);
 
 	return res;
 }
 
-DynamicRuntimeInfo::DynamicRuntimeInfo()
+MicroArch DynamicRuntimeInfo::getMicroArch()
 {
-#ifdef FLATPAK_USED
-	_environment = RuntimeEnvironment::FLATPAK;
-#elif __APPLE__
-	_environment = RuntimeEnvironment::MAC;
-#elif linux
-	_environment = RuntimeEnvironment::LINUX_LOCAL;
-#elif _WIN32
-	parseStaticRuntimeInfoFile(staticRuntimeInfoFilePath()); //will set runtime env info
-	parseDynamicRuntimeInfoFile(dynamicRuntimeInfoFilePath());
-#else
-    _environment = RuntimeEnvironment::UNKNOWN;
-#endif
-
-
 #if defined(__aarch64__)
-    _arch = MicroArch::AARCH64;
+	return MicroArch::AARCH64;
 #elif defined(__x86_64__) || defined(_M_X64)
-    _arch = MicroArch::X86_64;
+	return MicroArch::X86_64;
 #else
-    _arch = MicroArch::UNSUPPORTED;
+	return MicroArch::UNSUPPORTED;
 #endif
 }
 
-bool DynamicRuntimeInfo::parseStaticRuntimeInfoFile(const std::string &path)
+DynamicRuntimeInfo::DynamicRuntimeInfo()
 {
-	Log::log() << "Attempting to read static runtime information from: " + path << std::endl;
-	std::ifstream in(path, std::ifstream::in);
-    if(!in)
-    {
-        _environment = RuntimeEnvironment::UNKNOWN;
-        Log::log() << "Failed to open specified static runtime file" << std::endl;
-        return false;
-    }
-
-    Json::Value root;
-    in >> root;
-
-	std::string runtimeEnvironmentString = root.get("runtimeEnvironment", "").asString();
-	auto it = StringToRuntimeEnvironmentMap.find(runtimeEnvironmentString);
-	if(it == StringToRuntimeEnvironmentMap.end())
-        _environment = RuntimeEnvironment::UNKNOWN;
-    else 
-        _environment = it->second;
-
-    return true;
+#ifdef _WIN32
+	parseDynamicRuntimeInfoFile(dynamicRuntimeInfoFilePath());
+#endif
 }
 
 bool DynamicRuntimeInfo::parseDynamicRuntimeInfoFile(const std::string &path)
@@ -97,12 +67,12 @@ bool DynamicRuntimeInfo::parseDynamicRuntimeInfoFile(const std::string &path)
     Json::Value root;
     in >> root;
 
-	_bundledModulesInitializedSet = root.get("initialized", false).asBool();
-    _initializedByCommit = root.get("commit", "").asString();
-	_initializedByBuildDate = root.get("buildDate", "").asString();
-    _initializedForRVersion = root.get("RVersion", "").asString();
-	_initializedForJaspVersion = root.get("jaspVersion", "").asString();
-	_initializedOn = root.get("initTimestamp", 0).asUInt64();
+	_bundledModulesInitializedSet	= root.get("initialized",	false).asBool();
+	_initializedByCommit			= root.get("commit",		"").asString();
+	_initializedByBuildDate			= root.get("buildDate",		"").asString();
+	_initializedForRVersion			= root.get("RVersion",		"").asString();
+	_initializedForJaspVersion		= root.get("jaspVersion",	"").asString();
+	_initializedOn					= root.get("initTimestamp", 0).asUInt64();
 
     return true;
 
@@ -110,15 +80,15 @@ bool DynamicRuntimeInfo::parseDynamicRuntimeInfoFile(const std::string &path)
 
 std::string DynamicRuntimeInfo::staticRuntimeInfoFilePath()
 {
-	return fq(AppDirs::programDir().absoluteFilePath(tq(staticInfoFileName)));
+	return Dirs::exeDir() + "/" + staticInfoFileName;
 }
 
 std::string DynamicRuntimeInfo::dynamicRuntimeInfoFilePath()
 {	
 	switch (getRuntimeEnvironment()) {
-	case ZIP:
+	case RuntimeEnvironment::ZIP:
 		return fq(AppDirs::programDir().absoluteFilePath(tq(dynamicInfoFileName)));
-	case MSIX:
+	case RuntimeEnvironment::MSIX:
 		return fq(AppDirs::appData(false) + "/" + tq(dynamicInfoFileName));
 	default:
 		return "";
@@ -148,15 +118,38 @@ bool DynamicRuntimeInfo::writeDynamicRuntimeInfoFile()
 	return true;
 }
 
-DynamicRuntimeInfo::RuntimeEnvironment DynamicRuntimeInfo::getRuntimeEnvironment()
+RuntimeEnvironment DynamicRuntimeInfo::getRuntimeEnvironment()
 {
-	return _environment;
+#ifdef FLATPAK_USED
+	return RuntimeEnvironment::FLATPAK;
+#elif __APPLE__
+	return RuntimeEnvironment::MAC;
+#elif linux
+	return RuntimeEnvironment::LINUX_LOCAL;
+#elif _WIN32
+	std::string path = staticRuntimeInfoFilePath();
+	Log::log() << "Attempting to read static runtime information from: " + path << std::endl;
+	std::ifstream in(path, std::ifstream::in);
+	if(!in)
+	{
+		Log::log() << "Failed to open specified static runtime file" << std::endl;
+		return RuntimeEnvironment::UNKNOWN;;
+	}
+
+	Json::Value root;
+	in >> root;
+
+	std::string runtimeEnvironmentString = root.get("runtimeEnvironment", "").asString();
+	return RuntimeEnvironmentFromString(runtimeEnvironmentString, RuntimeEnvironment::UNKNOWN);
+#else
+	_environment = RuntimeEnvironment::UNKNOWN;
+#endif
+
 }
 
 std::string DynamicRuntimeInfo::getRuntimeEnvironmentAsString()
 {
-	auto x =  RuntimeEnvironmentToStringMap.find(_environment);
-	return x != RuntimeEnvironmentToStringMap.end() ? x->second : RuntimeEnvironmentToStringMap.find(UNKNOWN)->second;
+	return RuntimeEnvironmentToString(getRuntimeEnvironment());
 }
 
 uint64_t DynamicRuntimeInfo::bundledModulesInitializedOnTimestamp()

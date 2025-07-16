@@ -18,6 +18,8 @@ class JaspTheme : public QQuickItem
 
 	Q_PROPERTY(float              uiScale                         READ uiScale                                                                  NOTIFY uiScaleChanged                         )
 	Q_PROPERTY(float              ribbonScaleHovered              READ ribbonScaleHovered              WRITE setRibbonScaleHovered              NOTIFY ribbonScaleHoveredChanged              )
+	Q_PROPERTY(float              columnTypeScaleHovered          READ columnTypeScaleHovered          WRITE setColumnTypeScaleHovered          NOTIFY columnTypeScaleHoveredChanged          )
+	
 
 	//Colors (base):
 	Q_PROPERTY(QColor             white                           READ white                           WRITE setWhite                           NOTIFY whiteChanged                           )
@@ -165,6 +167,7 @@ class JaspTheme : public QQuickItem
 	Q_PROPERTY(QFont              fontLabel                       READ fontLabel                       WRITE setFontLabel                       NOTIFY fontLabelChanged                       )
 	Q_PROPERTY(QFont              fontRibbon                      READ fontRibbon                      WRITE setFontRibbon                      NOTIFY fontRibbonChanged                      )
 	Q_PROPERTY(QFont              fontGroupTitle                  READ fontGroupTitle                  WRITE setFontGroupTitle                  NOTIFY fontGroupTitleChanged                  )
+	Q_PROPERTY(QFont              fontGroupTitleSmall             READ fontGroupTitleSmall             WRITE setFontGroupTitleSmall             NOTIFY fontGroupTitleSmallChanged             )
 	Q_PROPERTY(QFont              fontPrefOptionsGroupTitle       READ fontPrefOptionsGroupTitle       WRITE setFontPrefOptionsGroupTitle       NOTIFY fontPrefOptionsGroupTitleChanged       )
 	Q_PROPERTY(QFont              fontALTNavTag                   READ fontALTNavTag                   WRITE setFontALTNavTag                   NOTIFY fontALTNavTagChanged                   )
 
@@ -321,7 +324,13 @@ public:
 	QString				themeName()							const	{ return _themeName;					}
 	static QString		currentIconPath();
 	bool				isDark()							const	{ return _isDark;						}
-
+	
+	float columnTypeScaleHovered() const;
+	void setColumnTypeScaleHovered(float newColumnTypeScaleHovered);
+	
+	QFont fontGroupTitleSmall() const;
+	void setFontGroupTitleSmall(const QFont &newFontGroupTitleSmall);
+	
 signals:
 	void currentThemeReady(JaspTheme * newTheme);
 	void uiScaleChanged(float uiScale);
@@ -456,7 +465,11 @@ signals:
 	void themeNameChanged(QString themeName);
 	void currentThemeNameChanged();
 	void isDarkChanged(bool isDark);
-
+	
+	void columnTypeScaleHoveredChanged();
+	
+	void fontGroupTitleSmallChanged();
+	
 public slots:
 	void setRibbonScaleHovered(float ribbonScaleHovered);
 	void setWhite(QColor white);
@@ -599,6 +612,7 @@ private:
 	static JaspTheme		* _currentTheme;
 
 	float				_ribbonScaleHovered,
+						_columnTypeScaleHovered,
 						_uiScale				= 1,	///< default for when in R, otherwise ignored
 						_maximumFlickVelocity	= 801;	///< default for when in R, otherwise ignored
 
@@ -730,6 +744,7 @@ private:
 						_fontRCode,
 						_fontCode,
 						_fontGroupTitle,
+						_fontGroupTitleSmall,
 						_fontPrefOptionsGroupTitle,
 						_fontALTNavTag;
 

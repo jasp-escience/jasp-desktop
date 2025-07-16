@@ -240,7 +240,7 @@ TableViewBase
 			boundsMovement	: Flickable.StopAtBounds
 			clip:			true
 
-			DataSetView
+			DataSetViewBase
 			{
 				z:						-1
 				id:						theView
@@ -332,7 +332,6 @@ TableViewBase
 							tableView.setButtons()
 						}
 						editable:				tableView.enabled && itemEditable && tableView.getEditable(columnIndex, rowIndex)
-						multiple:				itemInputType === "formulaArray"
 					}
 				}
 

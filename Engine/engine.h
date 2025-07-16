@@ -18,7 +18,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#include "enginebase.h"
+#include "databridge.h"
 #include "enginedefinitions.h"
 #include "ipcchannel.h"
 #include <json/json.h>
@@ -27,7 +27,7 @@
 /// The Engine handles communication between Desktop and R
 /// It can be in a variety of states _currentEngineState and can run analyses, filters, compute columns and Rcode.
 /// It also contains some utility functions for use by rbridge and by extension R
-class Engine : public EngineBase
+class Engine : public DataBridge
 {
 public:
 	typedef engineAnalysisStatus Status;
@@ -40,9 +40,9 @@ public:
 	bool					receiveMessages(int timeout = 0);
 	void					setSlaveNo(int no);
 	int						engineNum() const { return _engineNum; }
-	void					sendString(std::string message);
+	void					sendString(Json::Value message);
 
-	
+	bool					parentAlive();
 
 	Status					getAnalysisStatus() { return _analysisStatus; }
 	analysisResultStatus	getStatusToAnalysisStatus();
@@ -64,7 +64,6 @@ private:
 	void					receiveLogCfg(					const Json::Value & jsonRequest);
 	void					receiveSettings(				const Json::Value & jsonRequest);
 	void					absorbSettings(					const Json::Value & json);
-	void 					updateOptionsAccordingToMeta(					  Json::Value & options);
 
 	void					runAnalysis();
 	void					runComputeColumn(	const std::string & computeColumnName,	const std::string & computeColumnCode,	columnType computeColumnType	);
@@ -110,6 +109,7 @@ private: // Data:
 									_fixedDecimals			= false,
 									_exactPValues			= false,
 									_normalizedNotation		= true,
+									_useThousandSeps		= false,
 									_analysisPreloadData;
 	std::string						_analysisName,
 									_analysisTitle,
@@ -121,7 +121,8 @@ private: // Data:
 									_imageBackground		= "white",
 									_analysisRFile			= "",
 									_dynamicModuleCall		= "",
-									_langR					= "en";
+									_langR					= "en",
+									_qLocaleName			= "C";
 	Json::Value						_imageOptions,
 									_analysisOptions		= Json::nullValue,
 									_analysisResults;

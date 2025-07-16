@@ -22,21 +22,16 @@
  * and sometimes under windows too. hence, there are platform specific
  * implementations below */
 
-#ifdef __APPLE__
-#include <semaphore.h>
-#elif defined _WIN32
-
+#ifdef  _WIN32
 #undef Realloc
 #undef Free
-
 #include <windows.h>
-#else
-#include <boost/interprocess/sync/named_semaphore.hpp>
 #endif
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/container/string.hpp>
 #include <functional>
+#include <thread>
 
 typedef boost::interprocess::allocator<char,	boost::interprocess::managed_shared_memory::segment_manager	> CharAllocator;
 typedef boost::container::basic_string<char,	std::char_traits<char>, CharAllocator						> String;
@@ -56,13 +51,18 @@ public:
 
 	std::string lastSentMsg() const;
 
-	void send(std::string		&	data,	bool alreadyLockedMutex = false);
-	void send(std::string		&&	data,	bool alreadyLockedMutex = false);
-	bool receive(std::string	&	data,	int timeout = 0);
+	void resend();
+	void send(const std::string		&	data,	bool alreadyLockedMutex = false);
+	void send(const std::string		&&	data,	bool alreadyLockedMutex = false);
+	bool receive(	std::string		&	data,	int timeout = 0);
 
 	size_t channelNumber() { return _channelNumber; }
 
 	void findConstructAllAgain();
+
+	bool jaspAlive();
+	
+	void touchHeartbeat();
 
 private:
 	bool tryWait(int timeout = 0);
@@ -75,6 +75,14 @@ private:
 	void findConstructSizes();
 	void findConstructDataStrings();
 	void findConstructMutexes();
+
+	static bool										heartbeat(std::string path, unsigned int delayMs);
+	static std::thread								_heartbeatThread;
+
+	int64_t											_lastHeartBeatTimestamp = 0;
+	std::string										_jaspHeartBeatPath;
+	unsigned int									_heatbeatDelayS = 5;
+	unsigned int									_maxHeartbeatDiffS = 100;
 
 	std::string										_baseName,
 													_nameControl,
@@ -103,16 +111,8 @@ private:
 													_dataOutName,
 													_semaphoreInName,
 													_semaphoreOutName;
-#ifdef __APPLE__
-	sem_t										*	_semaphoreOut			= nullptr,
-												*	_semaphoreIn			= nullptr;
-#elif defined _WIN32
-	HANDLE											_semaphoreOut,
-													_semaphoreIn;
-#else
-	boost::interprocess::named_semaphore		*	_semaphoreOut			= nullptr,
-												*	_semaphoreIn			= nullptr;
-#endif
+	uint64_t										_msgIDSend				= 0,
+													_msgIDRecv				= 1;
 };
 
 #endif // IPCCHANNEL_H

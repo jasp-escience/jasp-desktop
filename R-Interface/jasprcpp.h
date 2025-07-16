@@ -18,7 +18,6 @@
 #ifndef JASPRCPP_H
 #define JASPRCPP_H
 
-#include <RInside.h>
 #include <Rcpp.h>
 #include "jasprcpp_interface.h"
 #include "columntype.h"
@@ -30,6 +29,7 @@
 Rcpp::DataFrame jaspRCPP_readFullDataSet();
 Rcpp::DataFrame jaspRCPP_readFullFilteredDataSet();
 Rcpp::DataFrame jaspRCPP_readFilterDataSet();
+Rcpp::DataFrame jaspRCPP_readCompColDataSet();
 Rcpp::DataFrame jaspRCPP_readDataSetRequested();
 Rcpp::DataFrame jaspRCPP_readDataSetSEXP(		SEXP columns, SEXP columnsAsNumeric, SEXP columnsAsOrdinal, SEXP columnsAsNominal, SEXP allColumns);
 Rcpp::DataFrame jaspRCPP_readDataSetHeaderSEXP(	SEXP columns, SEXP columnsAsNumeric, SEXP columnsAsOrdinal, SEXP columnsAsNominal, SEXP allColumns);
@@ -43,9 +43,9 @@ SEXP jaspRCPP_requestStateFileNameSEXP();
 SEXP jaspRCPP_allColumnNamesDataset();
 SEXP jaspRCPP_RunSeparateR(SEXP code);
 
-				//Custom parseEvals to make sure sink is set (to capture output)
+//Custom parseEvals to make sure sink is set (to capture output)
 void			jaspRCPP_parseEvalQNT(			const std::string & code,	bool setWd = false,	bool preface = true);
-RInside::Proxy	jaspRCPP_parseEval(				const std::string & code,	bool setWd = false,	bool preface = true);
+SEXP			jaspRCPP_parseEval(				const std::string & code,	bool setWd = false,	bool preface = true);
 std::string		jaspRCPP_parseEvalStringReturn(	const std::string & code,	bool setWd = false, bool preface = true);
 
 void			jaspRCPP_logString(		const std::string & code);
@@ -107,6 +107,7 @@ std::string				_jaspRCPP_System (				std::string cmd);
 columnType				jaspRCPP_getColumnType(			std::string columnName);
 bool					jaspRCPP_getColumnExists(		std::string columnName);
 int						jaspRCPP_getColumnAnalysisId(	std::string columnName);
+int						jaspRCPP_getColumnOriginalIndex(std::string columnName);
 std::string				jaspRCPP_createColumn(			std::string columnName);
 bool					jaspRCPP_deleteColumn(			std::string columnName);
 void					jaspRCPP_crashPlease();

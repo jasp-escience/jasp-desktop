@@ -103,6 +103,18 @@ set(AVAILABLE_R_VERSIONS
 	"R-4.4.2-x86_64"
 	"R-4.4.2-arm64"
 	"R-4.4.2-win"
+ "R-4.4.3"
+ 	"R-4.4.3-x86_64"
+  	"R-4.4.3-arm64"
+   	"R-4.4.3-win"
+"R-4.5.0"
+	  "R-4.5.0-x86_64"
+	  "R-4.5.0-arm64"
+	  "R-4.5.0-win"
+"R-4.5.1"
+	  "R-4.5.1-x86_64"
+	  "R-4.5.1-arm64"
+	  "R-4.5.1-win"
 )
 
 set(R_BINARY_HASHES
@@ -159,14 +171,29 @@ set(R_BINARY_HASHES
   "f49ad56ce3a0ac569fd8f9668749bc861b965b5e"
   "7832cb5d6cd686fd3cc54c8ab4c93c464540a944"
   "acf05881e15100144fd70c7df98dc10e57216224"
+    # 4.4.3
+  "2391e3c97b3c9f3d36001a3a3eb314a6e6efc819"
+  "2391e3c97b3c9f3d36001a3a3eb314a6e6efc819"
+  "c32bed5f8f0a7ddd31a8c5598a5a60f8b6c89073"
+  "791361bb061421ca178f4c5124cc1ee114810a4b"
+  # 4.5.0
+  "d1121c69451118c6e43d66b643c589008340f3e7"
+  "d1121c69451118c6e43d66b643c589008340f3e7"
+  "a47d9579664f0ca878b83d90416d66af2581ef9c"
+  "ed8be81b82f849e43cd85482753b0948acac0e19"
+  # 4.5.1
+  "5384a1b3458a28030fc043e64c113e3af40f4c58"
+  "5384a1b3458a28030fc043e64c113e3af40f4c58"
+  "0db802faf0e544168794a6d648c73a48c2b51a5d"
+  "612d85a0913dda78d95acf21a63489bc3b68352a"
 )
 
 
 list(APPEND CMAKE_MESSAGE_CONTEXT R)
 
 # dont forget check and upgrande Rtools version if major_minor version changed.
-set(R_VERSION "4.4.2")
-set(R_VERSION_MAJOR_MINOR "4.4")
+set(R_VERSION "4.5.1")
+set(R_VERSION_MAJOR_MINOR "4.5")
 set(CURRENT_R_VERSION ${R_VERSION_MAJOR_MINOR})
 
 if(CMAKE_OSX_ARCHITECTURES STREQUAL "arm64")
@@ -316,9 +343,9 @@ if(APPLE)
 
           fetchcontent_declare(
             gfortran_tar_gz
-            URL "${GFORTRAN_REPOSITORY}gfortran-12.0.1-20220312-is-darwin20-arm64.tar.xz"
+            URL "${GFORTRAN_REPOSITORY}gfortran-14.2-arm64.tar.xz"
             URL_HASH
-              SHA256=a2ab8be30a7d92a24f53e1509c8c0804f8502f0bc35469750e3f1e233d1c64b8
+              SHA256=77f5eb33b961eba4f9ffac015ca96dbabfd745fff6bf8883bc34c41b7208291d
             DOWNLOAD_NO_EXTRACT ON
             DOWNLOAD_NAME gfortran.tar.gz)
 
@@ -355,45 +382,25 @@ if(APPLE)
           # Downloading the gfortran
           message(CHECK_START "Downloading gfortran")
 
-          # @todo, it's probably a good idea to unpack this and provide a tar.gz like the other version
-          fetchcontent_declare(
-            gfortran_dmg
-            URL "${GFORTRAN_REPOSITORY}gfortran-8.2-Mojave.dmg"
+
+	  fetchcontent_declare(
+            gfortran_tar_gz
+            URL "${GFORTRAN_REPOSITORY}gfortran-14.2-intel.tar.xz"
             URL_HASH
-              SHA256=81d379231ba5671a5ef1b7832531f53be5a1c651701a61d87e1d877c4f06d369
+              SHA256=fae5e451ace56b97c02e909cd864095bf2a749b71db61454f4fdfd8908a71919
             DOWNLOAD_NO_EXTRACT ON
-            DOWNLOAD_NAME gfortran.dmg)
+            DOWNLOAD_NAME gfortran.tar.gz)
 
-          fetchcontent_makeavailable(gfortran_dmg)
+          fetchcontent_makeavailable(gfortran_tar_gz)
 
-          if(gfortran_dmg_POPULATED)
+          if(gfortran_tar_gz_POPULATED)
 
             message(CHECK_PASS "done.")
 
-            # message(CHECK_START "Unpacking the payloads.")
-            execute_process(WORKING_DIRECTORY ${gfortran_dmg_SOURCE_DIR}
-                            COMMAND hdiutil attach gfortran.dmg)
+            execute_process(WORKING_DIRECTORY ${gfortran_tar_gz_SOURCE_DIR}
+                            COMMAND tar xzf gfortran.tar.gz -C ${r_pkg_r_home}/)
 
-            execute_process(
-              WORKING_DIRECTORY /Volumes/gfortran-8.2-Mojave/gfortran-8.2-Mojave
-              COMMAND ${CMAKE_COMMAND} -E copy gfortran.pkg
-                      ${gfortran_dmg_SOURCE_DIR}/)
-
-            execute_process(WORKING_DIRECTORY ${gfortran_dmg_SOURCE_DIR}
-                            COMMAND xar -xf gfortran.pkg)
-
-            execute_process(WORKING_DIRECTORY ${gfortran_dmg_SOURCE_DIR}
-                            COMMAND tar -xf Payload)
-
-            execute_process(
-              WORKING_DIRECTORY ${gfortran_dmg_SOURCE_DIR}
-              COMMAND ${CMAKE_COMMAND} -E copy_directory usr/local
-                      ${r_pkg_r_home}/opt/local/)
-
-            execute_process(COMMAND hdiutil detach /Volumes/gfortran-8.2-Mojave)
-
-            set(GFORTRAN_PATH ${R_OPT_PATH}/local/gfortran/bin)
-
+            set(GFORTRAN_PATH ${R_OPT_PATH}/R/x86_64/bin)
           else()
 
             message(CHECK_FAIL "unsuccessful")
@@ -527,7 +534,7 @@ if(APPLE)
                 WORKING_DIRECTORY ${R_HOME_PATH}
                 COMMAND
                   codesign --force --verbose --deep ${CODESIGN_TIMESTAMP_FLAG} --sign
-                  ${APPLE_CODESIGN_IDENTITY} ${OPTIONS_RUNTIME}
+                  ${APPLE_CODESIGN_IDENTITY} 
                   "${R_HOME_PATH}/bin/exec/R"
                 RESULT_VARIABLE SIGNING_RESULT
                 OUTPUT_VARIABLE SIGNING_OUTPUT
@@ -833,29 +840,41 @@ elseif(LINUX)
 
 endif()
 
-set(RENV_LIBRARY                "${CMAKE_BINARY_DIR}/_cache/R/renv_library")
-set(R_CPP_INCLUDES_LIBRARY      "${CMAKE_BINARY_DIR}/Modules/Tools/R_cpp_includes_library")
-set(JASPMODULEINSTALLER_LIBRARY "${CMAKE_BINARY_DIR}/Modules/Tools/jaspModuleInstaller_library")
-set(PKGDEPENDS_LIBRARY          "${CMAKE_BINARY_DIR}/Modules/Tools/pkgdepends_library")
-set(JUNCTION_HANDLING_LIBRARY   "${CMAKE_BINARY_DIR}/Modules/Tools/junction_bootstrap_library")
+set(RENV_LIBRARY                        "${CMAKE_BINARY_DIR}/_cache/R/renv_library")
+set(R_CPP_INCLUDES_LIBRARY              "${CMAKE_BINARY_DIR}/Modules/Tools/R_cpp_includes_library")
+set(JASP_MODULE_BUNDLE_MANAGER_LIBRARY  "${CMAKE_BINARY_DIR}/Modules/Tools/jaspModuleBundleManager_library")
+set(JUNCTION_HANDLING_LIBRARY           "${CMAKE_BINARY_DIR}/Modules/Tools/junction_bootstrap_library")
 
 SET(RENV_SANDBOX                "${CMAKE_BINARY_DIR}/_cache/R/renv_sandbox")
 file(MAKE_DIRECTORY ${RENV_SANDBOX})
 # TODO: it could be nice to ship the sandbox so it can be used to install dynamic modules
 # also, the sandbox paths may need to be adjusted on windows (they are symlinks)
 
-message(STATUS "Setting up renv, Rcpp, RInside, and jaspModuleInstaller")
+message(STATUS "Setting up renv, Rcpp, RInside, and jaspModuleBundleManager, etc")
 message(STATUS "RENV_LIBRARY           = ${RENV_LIBRARY}")
 message(STATUS "R_CPP_INCLUDES_LIBRARY = ${R_CPP_INCLUDES_LIBRARY}")
 
-configure_file(${PROJECT_SOURCE_DIR}/Modules/setup_renv.R.in
-                ${SCRIPT_DIRECTORY}/setup_renv.R @ONLY)
 
+if(FLATPAK_USED)
+execute_process(
+  WORKING_DIRECTORY ${MODULES_BINARY_PATH}/../
+  COMMAND bash -c "rm -r ${MODULES_BINARY_PATH}  && ln -s /app/Modules/ ${MODULES_BINARY_PATH}"
+)
+
+else()
+##################
+# renv bootstrap  
+configure_file(${PROJECT_SOURCE_DIR}/Modules/install-renv.R.in
+                ${SCRIPT_DIRECTORY}/install-renv.R @ONLY)
+
+              
 execute_process(
   COMMAND_ECHO STDOUT
   #ERROR_QUIET OUTPUT_QUIET
   WORKING_DIRECTORY ${R_HOME_PATH}
-  COMMAND ${R_EXECUTABLE} --slave --no-restore --no-save --file=${SCRIPT_DIRECTORY}/setup_renv.R)
+  COMMAND 
+    ${R_EXECUTABLE} --slave --no-restore --no-save --file=${SCRIPT_DIRECTORY}/install-renv.R
+)
 
 if(APPLE)
   # Patch renv
@@ -873,19 +892,23 @@ if(APPLE)
       ${PROJECT_SOURCE_DIR}/Tools/CMake/Patch.cmake
   )
 endif()
-  
-configure_file(${PROJECT_SOURCE_DIR}/Modules/setup_rcpp_rinside.R.in
-                ${SCRIPT_DIRECTORY}/setup_rcpp_rinside.R @ONLY)
+
+##################
+# install rest of the tools  
+configure_file(${PROJECT_SOURCE_DIR}/Modules/install-tools.R.in
+                ${SCRIPT_DIRECTORY}/install-tools.R @ONLY)
 
 execute_process(
   COMMAND_ECHO STDOUT
   #ERROR_QUIET OUTPUT_QUIET
   WORKING_DIRECTORY ${R_HOME_PATH}
-  COMMAND ${R_EXECUTABLE} --slave --no-restore --no-save --file=${SCRIPT_DIRECTORY}/setup_rcpp_rinside.R)
+  COMMAND 
+    ${R_EXECUTABLE} --slave --no-restore --no-save --file=${SCRIPT_DIRECTORY}/install-tools.R
+    
+)
 
 if(APPLE)
-  # Patch RInside and RCpp
-  message(CHECK_START "Patching ${R_CPP_INCLUDES_LIBRARY}")
+  message(CHECK_START "Patching ${CMAKE_BINARY_DIR}/Modules/Tools/")
   execute_process(
     COMMAND_ECHO STDOUT
     #ERROR_QUIET OUTPUT_QUIET
@@ -893,13 +916,25 @@ if(APPLE)
     COMMAND
       ${CMAKE_COMMAND} -D
       NAME_TOOL_PREFIX_PATCHER=${PROJECT_SOURCE_DIR}/Tools/macOS/install_name_prefix_tool.sh
-      -D PATH=${R_CPP_INCLUDES_LIBRARY} -D R_HOME_PATH=${R_HOME_PATH} -D
+      -D PATH=${CMAKE_BINARY_DIR}/Modules/Tools/ -D R_HOME_PATH=${R_HOME_PATH} -D
       R_DIR_NAME=${R_DIR_NAME} -D SIGNING_IDENTITY=${APPLE_CODESIGN_IDENTITY}
       -D SIGNING=1 -D CODESIGN_TIMESTAMP_FLAG=${CODESIGN_TIMESTAMP_FLAG} -P
       ${PROJECT_SOURCE_DIR}/Tools/CMake/Patch.cmake
   )
 endif()
 
+endif()
+
+execute_process(
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/R-Interface
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different R/workarounds.R
+          ${MODULES_BINARY_PATH}/Tools/
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different R/symlinkTools.R
+          ${MODULES_BINARY_PATH}/Tools/)
+
+
+
+          
 include(FindRPackagePath)
 
 find_package_path(RCPP_PATH       ${R_CPP_INCLUDES_LIBRARY} "Rcpp")
@@ -937,4 +972,132 @@ if(APPLE OR LINUX)
   endif()
 endif()
 
+# ----- jags -----
+#
+# - JAGS needs GNU Bison v3, https://www.gnu.org/software/bison.
+# - With this, we can build JAGS, and link it, or even place it inside the the `R.framework`
+#   - `--prefix=${R_OPT_PATH}/jags`, with this, we inherit the R
+# - You can run `make jags-build` or `make jags-install` to just play with JAGS target
+#
+
+set(jags_HOME ${R_OPT_PATH}/jags)
+if(WIN32)
+  set(jags_VERSION_H_PATH ${jags_HOME}/include/version.h)
+else()
+  set(jags_VERSION_H_PATH ${jags_HOME}/include/JAGS/version.h)
+endif()
+
+if((NOT EXISTS ${jags_HOME}) AND (NOT LINUX))
+  message(STATUS "Creating ${jags_HOME}")
+  make_directory("${jags_HOME}")
+endif()
+
+if(WIN32)
+
+  message(STATUS "Downloading `jags`")
+  fetchcontent_declare(
+    jags_win
+    URL "https://static.jasp-stats.org/development/JAGS-4.3.1-Windows.zip"
+    URL_HASH
+      SHA256=4b168ddcc29a22c02e5c8dd61e3240ec8f940fee239b1563f63fc5b0bea60796
+  )
+
+  fetchcontent_makeavailable(jags_win)
+
+  if(jags_win_POPULATED)
+
+    message(CHECK_PASS "successful")
+
+    add_custom_command(
+      OUTPUT ${jags_VERSION_H_PATH}
+      # bin
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${jags_HOME}/x64
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${jags_HOME}/include
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              ${jags_win_SOURCE_DIR}/x64/ ${jags_HOME}/x64
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+              ${jags_win_SOURCE_DIR}/include/ ${jags_HOME}/include)
+
+    add_custom_target(
+      jags
+      JOB_POOL sequential
+      DEPENDS ${jags_VERSION_H_PATH})
+
+  else()
+    message(CHECK_FAIL "failed")
+  endif()
+
+elseif(APPLE)
+
+  # ----- Downloading and Building jags
+  if(NOT TARGET jags)
+
+    fetchcontent_declare(
+      jags
+      URL "http://static.jasp-stats.org/JAGS-4.3.1.tar.gz"
+      URL_HASH
+        SHA256=f9258355b5e9eb13bd33c5fa720f0cbebacea7d0a4a42b71b0fb14501ee14229
+    )
+
+    message(CHECK_START "Downloading 'jags'")
+
+    fetchcontent_makeavailable(jags)
+
+    if(jags_POPULATED)
+
+      message(CHECK_PASS "successful.")
+
+      set(JAGS_F77_FLAG "F77=${FORTRAN_EXECUTABLE}")
+      set(JAGS_CFLAGS
+          "-g -O2 -arch ${CMAKE_OSX_ARCHITECTURES} -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}"
+      )
+      set(JAGS_EXTRA_FLAGS_1 "--with-sysroot=${CMAKE_OSX_SYSROOT}")
+      set(JAGS_EXTRA_FLAGS_2 "--target=${CONFIGURE_HOST_FLAG}")
+      set(JAGS_CXXFLAGS "${JAGS_CFLAGS}")
+
+      add_custom_command(
+        JOB_POOL sequential
+        WORKING_DIRECTORY ${jags_SOURCE_DIR}
+        OUTPUT ${jags_VERSION_H_PATH}
+        COMMAND
+          export CFLAGS=${READSTAT_CFLAGS} && export
+          CXXFLAGS=${READSTAT_CXXFLAGS} && ${JAGS_F77_FLAG} ./configure
+          --disable-dependency-tracking --prefix=${jags_HOME}
+          ${JAGS_EXTRA_FLAGS_1} ${JAGS_EXTRA_FLAGS_2}
+        COMMAND ${MAKE}
+        COMMAND ${MAKE} install
+        COMMAND
+          ${CMAKE_COMMAND} -D
+          NAME_TOOL_PREFIX_PATCHER=${PROJECT_SOURCE_DIR}/Tools/macOS/install_name_prefix_tool.sh
+          -D PATH=${jags_HOME} -D R_HOME_PATH=${R_HOME_PATH} -D
+          R_DIR_NAME=${R_DIR_NAME} -D
+          SIGNING_IDENTITY=${APPLE_CODESIGN_IDENTITY} -D
+          SIGNING=${IS_SIGNING} -D
+          CODESIGN_TIMESTAMP_FLAG=${CODESIGN_TIMESTAMP_FLAG} -P
+          ${PROJECT_SOURCE_DIR}/Tools/CMake/Patch.cmake
+        COMMENT "----- Preparing 'jags'")
+
+      add_custom_target(
+        jags
+        JOB_POOL sequential
+        DEPENDS ${jags_VERSION_H_PATH})
+
+    else()
+
+      message(CHECK_FAIL "failed.")
+
+    endif()
+
+  endif()
+
+elseif(LINUX)
+
+  # On Linux,
+  #   we only set the jags_HOME to the /usr/local/ or /app in case of FLATPAK
+
+endif()
+
+set(jags_INCLUDE_DIRS ${jags_HOME}/include)
+set(jags_LIBRARY_DIRS ${jags_HOME}/lib)
+set(jags_PKG_CONFIG_PATH ${jags_HOME}/lib/pkgconfig/)
 list(POP_BACK CMAKE_MESSAGE_CONTEXT)

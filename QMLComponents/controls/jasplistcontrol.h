@@ -38,6 +38,7 @@ class ColumnTypesModel;
 class JASPListControl : public JASPControl
 {
 	Q_OBJECT
+	QML_ELEMENT
 
 	Q_PROPERTY( ListModel*			model							READ model																			NOTIFY modelChanged					)
 	Q_PROPERTY( QVariant			source							READ source								WRITE setSource								NOTIFY sourceChanged				)
@@ -45,7 +46,8 @@ class JASPListControl : public JASPControl
 	Q_PROPERTY( QVariant			values							READ values								WRITE setValues								NOTIFY sourceChanged				)
 	Q_PROPERTY( int					count							READ count																			NOTIFY countChanged					)
 	Q_PROPERTY( int					maxRows							READ maxRows							WRITE setMaxRows							NOTIFY maxRowsChanged				)
-	Q_PROPERTY( QString				optionKey						READ optionKey							WRITE setOptionKey																)
+	Q_PROPERTY( QString				optionKey						READ optionKeyValue						WRITE setOptionKeyValue															)
+	Q_PROPERTY( QString				optionKeyLabel					READ optionKeyLabel						WRITE setOptionKeyLabel															)
 	Q_PROPERTY( bool				addEmptyValue					READ addEmptyValue						WRITE setAddEmptyValue						NOTIFY addEmptyValueChanged			)
 	Q_PROPERTY( QString				placeholderText					READ placeholderText					WRITE setPlaceHolderText					NOTIFY placeHolderTextChanged		)
 	Q_PROPERTY( bool				containsVariables				READ containsVariables																NOTIFY containsVariablesChanged		)
@@ -68,13 +70,13 @@ class JASPListControl : public JASPControl
 
 
 public:
-	JASPListControl(QQuickItem* parent);
-	
-	virtual ListModel			*	model()						const	= 0;
+	JASPListControl(QQuickItem* parent = nullptr);
+
+	virtual ListModel			*	model()						const	{ return nullptr; } // Cannot be a pure virtual function: JASPListControl would not be a default constructible object, and could not be a QML Type
 	virtual void					setUpModel();
 			void					setUp()						override;
 			void					cleanUp()					override;
-	
+
 	const QVector<SourceItem*>	&	sourceItems()				const			{ return _sourceItems; }
 			void					applyToAllSources(std::function<void(SourceItem *sourceItem, const Terms& terms)> applyThis);
 
@@ -85,10 +87,10 @@ public:
 	virtual	bool					addRowControl(const QString& key, JASPControl* control);
 			bool					hasRowComponent()			const;
 
-			const QString		&	optionKey()					const			{ return _optionKey; }
+			const QString		&	optionKeyValue()			const		{ return _optionKeyValue; }
+			const QString		&	optionKeyLabel()			const		{ return _optionKeyLabel; }
 			JASPControl			*	getChildControl(const QString & key, const QString & name) override;
 
-	Q_INVOKABLE QString				getSourceType(QString name);
 	Q_INVOKABLE columnType			getVariableType(const QString& name);
 
 			const QVariant		&	source()					const			{ return _source;				}
@@ -99,8 +101,8 @@ public:
 			int						maxRows()					const			{ return _maxRows;				}
 			bool					addEmptyValue()				const			{ return _addEmptyValue;		}
 			const QString		&	placeholderText()			const			{ return _placeHolderText;		}
-			bool					containsVariables()			const			{ return _containsVariables;	}
-			bool					containsInteractions()		const			{ return _containsInteractions;	}
+	virtual	bool					containsVariables()			const;
+	virtual bool					containsInteractions()		const;
 			bool					encodeValue()				const override	{ return containsVariables() || containsInteractions();	}
 			bool					useSourceLevels()			const			{ return _useSourceLevels;		}
 			void					setUseSourceLevels(bool b)					{ _useSourceLevels = b;			}
@@ -152,23 +154,21 @@ signals:
 			void					allowedColumnsChanged();
 			void					allowedColumnsIconsChanged();
 
-public slots:
-			void					setContainsVariables();
-			void					setContainsInteractions();
-
 protected slots:
 	virtual void					termsChangedHandler();
 			void					_termsChangedHandler();
 			void					sourceChangedHandler();
 
-			void					setOptionKey(const QString& optionKey)	{ _optionKey = optionKey; }
+			void					setOptionKeyValue(const QString& optionKeyValue)		{ _optionKeyValue = optionKeyValue; }
+			void					setOptionKeyLabel(const QString& optionKeyLabel)		{ _optionKeyLabel = optionKeyLabel; }
 			bool					checkLevelsConstraints();
 
 protected:
-	void							_setInitialized(const Json::Value& value = Json::nullValue)	override;
+	void							_setInitialized(const Json::Value& value = Json::nullValue)				override;
 	void							_setAllowedVariables();
 	virtual bool					_checkLevelsConstraints();
 	bool							_checkLevelsConstraintsForVariable(const QString& variable);
+	JASPControls					getMDSubItems(const QQuickItem* parentItem = nullptr)			const	override;
 
 	GENERIC_SET_FUNCTION(Source,							_source,							sourceChanged,							QVariant		)
 	GENERIC_SET_FUNCTION(RSource,							_rSource,							sourceChanged,							QVariant		)
@@ -191,18 +191,17 @@ protected:
 
 private:
 	void					_setupSources();
-	Terms					_getCombinedTerms(SourceItem* sourceToCombine);			
-			
+	Terms					_getCombinedTerms(SourceItem* sourceToCombine);
+	void					_checkAllSourcesAreConnected(bool addConnect = true);
+
 protected:
 	QVector<SourceItem*>	_sourceItems;
-	QString					_optionKey							= "value";
+	QString					_optionKeyValue						= "value",
+							_optionKeyLabel						= "";
 	QVariant				_source;
 	QVariant				_rSource;
 	QVariant				_values;
 	bool					_addEmptyValue						= false,
-							_containsVariables					= false,
-							_containsInteractions				= false,
-							_termsAreInteractions				= false,
 							_useSourceLevels					= false,
 							_addAvailableVariablesToAssigned	= false,
 							_allowAnalysisOwnComputedColumns	= true,
@@ -224,5 +223,7 @@ protected:
 	ColumnTypesModel	*	_allowedTypesModel					= nullptr;
 
 };
+typedef std::vector<JASPListControl*> JASPListControls;
+
 
 #endif // JASPLISTCONTROL_H

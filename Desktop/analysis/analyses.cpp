@@ -25,6 +25,7 @@
 #include <QTimer>
 #include <QFile>
 #include "log.h"
+#include "gui/jaspConfiguration/jaspconfiguration.h"
 
 using namespace std;
 using Modules::Upgrader;
@@ -113,6 +114,11 @@ Analysis* Analyses::createFromJaspFileEntry(Json::Value analysisData, RibbonMode
 	return analysis;
 }
 
+Analysis* Analyses::create(Modules::AnalysisEntry * analysisEntry, Json::Value* options)
+{
+	return create(Json::nullValue, analysisEntry, _nextId++, Analysis::Empty, true, "", "", options);
+}
+
 Analysis* Analyses::create(const Json::Value & analysisData, Modules::AnalysisEntry * analysisEntry, size_t id, Analysis::Status status, bool notifyAll, std::string title, std::string moduleVersion, Json::Value *options)
 {
 	Analysis *analysis = new Analysis(id, analysisEntry, title, moduleVersion, options);
@@ -157,6 +163,7 @@ void Analyses::storeAnalysis(Analysis* analysis, size_t id, bool notifyAll)
 
 void Analyses::bindAnalysisHandler(Analysis* analysis)
 {
+	connect(analysis,	&Analysis::userModifiedSomething,				this, [](){ DataSetPackage::pkg()->setModified(true); });
 	connect(analysis,	&Analysis::statusChanged,						this, &Analyses::analysisStatusChanged				);
 	connect(analysis,	&Analysis::sendRScriptSignal,					this, &Analyses::sendRScriptHandler					);
 	connect(analysis,	&Analysis::sendFilterSignal,					this, &Analyses::sendFilterHandler					);
@@ -524,9 +531,16 @@ QHash<int, QByteArray>	Analyses::roleNames() const
 Analysis* Analyses::createAnalysis(const QString& module, const QString& analysis)
 {
 	Modules::DynamicModule * dynamicModule = Modules::DynamicModules::dynMods()->dynamicModule(module.toStdString());
+	Json::Value options = JASPConfiguration::getInstance()->getAnalysisOptionValues(module, analysis);
 
-	if (dynamicModule)	return create(dynamicModule->retrieveCorrespondingAnalysisEntry(fq(analysis)));
-	else				return nullptr;
+	if (dynamicModule) {
+		if(options != Json::nullValue)
+			return create(dynamicModule->retrieveCorrespondingAnalysisEntry(fq(analysis)), &options);
+		else
+			return create(dynamicModule->retrieveCorrespondingAnalysisEntry(fq(analysis)));
+	}
+	else
+		return nullptr;
 
 }
 

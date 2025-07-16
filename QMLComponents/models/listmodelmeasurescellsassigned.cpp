@@ -30,21 +30,13 @@ ListModelMeasuresCellsAssigned::ListModelMeasuresCellsAssigned(JASPListControl* 
 {
 }
 
-void ListModelMeasuresCellsAssigned::initLevels(const Terms &levels, const Terms &variables, bool initVariables)
+void ListModelMeasuresCellsAssigned::initLevels(const QList<QStringList> &combinedLevels, const Terms &variables, bool initVariables)
 {
 	beginResetModel();
 	_levels.clear();
-	vector<vector<string> > allLevels = levels.asVectorOfVectors();
 
-	for (const vector<string>& levels : allLevels)
-	{
-		string concatLevels;
-		if (levels.size() > 0)
-			concatLevels = levels[0];
-		for (uint i = 1; i < levels.size(); i++)
-			concatLevels += "," + levels[i];
-		_levels.push_back(QString::fromStdString(concatLevels));
-	}
+	for (const QStringList& levels : combinedLevels)
+		_levels.push_back(levels.join(","));
 	
 	if (initVariables)
 		_setTerms(variables);
@@ -104,13 +96,13 @@ QList<int> ListModelMeasuresCellsAssigned::indexesFromTerms(const Terms &terms) 
 	return indexes;
 }
 
-void ListModelMeasuresCellsAssigned::initTerms(const Terms &terms, const ListModel::RowControlsValues &allValuesMap, bool reInit)
+void ListModelMeasuresCellsAssigned::initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm &allValuesMap, bool reInit)
 {
 	ListModelAssignedInterface::initTerms(terms, allValuesMap, reInit);
 	_fitTermsWithLevels();
 }
 
-Terms ListModelMeasuresCellsAssigned::addTerms(const Terms& termsToAdd, int dropItemIndex, const RowControlsValues&)
+Terms ListModelMeasuresCellsAssigned::addTerms(const Terms& termsToAdd, int dropItemIndex, const Terms::RelatedValuesPerTerm&)
 {
 	if(!termsToAdd.size())
 		return Terms();
@@ -127,7 +119,7 @@ Terms ListModelMeasuresCellsAssigned::addTerms(const Terms& termsToAdd, int drop
 		{
 			const Term& newTerm = termsToAdd.at(0);
 			const Term& oldTerm = terms().at(size_t(dropItemIndex));
-			if (!oldTerm.asString().empty())
+			if (!oldTerm.value().isEmpty())
 				termsToSendBack.add(Term(oldTerm));
 			_replaceTerm(dropItemIndex, newTerm);
 		}
@@ -138,7 +130,7 @@ Terms ListModelMeasuresCellsAssigned::addTerms(const Terms& termsToAdd, int drop
 		for (size_t i = 0; i < terms().size() && index < termsToAdd.size(); i++)
 		{
 			const Term& oldTerm = terms().at(i);
-			if (oldTerm.asQString().isEmpty())
+			if (oldTerm.value().isEmpty())
 			{
 				const Term& newTerm = termsToAdd.at(index);
 				_replaceTerm(int(i), newTerm);
@@ -212,13 +204,13 @@ QVariant ListModelMeasuresCellsAssigned::data(const QModelIndex &index, int role
 	if (role == Qt::DisplayRole || role == ListModel::NameRole)
 	{
 		if (realCol == 0)
-			return terms()[size_t(realRow)].asQString();
+			return terms()[size_t(realRow)].label();
 		else
 			return _levels[realRow];
 	}
 	else if (role == ListModel::SelectableRole)
 	{
-		return realCol == 0 && !terms().at(size_t(realRow)).asString().empty();
+		return realCol == 0 && !terms().at(size_t(realRow)).value().isEmpty();
 	}
 	else if (role == ListModel::SelectedRole)
 	{

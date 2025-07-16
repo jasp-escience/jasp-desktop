@@ -69,7 +69,6 @@ public:
 		void				setEngineSync(EngineSync * engineSync);
 		void				reset(bool newDataSet = true);
 		void				setDataSetSize(size_t columnCount, size_t rowCount);
-		void				setDataSetColumnCount(size_t columnCount)			{ setDataSetSize(columnCount,			dataRowCount()); }
 		void				setDataSetRowCount(size_t rowCount)					{ setDataSetSize(dataColumnCount(),		rowCount); }
 		void				increaseDataSetColCount(size_t rowCount)			{ setDataSetSize(dataColumnCount() + 1,	rowCount); }
 
@@ -95,6 +94,8 @@ public:
 		void				waitForExportResultsReady();
 
 		void				beginLoadingData(	bool informEngines = true);
+		void				stopEngines();
+		void				restartEngines();
 		void				endLoadingData(		bool informEngines = true);
 		void				beginSynchingData(	bool informEngines = true);
 		void				endSynchingDataChangedColumns(stringvec	&	changedColumns,		bool hasNewColumns = false, bool informEngines = true);
@@ -120,8 +121,8 @@ public:
 				bool				insertColumns(	int column,		int count, const QModelIndex & aparent = QModelIndex())					override;
 				bool				removeRows(		int row,		int count, const QModelIndex & aparent = QModelIndex())					override;
 				bool				removeColumns(	int column,		int count, const QModelIndex & aparent = QModelIndex())					override;
-				QString				insertColumnSpecial(int column, const QMap<QString, QVariant>& props);
-				QString				appendColumnSpecial(			const QMap<QString, QVariant>& props);
+				QString				insertColumnSpecial(int column, const QMap<QString, QVariant>& props, bool setManualEdits=true);
+				QString				appendColumnSpecial(			const QMap<QString, QVariant>& props, bool setManualEdits=true);
 
 				QModelIndex			indexForSubNode(DataSetBaseNode * node)														const;
 				int					filteredRowCount()																			const { return _dataSet->filter()->filteredRowCount(); }
@@ -140,6 +141,7 @@ public:
 				bool				isLoaded()							const	{ return _isLoaded;						 }
 				bool				isJaspFile()						const	{ return _isJaspFile;					  } ///< for readability
 				bool				isModified()						const	{ return _isModified;					   }
+				bool				hasAnalysesWithoutData()			const	{ return _hasAnalysesWithoutData;			}
 				std::string			initialMD5()						const	{ return _initialMD5;						 }
 				bool				manualEdits()						const;
 				QString				windowTitle()						const;
@@ -162,7 +164,7 @@ public:
 				bool				currentFileIsExample()				const;
 				long				dataFileTimestamp()					const	{ return _dataSet ? _dataSet->dataFileTimestamp() : 0;	}
 				bool				isDatabaseSynching()				const	{ return _databaseIntervalSyncher.isActive();	}
-				bool				filterShouldRunInit()				const	{ return _filterShouldRunInit;					}
+				bool				filterShouldRunInit()				const	{ return _filterShouldRunInit && isLoaded();					}
 
 
 				void				setFilterShouldRunInit(bool shouldIt)				{ _filterShouldRunInit			= shouldIt;			}
@@ -186,7 +188,6 @@ public:
 				void				setLoaded(bool loaded = true);
 				void				setDescription(const QString& description);
 				
-				bool						initColumnWithStrings(			QVariant			colId,		const std::string & newName, const stringvec	& values, const stringvec	& labels=stringvec(),	const std::string & title = "", columnType desiredType = columnType::unknown, const stringset & emptyValues = stringset());
 				void						initializeComputedColumns();
 				
 				void						pasteSpreadsheet(size_t row, size_t column, const std::vector<std::vector<QString>> & values, const std::vector<std::vector<QString>> & labels, const intvec & colTypes, const QStringList & colNames, const std::vector<boolvec> & selected = {}); ///< If selected.size() >0 it is assumed to be the same size as labels/values. And it will make sure that it will only overwrite values where it is `true`
@@ -200,7 +201,8 @@ public:
 				void						columnsReorder(			const stringvec		& order);
 
 				stringvec					getColumnNames();
-				bool						isColumnDifferentFromStringValues(const std::string & columnName, const std::string & title, const stringvec & strVals, const stringvec & strLabs, const stringset & strEmptyVals);
+		std::map<std::string, columnType>	getColumnTypesMap();
+				bool						isColumnDifferentFromStringLookUps(const std::string & columnName, const std::string & title, size_t rows,	const std::function<std::string(size_t)> valueLookup, const std::function<std::string(size_t)> labelLookup, const stringset & strEmptyVals);
 				int							findIndexByName(const std::string & name)	const;
 
 				bool						getRowFilter(				int						row)		const;
@@ -233,31 +235,36 @@ public:
 				stringvec					getColumnDataStrs(					size_t				columnIndex);
 				void						setColumnName(						size_t				columnIndex, const std::string	& newName);
 				void						setColumnTitle(						size_t				columnIndex, const std::string	& newTitle);
+				void						setColumnDropLevels(				size_t					columnIndex, dropLevelsType dropLevels);
 				void						setColumnDescription(				size_t				columnIndex, const std::string	& newDescription);
 				void						setColumnComputedType(				size_t				columnIndex, computedColumnType	type);
 				void						setColumnComputedType(				const std::string &	columnName,	computedColumnType	type);
+				void						setColumnComputeFilter(				size_t columnIndex, const std::string &newFilter);
 				void						setColumnHasCustomEmptyValues(		size_t				columnIndex, bool				  hasCustomEmptyValue);
 				void						setColumnCustomEmptyValues(			size_t				columnIndex, const stringset	& customEmptyValues);
 				void						columnsReverseValues(				intset				columnIndex);
 				void						columnsSetAutoSortForColumns(		std::map<int,bool>	columnutoSort);
 				qsizetype					getMaximumColumnWidthInCharacters(	int					columnIndex)				const;
-				QStringList					getColumnLabelsAsStringList(		size_t				columnIndex)				const;
-				stringvec					getColumnLabelsAsStrVec(			size_t				columnIndex)				const;
-				boolvec						getColumnFilterAllows(				size_t				columnIndex)				const;
-				QList<QVariant>				getColumnValuesAsDoubleList(		size_t				columnIndex)				const;
+				QStringList					getColumnLabelsAsStringList(		size_t				columnIndex)				const;///< Has the same amount of levels as the data has rows!
+				stringvec					getColumnLabelsAsStrVec(			size_t				columnIndex)				const;///< Has the same amount of levels as the data has rows!
+				stringvec					getColumnLevelsAsStrVec(			size_t				columnIndex)				const;///< Has the same amount of levels as the labeleditor shows!
+				boolvec						getColumnFilterAllows(				size_t				columnIndex)				const; 
+				QList<QVariant>				getColumnValuesAsDoubleList(		size_t				columnIndex)				const; ///< Has the same amount of values as the data has rows!
 				Json::Value					serializeColumn(					const std::string & columnName)					const;
 				void						deserializeColumn(					const std::string & columnName, const Json::Value& col);
 
 				void						resetFilterAllows(					size_t				columnIndex);
 				int							filteredOut(						size_t				columnIndex)				const;
 				bool						labelNeedsFilter(					size_t				columnIndex)				const;
-				void						labelMoveRows(						size_t				columnIndex, std::vector<qsizetype> rows, bool up);
+				void						labelMoveRows(						size_t				columnIndex, std::vector<size_t> rows, bool up);
 				void						labelReverse(						size_t				columnIndex);
 				bool						setFilterData(const std::string & filter, const boolvec & filterResult);
 				void						resetAllFilters();
 				std::vector<bool>			filterVector();
 				void						setFilterVectorWithoutModelUpdate(std::vector<bool> newFilterVector) { if(_dataSet) _dataSet->filter()->setFilterVector(newFilterVector); }
 				
+	static		int							thresholdScale();
+	static		int							orderByValueByDefault();
 				const stringset&			workspaceEmptyValues()										const;
 				void						setWorkspaceEmptyValues(const stringset& emptyValues, bool resetModel = true);
 				void						setDefaultWorkspaceEmptyValues();
@@ -269,9 +276,11 @@ public:
 				stringset					columnsCreatedByAnalysis(					Analysis * analysis);
 				std::string					freeNewColumnName(size_t startHere);
 				void						dbDelete();
-				void						resetVariableTypes();
-
-
+				void						emitColumnChanged(const QString &colName); //temporary until ColumnQ exists
+				
+				
+				
+				
 signals:
 				void				datasetChanged(	QStringList				changedColumns,
 													QStringList				missingColumns,
@@ -311,6 +320,9 @@ signals:
 				void				columnsBeingRemoved(				int columnIndex, int count);
 				void				workspaceEmptyValuesChanged();
 				void				descriptionChanged();
+				void				refreshAllAnalyses();
+				void				refreshAllCompCols();
+				void				setDataMode(bool mode);
 
 public slots:
 				void				refresh()							{ beginResetModel(); endResetModel(); }
@@ -330,7 +342,10 @@ public slots:
 				bool				requestComputedColumnDestruction(	const std::string & columnName, Analysis * analysis);
 				void				checkDataSetForUpdates();
 				void				delayedRefresh();
+				void				doWalCheckPoint();
 				void				resetFilterCounters();
+				void				prepareForLanguageChange();
+				void				languageChangeDone();
 				
 private:
 				bool				isThisTheSameThreadAsEngineSync();
@@ -364,7 +379,8 @@ private:
 								_analysesHTMLReady			= false,
 								_filterShouldRunInit		= false,
 								_dataMode					= false,
-								_manualEdits				= false;
+								_manualEdits				= false,
+								_waitingForLanguageChange	= false;
 
 	Json::Value					_analysesData,
 								_database					= Json::nullValue;
@@ -379,7 +395,8 @@ private:
 							*	_labelsSubModel;
 	
 	QTimer						_databaseIntervalSyncher,
-								_delayedRefreshTimer;
+								_delayedRefreshTimer,
+								_doWalCheckPointTimer;
 	UndoStack				*	_undoStack					= nullptr;
 	
 };

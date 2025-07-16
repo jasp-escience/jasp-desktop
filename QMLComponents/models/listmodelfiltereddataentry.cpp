@@ -124,7 +124,7 @@ void ListModelFilteredDataEntry::sourceTermsReset()
 
 	Terms sourceTerms		= getSourceTerms();
 	QString colName			= (_editableColumn >= 0 && _editableColumn < _tableTerms.colNames.size()) ? _tableTerms.colNames[_editableColumn] : "";
-	_dataColumns			= sourceTerms.asQList();
+	_dataColumns			= sourceTerms.values();
 	_tableTerms.colNames	= _dataColumns;
 
 	if (_tableTerms.extraCol != "" && !_tableTerms.colNames.contains(_tableTerms.extraCol))
@@ -150,7 +150,7 @@ void ListModelFilteredDataEntry::initialValuesChanged()
 		const Terms& terms = _tableView->initialValuesControl()->model()->terms();
 		if (terms.size() > 0)
 		{
-			QList<QVariant> values = requestInfo(VariableInfo::DoubleValues, terms[0].asQString()).toList();
+			QList<QVariant> values = requestInfo(VariableInfo::DoubleValues, terms[0].value()).toList();
 			for (const QVariant& value : values)
 				_initialValues.push_back(value.toDouble());
 		}
@@ -365,7 +365,7 @@ void ListModelFilteredDataEntry::informDataSetOfInitialValues()
 		QVariantList vals;
 		for(size_t i=0; i<_initialValues.size(); i++)
 		{
-			vals.append(_acceptedRows[i] ? tq(ColumnUtils::doubleToString(_initialValues[i])) : "");
+			vals.append(_acceptedRows[i] ? QColumnUtils::doubleToString(_initialValues[i]) : "");
 			if(_acceptedRows[i])
 				somethingFilled = true;
 		}

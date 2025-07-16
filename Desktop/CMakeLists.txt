@@ -24,13 +24,14 @@ if(APPLE)
                  ${CMAKE_BINARY_DIR}/Info.plist)
 endif()
 
-configure_file(${CMAKE_CURRENT_LIST_DIR}/gui/preferencesmodel.cpp.in
-	           ${CMAKE_CURRENT_LIST_DIR}/gui/preferencesmodel.cpp)
-message(STATUS "preferencesmodel.cpp is successfully generated...")
+configure_file(${CMAKE_CURRENT_LIST_DIR}/gui/githubpat.h.in
+               ${CMAKE_CURRENT_LIST_DIR}/gui/githubpat.h)
+message(STATUS "githubpat.h is successfully generated...")
 
 
 file(GLOB_RECURSE HEADER_FILES "${CMAKE_CURRENT_LIST_DIR}/*.h")
 file(GLOB_RECURSE SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
+list(REMOVE_ITEM SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/container_permission_checker/main.cpp")
 
 file(GLOB_RECURSE BUNDLE_RESOURCES "${CMAKE_SOURCE_DIR}/Resources/*")
 
@@ -51,7 +52,7 @@ set(
 	"${PROJECT_SOURCE_DIR}/QMLComponents/components"
     CACHE
     PATH
-    "Path used to locate CMake modules by Qt Creator"
+	"Path used to locate QML modules by Qt Creator"
     FORCE
 )
 
@@ -60,6 +61,7 @@ if(IWYU_EXECUTABLE AND RUN_IWYU)
   set_target_properties(JASP PROPERTIES CXX_INCLUDE_WHAT_YOU_USE
                                         ${IWYU_EXECUTABLE})
 endif()
+
 
 add_custom_command(
   TARGET JASP
@@ -72,8 +74,24 @@ add_custom_command(
 
 add_dependencies(JASP JASPEngine)
 
-if(INSTALL_R_MODULES)
+if(WINDOWS)
+  # this little program checks for file permissions
+  message(STATUS "We will build the windows app container permission checker")
+  add_executable(ContainerFilePermissionChecker "${CMAKE_CURRENT_LIST_DIR}/container_permission_checker/main.cpp")
+  add_dependencies(JASP ContainerFilePermissionChecker)
+
+  set_target_properties(JASP PROPERTIES OUTPUT_NAME "JASPDesktop") # https://github.com/jasp-stats/jasp-issues/issues/1030
+endif()
+
+if(INSTALL_R_MODULES AND NOT FLATPAK_USED)
   add_dependencies(JASP Modules)
+  if(NOT LINUX)
+    add_dependencies(JASP jags)
+  endif()
+endif()
+
+if(LOCAL_MODULES_BUILD)
+  add_dependencies(JASP ModulesBuild)
 endif()
 
 if(APPLE)
@@ -86,7 +104,6 @@ if(WINDOWS)
   execute_process(
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMAND ${CMAKE_COMMAND} -E touch "junctions-recreated-successfully.log")
-
 endif()
 
 target_include_directories(
@@ -94,12 +111,11 @@ target_include_directories(
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
     ${PROJECT_SOURCE_DIR}/Common
-	${PROJECT_SOURCE_DIR}/Common/jaspColumnEncoder
+    ${PROJECT_SOURCE_DIR}/Common/jaspColumnEncoder
     ${PROJECT_SOURCE_DIR}/CommonData
     ${PROJECT_SOURCE_DIR}/QMLComponents
-    # ReadStat
-    $<$<PLATFORM_ID:Windows>:${RTOOLS_LIBREADSTAT_H}>
     ${LIBREADSTAT_INCLUDE_DIRS}
+    ${LIBRDATA_INCLUDE_DIRS}
     # JSONCPP
     $<$<PLATFORM_ID:Linux>:${_PKGCONFIG_LIB_JSONCPP_INCLUDEDIR}>
     $<$<BOOL:${FLATPAK_USED}>:/app/include/QtCore5Compat>
@@ -110,10 +126,11 @@ target_include_directories(
 
 target_link_libraries(
     JASP
-    PUBLIC
-    Common
+	PUBLIC
+	QMLComponentsplugin
     CommonData
-    QMLComponents
+    Common
+    $<$<PLATFORM_ID:Darwin>:compression>
     Qt::Core
     Qt::Gui
     Qt::OpenGL
@@ -148,15 +165,18 @@ target_link_libraries(
     $<$<NOT:$<BOOL:${LINUX}>>:freexl::freexl>
     # ReadStat -----------------------------------
     ${LIBREADSTAT_LIBRARIES}
-    # MinGW's ReadStat
+    # Rtools's ReadStat
     $<$<PLATFORM_ID:Windows>:${RTOOLS_LIBREADSTAT_DLL_A}>
+    # librdata -----------------------------------
+    ${LIBRDATA_LIBRARIES}
+    $<$<PLATFORM_ID:Windows>:${RTOOLS_LIBRDATA_DLL_A}>
+    $<$<PLATFORM_ID:Darwin>:librdata::librdata>
     # JSONCPP
          #$<$<PLATFORM_ID:Linux>:${_PKGCONFIG_LIB_JSONCPP_LIBRARIES}>
          #$<$<PLATFORM_ID:Linux>:${_PKGCONFIG_LIB_JSONCPP_LINK_LIBRARIES}>
     # R-Framework --------------------------------
     $<$<PLATFORM_ID:Darwin>:${_R_Framework}>
 )
-
 
 target_compile_definitions(JASP PUBLIC JASP_USES_QT_HERE)
 
@@ -165,9 +185,9 @@ if(NOT WINDOWS)
 
   target_link_libraries(
     JASP
-    PUBLIC
-      # When using Conan, we need to provide the static libraries directly, for some reason!
-      ${Iconv_LIBRARY_LIST})
+	PRIVATE
+    # When using Conan, we need to provide the static libraries directly, for some reason!
+    ${Iconv_LIBRARY_LIST})
 endif()
 
 if(LINUX)
@@ -203,22 +223,10 @@ qt_add_resources(
   FILES
   ${TRANSLATION_RESOURCE_FILES})
 
-file(GLOB_RECURSE ICONS_RESOURCE_FILES
-     "${CMAKE_CURRENT_LIST_DIR}/resources/icons/*")
-qt_add_resources(
-  JASP
-  "icons"
-  PREFIX
-  "/"
-  BASE
-  "${CMAKE_CURRENT_LIST_DIR}/resources"
-  FILES
-  ${ICONS_RESOURCE_FILES})
-
 file(GLOB_RECURSE QML_RESOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/components/*")
 qt_add_resources(
   JASP
-  "widgets"
+  "widgetsandtheme"
   PREFIX
   "/"
   BASE

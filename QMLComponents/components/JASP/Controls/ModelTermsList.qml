@@ -16,12 +16,14 @@
 // <http://www.gnu.org/licenses/>.
 //
 
-import QtQuick	2.11
-import JASP		1.0
+import QtQuick
+import JASP.Controls
+import JASP
 
 
 VariablesList
 {
+	id						: modelTermsList
 	dropMode				: JASP.DropInsert
 	name					: "modelTerms"
 	title					: qsTr("Model Terms")
@@ -30,13 +32,17 @@ VariablesList
 
 	rowComponentTitle		: qsTr("Add to null model")
 	interactionHighOrderCheckBox : "isNuisance"
+
+	property string checkedPerDefault: "randomFactors"
+
 	rowComponent			: CheckBox
 	{
 		name: "isNuisance"
 		Component.onCompleted:
 		{
-			if ((typeof(isNew) !== 'undefined') && isNew)
-				checked = (listView.getSourceType(rowValue) === "randomFactors")
+			var varList = form.getControl(modelTermsList.checkedPerDefault)
+			if ((typeof(isNew) !== 'undefined') && isNew && varList)
+				checked = varList.columnsNames.includes(rowValue)
 		}
 	}
 }

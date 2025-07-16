@@ -1,5 +1,6 @@
-import QtQuick 2.9
-import QtQuick.Controls 2.2
+import QtQuick
+import QtQuick.Controls
+import JASP.Controls
 
 
 Item
@@ -43,6 +44,32 @@ Item
 		height:				20 * preferencesModel.uiScale
 		text:				fileMenuModel.currentFile.getHeaderText()	//For shorcut key
 		font:				jaspTheme.font
+	}
+	
+	ScrollMoreIndicator
+	{
+		anchors
+		{
+			top:			headListLabel.bottom
+			left:			parent.left
+			right:			parent.right
+		}
+		
+		upsideDown:	true
+		extraSpace:	currentFileList.contentY
+	}
+	
+	ScrollMoreIndicator
+	{
+		anchors
+		{
+			left:			 parent.left
+			right:			 parent.right
+			bottom:			 parent.bottom
+		}
+		
+		upsideDown:	false
+		extraSpace:	currentFileList.contentHeight - (currentFileList.contentY + currentFileList.height)
 	}
 	 
 	FileList

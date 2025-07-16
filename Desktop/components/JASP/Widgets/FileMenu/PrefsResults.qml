@@ -1,15 +1,11 @@
-import QtQuick			2.11
-import QtQuick.Controls 2.4
-import JASP.Widgets		1.0
+import QtQuick
+import QtQuick.Controls
+import JASP.Widgets
+import JASP.Controls
 
-import JASP.Controls	1.0
-
-ScrollView
+PrefsScrollView
 {
 	id:						scrollPrefs
-	focus:					true
-	onActiveFocusChanged:	if(activeFocus) displayExactPVals.forceActiveFocus();
-	Keys.onLeftPressed:		resourceMenu.forceActiveFocus();
 
 	Column
 	{
@@ -37,8 +33,8 @@ ScrollView
 				label:					qsTr("Display exact p-values")
 				checked:				preferencesModel.exactPValues
 				onCheckedChanged:		preferencesModel.exactPValues = checked
-				
-				KeyNavigation.tab:			useNormalizedNotation
+				focus:					true
+				KeyNavigation.tab:		useNormalizedNotation
 			}
 
 			CheckBox

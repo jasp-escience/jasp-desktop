@@ -1243,7 +1243,7 @@ void JaspTheme::setThemeName(QString themeName)
 	_themeName = themeName;
 	emit themeNameChanged(_themeName);
 
-	setIconPath("qrc:/icons/" + _themeName + "/");
+	setIconPath("qrc:/jasp-stats.org/imports/JASP/Controls/icons/" + _themeName + "/");
 
 	if(_currentTheme == this)
 		emit currentThemeNameChanged();
@@ -1317,4 +1317,30 @@ void JaspTheme::updateFontMetrics()
 {
 	if(currentTheme())
 		_fontMetrics = QFontMetricsF(currentTheme()->font());
+}
+
+float JaspTheme::columnTypeScaleHovered() const
+{
+	return _columnTypeScaleHovered;
+}
+
+void JaspTheme::setColumnTypeScaleHovered(float newColumnTypeScaleHovered)
+{
+	if (qFuzzyCompare(_columnTypeScaleHovered, newColumnTypeScaleHovered))
+		return;
+	_columnTypeScaleHovered = newColumnTypeScaleHovered;
+	emit columnTypeScaleHoveredChanged();
+}
+
+QFont JaspTheme::fontGroupTitleSmall() const
+{
+	return _fontGroupTitleSmall;
+}
+
+void JaspTheme::setFontGroupTitleSmall(const QFont &newFontGroupTitleSmall)
+{
+	if (_fontGroupTitleSmall == newFontGroupTitleSmall)
+		return;
+	_fontGroupTitleSmall = newFontGroupTitleSmall;
+	emit fontGroupTitleSmallChanged();
 }

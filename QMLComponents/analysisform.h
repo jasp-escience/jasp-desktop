@@ -44,6 +44,8 @@ class RSyntax;
 class AnalysisForm : public QQuickItem
 {
 	Q_OBJECT
+	QML_ELEMENT
+
 	Q_PROPERTY(QString		title					READ title					WRITE setTitle					NOTIFY titleChanged					)
 	Q_PROPERTY(QString		errors					READ errors													NOTIFY errorsChanged				)
 	Q_PROPERTY(QString		warnings				READ warnings												NOTIFY warningsChanged				)
@@ -79,12 +81,13 @@ public:
 	bool					runOnChange()	{ return _runOnChange; }
 	void					setRunOnChange(bool change);
 	void					blockValueChangeSignal(bool block, bool notifyOnceUnblocked = true);
-	QString					title()							const	{ return _analysis ? tq(_analysis->title())		: "";		}
-	QString					name()							const	{ return _analysis ? tq(_analysis->name())		: "";		}
-	QString					module()						const	{ return _analysis ? tq(_analysis->module())	: "";		}
-	QString					version()						const	{ return _analysis ? tq(_analysis->moduleVersion().asString()) : "";	}
-	bool					hasVolatileNotes()				const	{ return _hasVolatileNotes;									}
-	bool					wasUpgraded()					const	{ return _analysis ? _analysis->wasUpgraded() : false;		}
+	QString					title()							const	{ return _analysis ? tq(_analysis->title())						: "";		}
+	QString					titleDefault()					const	{ return _analysis ? tq(_analysis->titleDefault())				: "";		}
+	QString					name()							const	{ return _analysis ? tq(_analysis->name())						: "";		}
+	QString					module()						const	{ return _analysis ? tq(_analysis->module())					: "";		}
+	QString					version()						const	{ return _analysis ? tq(_analysis->moduleVersion().asString())	: "";		}
+	bool					hasVolatileNotes()				const	{ return _hasVolatileNotes;													}
+	bool					wasUpgraded()					const	{ return _analysis ? _analysis->wasUpgraded() : false;						}
 	bool					formCompleted()					const	{ return _formCompleted;	}
 	bool					showRButton()					const	{ return _showRButton;		}
 	bool					developerMode()					const	{ return _developerMode;	}
@@ -94,15 +97,13 @@ public:
 public slots:
 	void					runScriptRequestDone(		const QString		&	result, const QString & requestId, bool hasError);
 	void					filterByNameDone(			const QString		&	name,	const QString & error);
-	void					setAnalysis(				AnalysisBase		*	analysis);
 	void					boundValueChangedHandler(	JASPControl			*	control);
 	void					setOptionNameConversion(	const QVariantList	&	conv);
 	void					setTitle(					QString					title);
 	void					setShowRButton(				bool					showRButton);
 	void					setDeveloperMode(			bool					developerMode);
-	void					setRSyntaxText();
-	void					setShowAllROptions(			bool				showAllROptions);
-	void					sendRSyntax(				QString				text);
+	void					setShowAllROptions(			bool					showAllROptions);
+	void					sendRSyntax(				QString					text);
 	void					toggleRSyntax();
 
 signals:
@@ -132,7 +133,7 @@ signals:
 public:
 	ListModel			*	getModel(const QString& modelName)								const	{ return _modelMap.count(modelName) > 0 ? _modelMap[modelName] : nullptr;	} // Maps create elements if they do not exist yet
 	void					addModel(ListModel* model)												{ if (!model->name().isEmpty())	_modelMap[model->name()] = model;			}
-	JASPControl			*	getControl(const QString& name)											{ return _controls.contains(name) ? _controls[name] : nullptr;				}
+	Q_INVOKABLE JASPControl* getControl(const QString& name)										{ return _controls.contains(name) ? _controls[name] : nullptr;				}
 	void					addListView(JASPListControl* listView, JASPListControl* sourceListView);
 	void					addControl(JASPControl* control);
 
@@ -143,15 +144,18 @@ public:
 	Q_INVOKABLE void		addFormError(const QString& message);
 	Q_INVOKABLE void		addFormWarning(const QString& message);
 	Q_INVOKABLE void		refreshAnalysis();
+	Q_INVOKABLE QVariant    getConstant(QString key, QVariant defaultValue) const;
+	Q_INVOKABLE QVariant    getConstant(QString key, QVariant defaultValue, QString module, QString analysis) const;
 	Q_INVOKABLE bool		initialized()			const	{ return _initialized; }
-	Q_INVOKABLE QString		generateWrapper()		const;
-	Q_INVOKABLE QString		parseOptions(QString options);
-
+	QString					generateWrapper(const QString& moduleName, const QString& analysisName, const QString& qmlFileName, const QString& analysisTitle, bool preloadData);
+	bool					parseOptions(std::string rawOptions, Json::Value& parsedOptions, std::string& errorMsg);
+	void					setAnalysis(AnalysisBase *	analysis);
 	void					addControlError(JASPControl* control, QString message, bool temporary = false, bool warning = false, bool closeable = true);
 	void					clearControlError(JASPControl* control);
+	void					clearAllErrors();
 	void					cleanUpForm();
 	bool					hasError();
-	QString					getError();
+	QString					getError(bool withControlName = false);
 
 	bool					isOwnComputedColumn(const std::string& col)			const	{ return _analysis ? _analysis->isOwnComputedColumn(col) : false; }
 
@@ -204,6 +208,7 @@ private:
 	void			setAnalysisUp();
 	stringvecvec	_getValuesFromJson(const Json::Value& jsonValues, const QStringList& searchPath);
 	QString			msgsListToString(const QStringList & list) const;
+	void			lockOptions();
 
 private slots:
 	   void			formCompletedHandler();
@@ -239,7 +244,6 @@ private:
 	RSyntax										*	_rSyntax						= nullptr;
 	bool											_showRButton					= false,
 													_developerMode					= false;
-	QString											_rSyntaxText;
 	JASPControl*									_activeJASPControl				= nullptr;
 };
 

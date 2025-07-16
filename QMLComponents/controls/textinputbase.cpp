@@ -18,7 +18,6 @@
 
 #include "textinputbase.h"
 #include "analysisform.h"
-#include "utils.h"
 #include "columnutils.h"
 
 using namespace std;
@@ -29,30 +28,6 @@ TextInputBase::TextInputBase(QQuickItem* parent)
 	_controlType = ControlType::TextField;
 }
 
-QString TextInputBase::_getPercentValue(double dblVal)
-{
-	double doubleValue = dblVal * 100; // The value is stored as a double from 0...1, but is displayed as a percent number
-	doubleValue = std::max(0., std::min(100., doubleValue));
-
-	int decimals = property("decimals").toInt();
-	return QString::number(doubleValue, 'f', decimals);
-}
-
-QString TextInputBase::_getIntegerArrayValue(const std::vector<int>& intValues)
-{
-	QString value;
-	bool first  = true;
-	for (int intValue : intValues)
-	{
-		if (!first)
-			value += ",";
-		first = false;
-		value += QString::number(intValue);
-	}
-
-	return value;
-}
-
 QString TextInputBase::_getDoubleArrayValue(const std::vector<double>& doubleValues)
 {
 	QString value;
@@ -60,9 +35,9 @@ QString TextInputBase::_getDoubleArrayValue(const std::vector<double>& doubleVal
 	for (double doubleValue : doubleValues)
 	{
 		if (!first)
-			value += ",";
+			value += ";";
 		first = false;
-		value += QString::number(doubleValue);
+		value += QColumnUtils::doubleToString(doubleValue);
 	}
 
 	return value;
@@ -73,31 +48,30 @@ void TextInputBase::bindTo(const Json::Value& value)
 	switch (_inputType)
 	{
 	case TextInputType::IntegerInputType:
-		if (value.isNumeric())		_value = value.asInt();
-		else if (value.isString())	_value = std::stoi(value.asString());
+		int intVal;
+		if (value.isNumeric())		
+			_value = value.asInt();
+		
+		else if (value.isString() && QColumnUtils::getIntValue(tq(value.asString()), intVal))
+			_value = intVal;
+		
 		break;
+		
 	case TextInputType::NumberInputType:
 	case TextInputType::PercentIntputType:
 	{
 		double dblVal = 0;
-		if (value.isNumeric())		dblVal = value.asDouble();
-		else if (value.isString())	dblVal = std::stod(value.asString());
-		if (_inputType == TextInputType::PercentIntputType)
-			_value = _getPercentValue(dblVal);
-		else
-			_value = dblVal;
+		if (value.isNumeric())		
+			dblVal = value.asDouble();
+		
+		else if (value.isString() && !QColumnUtils::getDoubleValue(tq(value.asString()), dblVal))
+			dblVal = NAN;
+			
+		_value = dblVal; //Stored as the user enters (so 0-100), but sent in json / 100 through
+		//This mean the "bound value" is 0...1 so:
+		if(_inputType == TextInputType::PercentIntputType)
+			_value = dblVal * 100.0;
 
-		break;
-	}
-	case TextInputType::IntegerArrayInputType:
-	{
-		std::vector<int> arrayVal;
-		if (value.isArray())
-		{
-			for (const Json::Value& oneValue : value)
-				if (oneValue.isNumeric())	arrayVal.push_back(oneValue.asInt());
-		}
-		_value = _getIntegerArrayValue(arrayVal);
 		break;
 	}
 	case TextInputType::DoubleArrayInputType:
@@ -106,52 +80,78 @@ void TextInputBase::bindTo(const Json::Value& value)
 		if (value.isArray())
 		{
 			for (const Json::Value& oneValue : value)
-				if (oneValue.isNumeric())	arrayVal.push_back(oneValue.asDouble());
+				if (oneValue.isNumeric())
+					arrayVal.push_back(oneValue.asDouble());
 		}
 		_value = _getDoubleArrayValue(arrayVal);
 		break;
 	}
 	case TextInputType::FormulaType:
-	case TextInputType::FormulaArrayType:
 	{
-		QString strValue;
-		if (value.isString())	strValue = tq(value.asString());
-		_value = strValue;
-		setIsRCode();
+		// If it is already numeric, no need to parse it.
+		// This also avoid parsing infinite value: a QVariant with an infinite value gives "inf" as string value,
+		// which gives an error when parsed by R.
+		bool setRealValue = true;
 
-		if (!strValue.isEmpty())
+		if (value.isNumeric())
+			_value = value.asDouble();
+		else if (value.isString())
 		{
-			if (_inputType == TextInputType::FormulaType)	runRScript("as.character("   + strValue + ")",					true);
-			else											runRScript("paste(as.array(" + strValue + "), collapse=\"|\")",	true);
+			double dblVal = 0;
+			QString strValue = tq(value.asString());
+			if (!strValue.isEmpty() && !QColumnUtils::getDoubleValue(strValue, dblVal))
+			{
+				setIsRCode();
+				runRScript("as.character(" + _value.toString() + ")", true);
+				setRealValue = false;
+			}
+			else
+				_value = dblVal;
 		}
+		else
+			_value = QVariant();
+
+		if (setRealValue)
+			setProperty("realValue", _value);
+
 		break;
 	}
 	case TextInputType::ComputedColumnType:
 	{
-		if (value.isString())	_value = tq(value.asString());
+		if (value.isString())	
+			_value = tq(value.asString());
+		
 		setIsColumn(true);
 		checkIfColumnIsFreeOrMine();
 		break;
 	}
 	case TextInputType::CheckColumnFreeOrMineType:
 	{
-		if (value.isString())	_value = tq(value.asString());
+		if (value.isString())	
+			_value = tq(value.asString());
+		
 		checkIfColumnIsFreeOrMine();
 		break;
 	}
 	case TextInputType::AddColumnType:
 	{
-		if (value.isString())	_value = tq(value.asString());
+		if (value.isString())	
+			_value = tq(value.asString());
+		
 		columnType	colType		= static_cast<columnType>(property("columnType").toInt());
 		setIsColumn(false, colType);
 		checkIfColumnIsFreeOrMine();
 		break;
 	}
+		
 	default:
-	{
-		if (value.isString())	_value = tq(value.asString());
+		if (value.isString())
+			_value = tq(value.asString());
+		else if (value.isInt())
+			_value = value.asInt();
+		else if (value.isDouble())
+			_value = value.asDouble();
 		break;
-	}
 	}
 
 	setDisplayValue();
@@ -173,10 +173,8 @@ bool TextInputBase::isJsonValid(const Json::Value &value) const
 	bool valid = false;
 	switch (_inputType)
 	{
-	case TextInputType::IntegerArrayInputType:
-	case TextInputType::DoubleArrayInputType:
-	case TextInputType::FormulaArrayType:		valid = value.isArray(); break;
-	default:									valid = value.isNumeric() || value.isString(); break;
+	case TextInputType::DoubleArrayInputType:	valid = value.isArray();						break;
+	default:									valid = value.isNumeric() || value.isString();	break;
 	}
 	return valid;
 }
@@ -188,13 +186,11 @@ void TextInputBase::setUp()
 		 if (type == "integer")			_inputType = TextInputType::IntegerInputType;
 	else if (type == "number")			_inputType = TextInputType::NumberInputType;
 	else if (type == "percent")			_inputType = TextInputType::PercentIntputType;
-	else if (type == "integerArray")	_inputType = TextInputType::IntegerArrayInputType;
 	else if (type == "doubleArray")		_inputType = TextInputType::DoubleArrayInputType;
 	else if (type == "computedColumn")	_inputType = TextInputType::ComputedColumnType;
 	else if (type == "checkColumn")		_inputType = TextInputType::CheckColumnFreeOrMineType;
 	else if (type == "addColumn")		_inputType = TextInputType::AddColumnType;
 	else if (type == "formula")			_inputType = TextInputType::FormulaType;
-	else if (type == "formulaArray")	_inputType = TextInputType::FormulaArrayType;
 	else								_inputType = TextInputType::StringInputType;
 
 	_parseDefaultValue = property("parseDefaultValue").toBool();
@@ -207,15 +203,38 @@ void TextInputBase::setUp()
 		connect(form(), &AnalysisForm::languageChanged, this, &TextInputBase::setDisplayValue);
 
 	if (_value.isNull()) // If the value is not directly set, use the default value.
-		setValue(_defaultValue);
+		setValue(_defaultValue, false);
 
 	JASPControl::setUp(); // It might need the _inputType, so call it after it is set.
 }
 
 void TextInputBase::setDisplayValue()
 {
-	if(property("displayValue") != _value)
-		setProperty("displayValue", _value);
+	int		valueInt;
+	double	valueDbl;
+	bool	isInt = (_value.typeId() == QMetaType::Int),
+			isDbl = (_value.typeId() == QMetaType::Double);
+
+	if (isInt)
+		valueInt = _value.toInt();
+	else if (isDbl)
+		valueDbl = _value.toDouble();
+	else
+	{
+		isInt = QColumnUtils::getIntValue(	_value.toString(), valueInt);
+		isDbl = QColumnUtils::getDoubleValue(	_value.toString(), valueDbl);
+	}
+	
+	QString showThis = _value.toString();
+	
+	if(isInt)
+		showThis = QString::number(valueInt); //QColumnUtils::currentQLocale().toString(valueInt);
+
+	else if(isDbl) // Can be also a formula
+		showThis = QColumnUtils::doubleToString(valueDbl);
+
+	if(property("displayValue") != showThis)
+		setProperty("displayValue", showThis);
 }
 
 void TextInputBase::rScriptDoneHandler(const QString &result)
@@ -231,7 +250,8 @@ void TextInputBase::rScriptDoneHandler(const QString &result)
 	bool succes = true;
 	for (const QString& valStr : results)
 	{
-		double val = valStr.toDouble(&succes);
+		double val;
+		succes = QColumnUtils::getDoubleValue(valStr, val);
 
 		if (!succes)
 		{
@@ -239,6 +259,12 @@ void TextInputBase::rScriptDoneHandler(const QString &result)
 			setHasScriptError(true);
 			break;
 		}
+		else
+		{
+			clearControlError();
+			setHasScriptError(false);
+		}
+
 
 		if (!_formulaResultInBounds(val))
 		{
@@ -262,21 +288,31 @@ void TextInputBase::rScriptDoneHandler(const QString &result)
 
 QString TextInputBase::friendlyName() const
 {
-	switch (_inputType)
+	switch (_inputType)	
 	{
 	case TextInputType::IntegerInputType:			return tr("Integer Field");
 	case TextInputType::NumberInputType:			return tr("Double Field");
 	case TextInputType::PercentIntputType:			return tr("Percentage Field");
-	case TextInputType::IntegerArrayInputType:		return tr("Integers Field");
 	case TextInputType::DoubleArrayInputType:		return tr("Doubles Field");
 	case TextInputType::AddColumnType:				return tr("Add Column Field");
 	case TextInputType::ComputedColumnType:			return tr("Add Computed Column Field");
 	case TextInputType::CheckColumnFreeOrMineType:	return tr("Column-name-is-free field");
 	case TextInputType::FormulaType:				return tr("Formula Field");
-	case TextInputType::FormulaArrayType:			return tr("Formulas Field");
 	case TextInputType::StringInputType:
 	default:										return tr("Text Field");
 	}
+}
+
+QVariant TextInputBase::defaultValue() const	
+{ 
+	return _defaultValue;
+}
+
+QVariant TextInputBase::value() const	
+{ 
+	QVariant showThis = _value.isNull() ? _defaultValue : _value; 
+	
+	return showThis;	
 }
 
 void TextInputBase::checkIfColumnIsFreeOrMine()
@@ -329,48 +365,71 @@ bool TextInputBase::_formulaResultInBounds(double result)
 	return inBounds;
 }
 
-Json::Value TextInputBase::_getJsonValue(const QVariant& value) const
+Json::Value TextInputBase::_getJsonValue(QVariant value) const
 {
+	int		valueInt;
+	double	valueDbl;
+	bool	isInt,
+			isDbl;
+	
+	isInt = QColumnUtils::getIntValue(		value.toString(), valueInt);
+	isDbl = QColumnUtils::getDoubleValue(	value.toString(), valueDbl);
+	
 	switch (_inputType)
 	{
-	case TextInputType::IntegerInputType:		return (value.toInt());
-	case TextInputType::NumberInputType:		return value.toDouble();
-	case TextInputType::PercentIntputType:		return std::min(std::max(value.toDouble(), 0.0), 100.0) / 100;
-	case TextInputType::IntegerArrayInputType:
+	case TextInputBase::FormulaType:			return isDbl ? Json::Value(valueDbl) : fq(value.toString()); // Keep it as string and do not try to make it an integer or a double
+	case TextInputType::IntegerInputType:		return isInt ? valueInt : 0;
+	case TextInputType::NumberInputType:		return isDbl ? valueDbl : 0;
+	case TextInputType::PercentIntputType:		return std::min(std::max(isDbl ? valueDbl : 0, 0.0), 100.0) / 100;
 	case TextInputType::DoubleArrayInputType:
 	{
 		QString str = value.toString();
-		str.replace(QString(" "), QString(","));
+		str.replace(QString(" "), QString(";"));
 		Json::Value values(Json::arrayValue);
-		QStringList chunks = str.split(QChar(','), Qt::SkipEmptyParts);
+		QStringList chunks = str.split(QChar(';'), Qt::SkipEmptyParts);
 
 		for (QString &chunk: chunks)
 		{
 			bool ok;
 			if (_inputType == TextInputType::IntegerInputType)
 			{
-				int value = chunk.toInt(&ok);
-				if (ok)	values.append(value);
+				int value;
+				ok = QColumnUtils::getIntValue(chunk, value);
+				
+				if (ok)	
+					values.append(value);
 			}
 			else
 			{
-				double value = chunk.toDouble(&ok);
-				if (ok)	values.append(value);
+				double valueDbl;
+				ok		= QColumnUtils::getDoubleValue(chunk, valueDbl);
+				
+				if (ok)	
+					values.append(valueDbl);
 			}
 		}
 		return values;
 	}
-	default:	return fq(value.toString());
+	default:	
+		return isInt ? Json::Value(valueInt) 
+					 : isDbl ? Json::Value(valueDbl) 
+							 : fq(value.toString());
 	}
 }
 
 void TextInputBase::valueChangedSlot()
 {
-	setValue(property("displayValue"));
+	QVariant prop = property("displayValue");
+
+	setValue(prop);
 }
 
-void TextInputBase::setValue(const QVariant &value)
+void TextInputBase::setValue(QVariant value, bool useLocale)
 {
+	double valueDbl;
+	if(QColumnUtils::getDoubleValue(value.toString(), valueDbl, useLocale))
+		value = valueDbl;	
+	
 	bool hasChanged = _value != value;
 	_value = value;
 	
@@ -383,32 +442,63 @@ void TextInputBase::setValue(const QVariant &value)
 	{
 		emit valueChanged();
 
-		if (_initialized)
+		if (initialized())
 			_setBoundValue();
 	}
 }
 
+void TextInputBase::setDefaultValue(QVariant value)
+{
+	double valueDbl;
+	if(QColumnUtils::getDoubleValue(value.toString(), valueDbl, false)) // Don't use locale with default value: they are set by the analysis, not by the user.
+		value = valueDbl;
+		
+	bool	hasChanged	= _defaultValue !=  value,
+			curValIsDef	= _defaultValue == _value;
+	
+	_defaultValue = value;
+	
+	if(hasChanged)
+		emit defaultValueChanged();
+	
+	if(curValIsDef)
+		setValue(_defaultValue, false);
+}
+
 void TextInputBase::_setBoundValue()
 {
-	if (_inputType == TextInputType::FormulaType || _inputType == TextInputType::FormulaArrayType)
+	if (_inputType == TextInputType::FormulaType)
 	{
-		QString strValue = _value.toString();
+		double valueDbl = 0;
+		bool isDbl = QColumnUtils::getDoubleValue(_value.toString(), valueDbl);
 
-		// _formula might be empty (in TableView the FormulaType is not directly bound, and has its own model).
-		if (boundValue().asString() != fq(strValue))
+		if (isDbl)
 		{
-			if (!_parseDefaultValue && _defaultValue == _value)
+			if (_formulaResultInBounds(valueDbl))
 			{
-				// The value is the same as the default value and this default value should not be parsed (this might be just a string like '...')
-				// So just set this value and emit that the formula is succesfully checked without running the R script.
-				setBoundValue(fq(strValue));
+				setProperty("realValue", _value);
+				setBoundValue(_getJsonValue(_value));
+				clearControlError();
+				setHasScriptError(false);
 				emit formulaCheckSucceeded();
 			}
-			else if (_inputType == TextInputType::FormulaType)
-				runRScript("as.character(" + strValue + ")", true);
-			else
-				runRScript("paste(as.array(" + strValue + "), collapse=\"|\")", true);
+		}
+		else
+		{
+			QString strValue = _value.toString();
 
+			// _formula might be empty (in TableView the FormulaType is not directly bound, and has its own model).
+			if (boundValue().asString() != fq(strValue))
+			{
+				if (!_parseDefaultValue && _defaultValue == _value)
+				{
+					// The value is the same as the default value and this default value should not be parsed (this might be just a string like '...')
+					// So just set this value and emit that the formula is succesfully checked without running the R script.
+					setBoundValue(fq(strValue));
+					emit formulaCheckSucceeded();
+				}
+				runRScript("as.character(" + strValue + ")", true);
+			}
 		}
 	}
 	else setBoundValue(_getJsonValue(_value));

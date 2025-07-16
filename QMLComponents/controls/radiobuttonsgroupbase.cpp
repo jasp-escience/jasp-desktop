@@ -45,6 +45,33 @@ void RadioButtonsGroupBase::setUp()
 	connect(this, &RadioButtonsGroupBase::initializedChanged, this, &RadioButtonsGroupBase::_setCheckedButtonHandler);
 }
 
+QString RadioButtonsGroupBase::generateDoxygenHelp() const
+{
+	QString result = JASPControl::generateDoxygenHelp();
+	if (result.isEmpty())
+		return result;
+
+	result += "#' \\itemize{\n";
+
+	for (const RadioButtonBase* button : _buttons)
+	{
+		QString value = button->property("value").toString();
+		if (value.isEmpty())
+			continue;
+		result += "#'   \\item \\code{\"" + value + "\"}";
+		if (_defaultValue == value)
+			result += " (default) ";
+		QString info = button->info();
+		if (!info.isEmpty())
+			result += ": " + info;
+		result += "\n";
+	}
+
+	result += "#' }\n";
+
+	return result;
+}
+
 void RadioButtonsGroupBase::_setCheckedButtonHandler()
 {
 	if (checkedButton()) return;
@@ -89,10 +116,12 @@ void RadioButtonsGroupBase::registerRadioButton(RadioButtonBase* button)
 
 void RadioButtonsGroupBase::unregisterRadioButton(RadioButtonBase* button)
 {
-	_buttons.remove(button);
-	if (button == _selectedButton && _buttons.size() > 0)
-		_setCheckedButton(*_buttons.begin());
-	emit buttonsChanged();
+	if (_buttons.remove(button))
+	{
+		if (button == _selectedButton && _buttons.size() > 0 && initialized())
+			_setCheckedButton(*_buttons.begin());
+		emit buttonsChanged();
+	}
 }
 
 void RadioButtonsGroupBase::radioButtonValueChanged(RadioButtonBase *button)
@@ -119,6 +148,15 @@ void RadioButtonsGroupBase::setDefaultValue(const QString &defaultValue)
 
 	_defaultValue = defaultValue;
 	emit defaultValueChanged();
+}
+
+void RadioButtonsGroupBase::unregisterAll()
+{
+	setUnitialized();
+	auto buttonsTmp = _buttons;
+	for(auto* button : buttonsTmp) {
+		button->unregisterRadioButton();
+	}
 }
 
 void RadioButtonsGroupBase::bindTo(const Json::Value &jsonValue)

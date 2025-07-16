@@ -1,6 +1,6 @@
-import QtQuick.Controls 6.0
-import QtQuick.Layouts	1.0
-import QtQuick			2.15
+import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick
 
 
 Rectangle
@@ -23,7 +23,7 @@ Rectangle
 			objectName:					"filterWindow"
 			SplitView.minimumHeight:	desiredMinimumHeight
 			SplitView.preferredHeight:	desiredHeight
-			SplitView.maximumHeight:	rootDataset.height * 0.8
+			SplitView.maximumHeight:	splitViewData.height
 
 		}
 
@@ -32,7 +32,7 @@ Rectangle
 			id:							variablesWindow
 			SplitView.minimumHeight:	calculatedMinimumHeight
 			SplitView.preferredHeight:	calculatedPreferredHeight
-			SplitView.maximumHeight:	calculatedMaximumHeight
+			SplitView.maximumHeight:	splitViewData.height
 		}
 
 		DataTableView

@@ -3,6 +3,7 @@
 #include "log.h"
 #include "analysisform.h"
 #include "jasptheme.h"
+#include "preferencesmodelbase.h"
 #include <QQmlProperty>
 #include <QQmlContext>
 #include <QTimer>
@@ -44,8 +45,8 @@ JASPControl::JASPControl(QQuickItem *parent) : QQuickItem(parent)
 
 	connect(this, &JASPControl::titleChanged,			this, &JASPControl::helpMDChanged);
 	connect(this, &JASPControl::infoChanged,			this, &JASPControl::helpMDChanged);
-	connect(this, &JASPControl::visibleChanged,			this, &JASPControl::helpMDChanged);
-	connect(this, &JASPControl::visibleChildrenChanged,	this, &JASPControl::helpMDChanged);
+	//connect(this, &JASPControl::visibleChanged,			this, &JASPControl::helpMDChanged);
+	//connect(this, &JASPControl::visibleChildrenChanged,	this, &JASPControl::helpMDChanged);
 	connect(this, &JASPControl::backgroundChanged,		[this] () { if (!_focusIndicator)		setFocusIndicator(_background); });
 	connect(this, &JASPControl::infoChanged,			[this] () { if (_toolTip.isEmpty())	setToolTip(info());					});
 	connect(this, &JASPControl::toolTipChanged,			[this] () { setShouldStealHover(!_toolTip.isEmpty());					});
@@ -61,6 +62,11 @@ JASPControl::JASPControl(QQuickItem *parent) : QQuickItem(parent)
 	connect(this, &JASPControl::boundValueChanged,		this, &JASPControl::_resetBindingValue);
 	connect(this, &JASPControl::activeFocusChanged,		this, &JASPControl::_setFocus);
 	connect(this, &JASPControl::activeFocusChanged,		this, &JASPControl::_notifyFormOfActiveFocus);
+								 
+	PreferencesModelBase* pref = PreferencesModelBase::preferences();
+								 
+	if(pref)
+		connect(pref, &PreferencesModelBase::developerModeChanged, this, [this](){ _setVisible(); });
 }
 
 JASPControl::~JASPControl()
@@ -133,12 +139,14 @@ void JASPControl::_setBackgroundColor()
 
 void JASPControl::_setVisible()
 {
-	bool isDebug = false;
-#ifdef JASP_DEBUG
-	isDebug = true;
-#endif
-	if (!isDebug && (debug() || parentDebug()))
+	PreferencesModelBase* pref = PreferencesModelBase::preferences();
+	bool isDeveloperMode = pref ? pref->developerMode() : false;
+
+	if (!isDeveloperMode && (debug() || parentDebug()))
 		setVisible(false);
+								 
+	if(isDeveloperMode && (debug() || parentDebug()))
+		setVisible(true);
 }
 
 void JASPControl::_resetBindingValue()
@@ -211,36 +219,38 @@ void JASPControl::componentComplete()
 		// The control is created dynamically, this is the case for row components.
 		// They are created either from a ListView (or a TableView): when all terms of the ListView are set, the row components are created, and then initialized (via rhe ListModel::setUpRowControls function).
 		// Here the parent ListView and the key for this control is stored.
-		setUp();
-
-		JASPListControl* listView = nullptr;
+		JASPListControl* parentlistView = nullptr;
 
 		QVariant listViewVar = context->contextProperty("listView");
 		if (!listViewVar.isNull())
-			listView = listViewVar.value<JASPListControl*>();
+			parentlistView = listViewVar.value<JASPListControl*>();
 		else
 		{
 			QVariant tableViewVar = context->contextProperty("tableView");
 			if (!tableViewVar.isNull())
-				listView = tableViewVar.value<JASPListControl*>();
+				parentlistView = tableViewVar.value<JASPListControl*>();
 		}
 
-		if (listView && listView != this)
+		if (parentlistView && parentlistView != this)
 		{
-			_parentListView = listView;
+			_parentListView = parentlistView;
+			emit parentListViewChanged();
 
 			if (!listViewVar.isNull())
 			{
 				_parentListViewKey = context->contextProperty("rowValue").toString();
-				connect(listView->model(), &ListModel::oneTermChanged, this, &JASPControl::parentListViewKeyChanged);
+				connect(parentlistView->model(), &ListModel::keyTermChanged, this, &JASPControl::parentListViewKeyChanged);
 			}
 			else
 				_parentListViewKey = context->contextProperty("rowIndex").toString();
-
-			listView->addRowControl(_parentListViewKey, this);
-
-			emit parentListViewChanged();
 		}
+
+		JASPListControl* listControl = qobject_cast<JASPListControl*>(this);
+		if (listControl)
+			listControl->setUpModel();
+		if (parentlistView)
+			parentlistView->addRowControl(_parentListViewKey, this);
+
 	}
 
 	if (_background == nullptr && _innerControl != nullptr)
@@ -302,13 +312,14 @@ void JASPControl::clearControlError()
 		_form->clearControlError(this);
 }
 
-QList<JASPControl*> JASPControl::getChildJASPControls(const QQuickItem * item, bool removeUnecessaryGroups)
+QList<JASPControl*> JASPControl::getChildJASPControls(const QQuickItem * item, bool collapseStructuralControls)
 {
 	QList<JASPControl*> result;
 
 	if (!item)
 		return result;
 
+	PreferencesModelBase* pref = PreferencesModelBase::preferences();
 	QList<QQuickItem*> childItems = item->childItems();
 
 	for (QQuickItem* childItem : childItems)
@@ -317,10 +328,13 @@ QList<JASPControl*> JASPControl::getChildJASPControls(const QQuickItem * item, b
 
 		if (childControl)
 		{
-			if (removeUnecessaryGroups && childControl->controlType() == ControlType::GroupBox && childControl->title().isEmpty() && childControl->infoLabel().isEmpty() && childControl->info().isEmpty())
-				// If a Group has no label, title or info, then it is used probably for layout purpose, but to structure the controls is sub elements.
+			if (!pref->developerMode() && childControl->debug())
+				continue;
+
+			if (collapseStructuralControls && childControl->controlType() == ControlType::GroupBox && !childControl->hasLabelOrInfo())
+				// If a Group has no label, title or info, then it is used probably for layout purpose.
 				// Just skip it: this is necessary for generating properly the markdown help
-				result.append(getChildJASPControls(childControl));
+				result.append(getChildJASPControls(childControl, collapseStructuralControls));
 			else
 				result.push_back(childControl);
 		}
@@ -332,7 +346,7 @@ QList<JASPControl*> JASPControl::getChildJASPControls(const QQuickItem * item, b
 			result.push_back(expanderButton);
 		}
 		else
-			result.append(getChildJASPControls(childItem));
+			result.append(getChildJASPControls(childItem, collapseStructuralControls));
 	}
 
 	return result;
@@ -555,78 +569,91 @@ QString JASPControl::ControlTypeToFriendlyString(ControlType controlType)
 	}
 }
 
-bool JASPControl::hasInfo() const
+bool JASPControl::hasInfoSomewhere() const
 {
 	if(!info().isEmpty()) return true;
 
 	for (JASPControl* control : getChildJASPControls(_childControlsArea ? _childControlsArea : this))
-		if (control->hasInfo()) return true;
+		if (control->hasInfoSomewhere()) return true;
 
 	return false;
 }
 
-bool JASPControl::printLabelMD(QStringList& md, int depth) const
+QString JASPControl::printLabelMD(int depth) const
 {
-	QString label = (infoLabel().isEmpty() ? title() : infoLabel()).trimmed();
+	QString label = fullLabel();
 	if(label.isEmpty() && !infoAddControlType())
-		return false;
+		return QString();
 
+	QStringList md;
 	// Print the label as a header, in italic or in bold
-	if (infoLabelIsHeader())			md << "<h" << QString::number(depth + 2) << ">";
-	else if	(infoLabelItalic())			md << "*";
+	if	(infoLabelItalic())				md << "*";
 	else								md << "**";
 
 	if (infoAddControlType())			md << (friendlyName() + (!label.isEmpty() ? " - " : ""));
 
-	md << label;
+	md << label << (infoLabelItalic() ? "*" : "**");
+	if (!info().isEmpty() && !label.endsWith(":")) // Add ':' when necessary
+		md << ":";
+	md << " ";
 
-	if (infoLabelIsHeader())			md << "</h" << QString::number(depth + 2) << ">\n";
-	else
-	{
-		md << (infoLabelItalic() ? "*" : "**");
-		if (!info().isEmpty() && !label.endsWith(":")) // Add ':' when necessary
-			md << ":";
-		md << " ";
-	}
-
-	return true;
+	return md.join("");
 }
 
-QString JASPControl::helpMD(int depth) const
+bool JASPControl::hasLabelOrInfo() const
 {
-	if (!hasInfo()) return "";
-		
-	QStringList childMDs, markdown;
+	return !fullLabel().isEmpty() || !info().isEmpty();
+}
 
-	for (JASPControl* childControl : getChildJASPControls(_childControlsArea ? _childControlsArea : this, true))
+JASPControls JASPControl::getMDSubItems(const QQuickItem* parentItem) const
+{
+	JASPControls MDSubItems;
+
+	if (!parentItem)
+		parentItem = _childControlsArea ? _childControlsArea : this;
+
+	for (JASPControl* childControl : getChildJASPControls(parentItem, true))
 	{
-		QString childMD = childControl->helpMD(depth + 1);
-		if (!childMD.isEmpty())
-			childMDs.push_back(childMD);
-	}
-
-	bool hasLabel = printLabelMD(markdown, depth);
-	markdown << info() << "\n";
-
-	if (infoLabelIsHeader() && !info().isEmpty())
-		markdown << "\n"; // Special case when a header has no info (a Section without info eg).
-
-	if (childMDs.length() == 1)
-		markdown << QString{depth * 2, ' '} << childMDs[0];
-	else
-	{
-		for (const QString& childMD : childMDs)
+		// In case of RadioButtonGroup, if at least one of the RadioButton has info, then all RadioButtons should be listed even if they don't have any info
+		if (childControl->hasInfoSomewhere() || (controlType() == ControlType::RadioButtonGroup && childControl->controlType() == ControlType::RadioButton))
 		{
-			markdown << QString{depth * 2, ' '};
-			if (hasLabel)
-				markdown << "- "; // Add bullet list
-			markdown << childMD;
-			if (!hasLabel)
-				markdown << "\n"; // If no bullet list is used, markdown needs an extra '\n' to display a new line
+			JASPControls MDGrandChilren = childControl->getMDSubItems();
+
+			if (!childControl->hasLabelOrInfo())
+				// The child does not have label nor info: just add its own children to the parent
+				MDSubItems.insert(MDSubItems.end(), MDGrandChilren.begin(), MDGrandChilren.end());
+			else
+				MDSubItems.push_back(childControl);
 		}
 	}
 
-	return markdown.join("");;
+	return MDSubItems;
+}
+
+QString JASPControl::generateMDHelp(int depth) const
+{
+	JASPControls MDSubItems = getMDSubItems();
+	QStringList markdown;
+	markdown << printLabelMD(depth) << info() << "\n";
+
+	if (MDSubItems.size() > 0)
+	{
+		bool addBullet = MDSubItems.size() > 1 || (depth == 0 && MDSubItems[0]->hasLabelOrInfo());
+		markdown << "\n";
+		for (const auto& childMD : MDSubItems)
+			markdown << QString{depth * 2, ' '} << (addBullet ? "- " : "") << childMD->generateMDHelp(depth + 1);
+	}
+
+	return markdown.join("");
+}
+
+QString JASPControl::generateDoxygenHelp() const
+{
+	QString result;
+	if (isBound() && !info().isEmpty())
+		result += "#' @param " + name() + ", " + info() + "\n";
+
+	return result;
 }
 
 void JASPControl::setChildControlsArea(QQuickItem * childControlsArea)
@@ -702,12 +729,6 @@ bool JASPControl::childHasWarning() const
 	return _hasWarning;
 }
 
-// This method is just for the parentListView property that needs a JASPControl (JASPListControl is unknown in QML).
-JASPControl *JASPControl::parentListViewEx() const
-{
-	return _parentListView;
-}
-
 bool JASPControl::hovered() const
 {
 	if (_mouseAreaObj)
@@ -715,8 +736,6 @@ bool JASPControl::hovered() const
 	else
 		return false;
 }
-
-
 
 QString JASPControl::humanFriendlyLabel() const
 {
@@ -745,7 +764,7 @@ QVector<JASPControl::ParentKey> JASPControl::getParentKeys()
 
 	while (parentControl)
 	{
-		parentKeys.prepend({parentControl->name().toStdString(), parentControl->optionKey().toStdString(), Term::readTerm(parentKeyValue).scomponents()});
+		parentKeys.prepend({parentControl->name().toStdString(), parentControl->optionKeyValue().toStdString(), Term::readTerm(parentKeyValue).scomponents()});
 		parentKeyValue = parentControl->parentListViewKey();
 		parentControl = parentControl->parentListView();
 	}
@@ -840,6 +859,12 @@ void JASPControl::setInitialized(const Json::Value &value)
 	}
 }
 
+void JASPControl::setUnitialized()
+{
+	_initialized = false;
+	_initializedWithValue = Json::nullValue;
+}
+
 void JASPControl::_setInitialized(const Json::Value &value)
 {
 	BoundControl* bControl = boundControl();
@@ -853,4 +878,4 @@ void JASPControl::_setInitialized(const Json::Value &value)
 	_initialized = true;
 	_initializedWithValue = (value != Json::nullValue);
 	emit initializedChanged();
-}		
+}

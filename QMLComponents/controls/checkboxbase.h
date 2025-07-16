@@ -25,6 +25,7 @@
 class CheckBoxBase : public JASPControl, public BoundControlBase
 {
 	Q_OBJECT
+	QML_ELEMENT
 	
 public:
 				CheckBoxBase(QQuickItem* parent = nullptr);
@@ -33,7 +34,7 @@ public:
 	Json::Value createJson()								const	override;
 	void		bindTo(const Json::Value& value)					override;
 	void		setUp()												override;
-
+	QString		generateDoxygenHelp()						const	override;
 	void		setChecked(bool checked);
 	bool		checked()									const;
 

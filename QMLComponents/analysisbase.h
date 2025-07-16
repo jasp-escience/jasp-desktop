@@ -11,6 +11,8 @@ class AnalysisForm;
 class AnalysisBase : public QObject
 {
 	Q_OBJECT
+	QML_ELEMENT
+
 	Q_PROPERTY(QQuickItem		*	formItem				READ formItem										NOTIFY formItemChanged			)
 	Q_PROPERTY(QString				qmlError				READ qmlError			WRITE setQmlError			NOTIFY qmlErrorChanged			)
 
@@ -29,6 +31,7 @@ public:
 	virtual				const std::string & module()													const	{ return emptyString;		}
 	virtual				const std::string & name()														const	{ return emptyString;		}
 	virtual				const std::string & title()														const	{ return emptyString;		}
+	virtual				const std::string & titleDefault()												const	{ return emptyString;		}
 	virtual				void				setTitle(const std::string& titel)									{}
 	virtual				void				preprocessMarkdownHelp(const QString& md)					const	{}
 	virtual				QString				helpFile()															{ return "";				}
@@ -42,6 +45,10 @@ public:
 	virtual Q_INVOKABLE void				createForm(QQuickItem* parentItem=nullptr);
 	virtual				void				destroyForm();
 	virtual				bool				isColumnFreeOrMine(const QString & columnName)				const	{ return false; }
+
+	virtual QVariant getConstant(const QString& key, const QVariant& defaultValue)										const	{ return defaultValue;		}
+	virtual QVariant getConstant(const QString& key, const QVariant& defaultValue, const QString& module, const QString& analysis)		const	{ return defaultValue;		}
+	virtual bool optionLocked(const QString& name) const { return false; };
 
 						const Json::Value &	boundValues()												const	{ return _boundValues;		}
 						const Json::Value &	orgBoundValues()											const	{ return _orgBoundValues;	}

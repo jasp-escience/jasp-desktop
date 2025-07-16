@@ -1,7 +1,8 @@
-import QtQuick			2.11
-import QtQuick.Controls 2.4 as QTC
-import QtQuick.Layouts	1.3
-import JASP				1.0
+import QtQuick
+import QtQuick.Controls	as QTC
+import QtQuick.Layouts
+import JASP.Controls
+import JASP
 
 TextAreaBase
 {
@@ -197,6 +198,13 @@ TextAreaBase
 		}
 	}
 
+	Rectangle
+	{
+		anchors.fill:			infoText
+		opacity:				textArea.hasScriptError ? 1 : .8
+		color:					textArea.hasScriptError ? jaspTheme.errorMessagesBackgroundColor : flickableRectangle.color
+	}
+
 	Text
 	{
 		id:						infoText
@@ -215,12 +223,5 @@ TextAreaBase
 		color:					!enabled ? jaspTheme.textDisabled : textArea.hasScriptError ? jaspTheme.textEnabled : jaspTheme.grayDarker
 		wrapMode:				Text.Wrap
 		width:					implicitWidth > textArea.width - 2 * anchors.margins ? textArea.width - 2 * anchors.margins : implicitWidth
-
-		Rectangle
-		{
-			z:				-1
-			anchors.fill:	infoText
-			color:			textArea.hasScriptError ? jaspTheme.errorMessagesBackgroundColor : "transparent"
-		}
 	}
 }

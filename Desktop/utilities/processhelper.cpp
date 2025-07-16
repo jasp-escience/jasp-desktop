@@ -2,6 +2,7 @@
 #include "utilities/appdirs.h"
 #include "utilities/qutils.h"
 #include "log.h"
+#include "dirs.h"
 
 QProcessEnvironment ProcessHelper::getProcessEnvironmentForJaspEngine(bool bootStrap)
 {
@@ -22,7 +23,7 @@ QProcessEnvironment ProcessHelper::getProcessEnvironmentForJaspEngine(bool bootS
 
 	QString TZDIR		= AppDirs::rHome() + "/share/zoneinfo";
 	QString rHomePath	= AppDirs::rHome();
-	QDir	rHome		( rHomePath );
+	QDir	rHome		= rHomePath ;
 
 	QString custom_R_library = "";
 #ifdef JASP_DEBUG
@@ -30,32 +31,32 @@ QProcessEnvironment ProcessHelper::getProcessEnvironmentForJaspEngine(bool bootS
 	if (env.contains("JASP_R_Library"))
 		custom_R_library = ":" + env.value("JASP_R_Library");
 #endif
+		env.insert("JASP_TMP_DIR", QString(Dirs::tempDir().c_str()));
 #ifdef _WIN32
+		//set R_TMP_DIR to appdata dir for win appcontainers if anyone ever change tmp behaviour it will fallback to this
+		env.insert("TMPDIR", AppDirs::RtmpDir());
 #if defined(ARCH_32)
 #define ARCH_SUBPATH "i386"
 #else
 #define ARCH_SUBPATH "x64"
 #endif
-	
-			TZDIR		= shortenWinPaths(TZDIR);
-	QString PATH		= shortenWinPaths(programDir.absoluteFilePath("R/library/RInside/libs/" ARCH_SUBPATH)) + ";" + shortenWinPaths(programDir.absoluteFilePath("R/library/Rcpp/libs/" ARCH_SUBPATH)) + ";" + shortenWinPaths(programDir.absoluteFilePath("R/bin/" ARCH_SUBPATH)) + ";" + shortenWinPaths(env.value("PATH")),
-			R_HOME		= shortenWinPaths(rHome.absolutePath()),
-			JAGS_HOME	= shortenWinPaths(programDir.absoluteFilePath("R/opt/jags/"));
-			// JAGS_LIBDIR	= shortenWinPaths(programDir.absoluteFilePath("R/opt/jags/lib/"));
 
-	Log::log() << "R_HOME set to " << R_HOME << std::endl;
+	ProcessHelper::fixPATHForWindows(env);
 
-	env.insert("PATH",				PATH);
-	env.insert("R_HOME",			R_HOME);
+	QString _R_HOME		= rHome.absolutePath(),
+			JAGS_HOME	= programDir.absoluteFilePath("R/opt/jags/");
+
+	Log::log() << "R_HOME set to " << _R_HOME << std::endl;
+
+	env.insert("R_HOME",			_R_HOME);
 	env.insert("JAGS_HOME",			JAGS_HOME);
-	// env.insert("JAGS_LIBDIR",		JAGS_LIBDIR);
 	
 #undef ARCH_SUBPATH
 
 	if(bootStrap)
-		env.insert("R_LIBS",			programDir.absoluteFilePath("Modules/Tools/junction_bootstrap_library") + ";" + R_HOME + "/library");
+		env.insert("R_LIBS",			programDir.absoluteFilePath("Modules/Tools/junction_bootstrap_library") + ";" + _R_HOME + "/library");
 	else
-		env.insert("R_LIBS",			AppDirs::bundledModulesDir() + "Tools/R_cpp_includes_library" + ";" + R_HOME + "/library");
+		env.insert("R_LIBS",			programDir.absoluteFilePath("Modules/Tools/R_cpp_includes_library") + ";" + _R_HOME + "/library");
 
 	env.insert("R_ENVIRON",			"something-which-doesn't-exist");
 	env.insert("R_PROFILE",			"something-which-doesn't-exist");
@@ -101,10 +102,38 @@ QProcessEnvironment ProcessHelper::getProcessEnvironmentForJaspEngine(bool bootS
 	env.insert("R_LIBS_USER", (AppDirs::programDir().absolutePath().toStdString() + "/../R/library").c_str());
 #endif
 
-	Log::log() <<	"R_LIBS:"			<< env.value("R_LIBS")			<< "\n" <<
-					"R_LIBS_USER:"		<< env.value("R_LIBS_USER")		<< "\n" <<
-					"LD_LIBRARY_PATH:"	<< env.value("LD_LIBRARY_PATH") << "\n" <<
+	Log::log() <<	"PATH:            "	<< env.value("PATH")			<< "\n" <<
+					"R_HOME:          "	<< env.value("R_HOME")			<< "\n" <<
+					"R_LIBS:          "	<< env.value("R_LIBS")			<< "\n" <<
+					"R_LIBS_USER:     "	<< env.value("R_LIBS_USER")		<< "\n" <<
+					"LD_LIBRARY_PATH: "	<< env.value("LD_LIBRARY_PATH") << "\n" <<
 					std::endl;
 
 	return(env);	
 }
+
+#ifdef _WIN32 
+///Overwrites the PATH with a simple clean one
+void ProcessHelper::fixPATHForWindows(QProcessEnvironment & env)
+{
+	const QString R_ARCH =
+#ifdef _WIN64
+		"x64";
+#else
+		"i386";
+#endif
+
+	QStringList pathEntries = {
+		AppDirs::programDir().absolutePath(),
+		QDir(AppDirs::rHome()).absoluteFilePath("bin"),
+		QDir(AppDirs::rHome()).absoluteFilePath("bin/" + R_ARCH),
+		QDir(AppDirs::rHome()).absoluteFilePath("R/library/Rcpp/libs/"  + R_ARCH),
+		QDir(AppDirs::rHome()).absoluteFilePath("R/library/RInside/libs/"  + R_ARCH),
+		env.value("PATH")
+	};
+
+	env.insert("PATH", pathEntries.join((";")));
+
+	Log::log() << "Windows PATH was changed to: '" << env.value("PATH", "???") << "'" << std::endl;
+}
+#endif 

@@ -16,8 +16,8 @@
 // <http://www.gnu.org/licenses/>.
 //
 
-import QtQuick 2.9
-import QtQuick.Controls 2.4
+import QtQuick
+import QtQuick.Controls
 
 
 Rectangle
@@ -47,7 +47,6 @@ Rectangle
 
 	//on_ScaledDimChanged: console.log("Button " + text + ": " + _scaledDim + ", text height: " + buttonText.height + ", content height: " + buttonText.contentHeight + ", padding: " + buttonPadding)
 
-	focus:								true
 	implicitWidth:						showIconAndText ?
 											buttonText.implicitWidth + buttonWidthPadding + _scaledDim + buttonWidthPadding :
 											buttonIcon.visible ? _scaledDim : buttonText.implicitWidth + ( 2 * buttonWidthPadding)
@@ -58,8 +57,8 @@ Rectangle
 												 : _pressed ? jaspTheme.buttonColorPressed
 															: (filterButtonRoot.hovered || filterButtonRoot.activeFocus)	? jaspTheme.buttonColorHovered
 																															: jaspTheme.buttonColor
-	border.color:						(filterButtonRoot.hovered || selected) ? jaspTheme.buttonBorderColorHovered
-																			   : jaspTheme.buttonBorderColor
+	border.color:						enabled && (filterButtonRoot.hovered || selected)	? jaspTheme.buttonBorderColorHovered
+																							: jaspTheme.buttonBorderColor
 	border.width:						1
 
 
@@ -82,9 +81,9 @@ Rectangle
 		anchors.fill:				parent
 		acceptedButtons:			Qt.LeftButton
 		hoverEnabled:				true
-		cursorShape:				Qt.PointingHandCursor
+		cursorShape:				filterButtonRoot.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 		onClicked:					filterButtonRoot.clicked();
-		visible:					filterButtonRoot.enabled
+		//visible:					filterButtonRoot.enabled
 		//propagateComposedEvents:	true
 	}
 

@@ -1,19 +1,17 @@
+#include "utilities/qutils.h"
 #include "importdataset.h"
 #include "timers.h"
 #include "appinfo.h"
+#include "importer.h"
 
 using namespace std;
 
-ImportDataSet::ImportDataSet(Importer *importer) : _importer(importer)
+ImportDataSet::ImportDataSet(Importer *importer) : QObject(importer), _importer(importer)
 {
 }
 
 ImportDataSet::~ImportDataSet()
 {
-	JASPTIMER_SCOPE(ImportDataSet::~ImportDataSet());
-	
-	for (ImportColumn * col : _columns)
-		delete col;
 }
 
 void ImportDataSet::addColumn(ImportColumn *column)
@@ -29,12 +27,17 @@ size_t ImportDataSet::columnCount() const
 const string & ImportDataSet::description() const
 {
 	static std::string localCache;
-	localCache = "Originally imported into " + AppInfo::getShortDesc()+ " on " + Utils::currentDateTime();	
+	QString desc = tr("Originally imported into %1 on %2").arg(tq(AppInfo::getShortDesc())).arg(tq(Utils::currentDateTime()));
+	localCache = fq(desc);
+	
 	return localCache;
 }
 
 size_t ImportDataSet::rowCount() const
 {
+	if(_rowsCountedByBuildDictionary != -1)
+		return _rowsCountedByBuildDictionary;
+
 	if (columnCount() == 0)
 		return 0;
 	else
@@ -90,23 +93,32 @@ void ImportDataSet::buildDictionary()
 		if(col->name() != "")
 			_nameToColMap[col->name()] = col;
 
-	//Lets name the unnamed columns the same way csv does
-	size_t curCol = 0;
 
-	for(ImportColumn * col : *this)
+	//Lets name the unnamed columns the same way csv does
+	_rowsCountedByBuildDictionary = -1;
+
+	for(size_t curCol = 0; curCol < _columns.size(); curCol++)
 	{
-		curCol++;
+		ImportColumn * col = _columns[curCol];
 		
-		if(col->name() == "")
+		if(!col->containsAnythingAtAll()) //Ignore very empty columns
+		{
+			_columns.erase(_columns.begin() + curCol);
+			curCol--;
+			delete col;
+		}
+		else if(col->name() == "")
 		{
 			std::string newName;
 			do
-				newName = "V" + std::to_string(curCol);
+				newName = "V" + std::to_string(curCol + 1);
 			while(_nameToColMap.count(newName) > 0);
 				
 			col->setName(newName);
 
 			_nameToColMap[col->name()] = col;
+
+			_rowsCountedByBuildDictionary = std::max(int(col->size()), _rowsCountedByBuildDictionary);
 		}
 	}
 }

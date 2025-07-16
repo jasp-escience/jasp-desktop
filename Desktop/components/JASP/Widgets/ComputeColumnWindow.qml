@@ -1,7 +1,7 @@
-import QtQuick			2.7
-import QtQuick.Controls 2.12
-import QtQuick.Layouts	1.3
-import JASP.Controls	1.0 as JaspControls
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import JASP.Controls	as JaspControls
 import JASP
 
 import "FilterConstructor"
@@ -105,7 +105,7 @@ FocusScope
 				{
 					id: computeColumnEdit
 					
-					RSyntaxHighlighterQuick
+					JaspControls.RSyntaxHighlighterQuick
 					{
 						textDocument:		computeColumnEdit.textDocument
 					}
@@ -185,6 +185,15 @@ FocusScope
 					ListElement	{ type: "function";	friendlyFunctionName:	"";						functionName: "round";	functionParameters: "y,n";		functionParamTypes: "number,number";			toolTip: qsTr("rounds y to n decimals") }
 					ListElement	{ type: "function";	friendlyFunctionName:	"";						functionName: "length";	functionParameters: "y";		functionParamTypes: "string:number:boolean";	toolTip: qsTr("returns number of elements in y") }
 					ListElement	{ type: "function";	friendlyFunctionName:	"";						functionName: "median";	functionParameters: "values";	functionParamTypes: "number";					toolTip: qsTr("median") }
+					
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowMean";		toolTip: qsTr("Rowwise mean") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowSum";			toolTip: qsTr("Rowwise sum") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowSD";			toolTip: qsTr("Rowwise standard deviation") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowVariance";	toolTip: qsTr("Rowwise variance") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowMedian";		toolTip: qsTr("Rowwise median") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowMin";			toolTip: qsTr("Rowwise minimum") }
+					ListElement	{ type: "rowfunction";	friendlyFunctionName:	"";	functionName: "rowMax";			toolTip: qsTr("Rowwise maximum") }
+					
 
 					ListElement	{ type: "separator" }
 					ListElement	{ type: "function";	friendlyFunctionName:	"";						functionName: "log";			functionParameters: "y";				functionParamTypes: "number";						toolTip: qsTr("natural logarithm") }
@@ -296,13 +305,29 @@ FocusScope
 
 				text:				qsTr("Compute column") 
 				anchors.left:		showGeneratedRCode.right
-				anchors.right:		helpButton.left
+				anchors.right:		computeFilterDropDown.left
 				centerTextParent:	true
 				anchors.bottom:		parent.bottom
 				anchors.top:		helpButton.top
 				onClicked:			{ forceActiveFocus(); computedColumnContainer.applyComputedColumn() }
 				toolTip:			qsTr("Click to compute column")
-				
+			}
+			
+			JaspControls.DropDown
+			{
+				id:					computeFilterDropDown
+				values:				filterModel.filterDropDownList
+				startValue:			""
+				currentValue:		columnModel.computeFilter
+				onValueChanged:		{
+					columnModel.computeFilter = currentValue
+					computedColumnContainer.applyComputedColumn()
+					
+				}
+				anchors.right:		helpButton.left
+				anchors.bottom:		parent.bottom
+				toolTip:			qsTr("Select a filter to use for this computed column")
+				control.height:		applyComputedColumnButton.height
 			}
 
 			JaspControls.RectangularButton

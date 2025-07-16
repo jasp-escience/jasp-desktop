@@ -18,6 +18,7 @@ class BoundControl;
 class JASPControl : public QQuickItem
 {
 	Q_OBJECT
+	QML_ELEMENT
 
 	Q_PROPERTY( ControlType							controlType				READ controlType			WRITE setControlType			NOTIFY controlTypeChanged			)
 	Q_PROPERTY( QString								name					READ name					WRITE setName					NOTIFY nameChanged					)
@@ -25,7 +26,6 @@ class JASPControl : public QQuickItem
 	Q_PROPERTY( QString								info					READ info					WRITE setInfo					NOTIFY infoChanged					)
 	Q_PROPERTY( QString								infoLabel				READ infoLabel				WRITE setInfoLabel				NOTIFY infoLabelChanged				)
 	Q_PROPERTY( QString								toolTip					READ toolTip				WRITE setToolTip				NOTIFY toolTipChanged				)
-	Q_PROPERTY( QString								helpMD					READ helpMD													NOTIFY helpMDChanged				)
 	Q_PROPERTY( bool								isBound					READ isBound				WRITE setIsBound				NOTIFY isBoundChanged				)
 	Q_PROPERTY( bool								indent					READ indent					WRITE setIndent					NOTIFY indentChanged				)
 	Q_PROPERTY( bool								isDependency			READ isDependency			WRITE setIsDependency			NOTIFY isDependencyChanged			)
@@ -37,7 +37,7 @@ class JASPControl : public QQuickItem
 	Q_PROPERTY( bool								initialized				READ initialized											NOTIFY initializedChanged			)
 	Q_PROPERTY( bool								shouldStealHover		READ shouldStealHover		WRITE setShouldStealHover		NOTIFY shouldStealHoverChanged		)
 	Q_PROPERTY( QQuickItem						*	childControlsArea		READ childControlsArea		WRITE setChildControlsArea											)
-	Q_PROPERTY( JASPControl						*	parentListView			READ parentListViewEx										NOTIFY parentListViewChanged		)
+	Q_PROPERTY( JASPListControl					*	parentListView			READ parentListView											NOTIFY parentListViewChanged		)
 	Q_PROPERTY( QQuickItem						*	innerControl			READ innerControl			WRITE setInnerControl			NOTIFY innerControlChanged			)
 	Q_PROPERTY( QQuickItem						*	background				READ background				WRITE setBackground				NOTIFY backgroundChanged			)
 	Q_PROPERTY( QQuickItem						*	focusIndicator			READ focusIndicator			WRITE setFocusIndicator			NOTIFY focusIndicatorChanged		)
@@ -53,7 +53,8 @@ class JASPControl : public QQuickItem
 protected:
 	typedef std::set<JASPControl*>			Set;
 	typedef std::set<const JASPControl*>	SetConst;
-
+	typedef std::vector<JASPControl*>		JASPControls;
+	
 public:
 	struct ParentKey
 	{
@@ -90,10 +91,10 @@ public:
 	// Be careful not to reuse a name in a enum type: in QML, they are mixed up with a 'JASP' prefix: JASP.DropNone or JASP.None
 	enum class Inclusive		{ None				= 0,															MinMax, MinOnly, MaxOnly };
 	enum class DropMode			{ DropNone			= static_cast<int>(Inclusive::MaxOnly)					+ 1,	DropInsert, DropReplace };
-	enum class ListViewType		{ AssignedVariables = static_cast<int>(DropMode::DropReplace)				+ 1,	Interaction, AvailableVariables, RepeatedMeasures, Layers, AvailableInteraction };
-	enum class CombinationType	{ NoCombination		= static_cast<int>(ListViewType::AvailableInteraction)	+ 1,	CombinationCross, CombinationInteraction, Combination2Way, Combination3Way, Combination4Way, Combination5Way };
-	enum class TextType			{ TextTypeDefault	= static_cast<int>(CombinationType::Combination5Way)	+ 1,	TextTypeModel, TextTypeRcode, TextTypeJAGSmodel, TextTypeSource, TextTypeLavaan, TextTypeCSem };
-	enum class ModelType		{ Simple			= static_cast<int>(TextType::TextTypeLavaan)			+ 1,	GridInput, CustomContrasts, MultinomialChi2Model, JAGSDataInputModel, FilteredDataEntryModel };
+	enum class ListViewType		{ AssignedVariables = static_cast<int>(DropMode::DropReplace)				+ 1,	Interaction, AvailableVariables, RepeatedMeasures, Layers };
+	enum class CombinationType	{ NoCombination		= static_cast<int>(ListViewType::Layers)				+ 1,	CombinationCross, CombinationInteraction, Combination2Way, Combination3Way, Combination4Way, Combination5Way };
+	enum class TextType			{ TextTypeDefault	= static_cast<int>(CombinationType::Combination5Way)	+ 1,	TextTypeModel, TextTypeRcode, TextTypeJAGSmodel, TextTypeSource, TextTypeLavaan, TextTypeMetaSem, TextTypeCSem };
+	enum class ModelType		{ Simple			= static_cast<int>(TextType::TextTypeCSem)				+ 1,	GridInput, CustomContrasts, MultinomialChi2Model, JAGSDataInputModel, FilteredDataEntryModel };
 	enum class ItemType			{ String			= static_cast<int>(ModelType::FilteredDataEntryModel)	+ 1,	Integer, Double	};
 
 	Q_ENUM(ControlType)
@@ -113,13 +114,14 @@ public:
 	QString				title()						const	{ return _title;					}
 	QString				info()						const	{ return _info;						}
 	QString				infoLabel()					const	{ return _infoLabel;				}
+	QString				fullLabel()					const	{ return (infoLabel().isEmpty() ? title() : infoLabel()).trimmed(); }
 	virtual bool		infoAddControlType()		const	{ return  false;					}
-	virtual bool		infoLabelIsHeader()			const	{ return  false;					}
 	virtual bool		infoLabelItalic()			const	{ return  false;					}
 
 	QString				toolTip()					const	{ return _toolTip;					}
-	virtual QString		helpMD(int depth = 0)		const;
-	virtual bool		hasInfo()					const;
+	virtual QString		generateMDHelp(int depth = 0) const;
+	virtual QString		generateDoxygenHelp()		const;
+	virtual bool		hasInfoSomewhere()					const;
 	bool				isBound()					const	{ return _isBound;					}
 	bool				nameIsOptionValue()			const	{ return _nameIsOptionValue;		}
 	bool				indent()					const	{ return _indent;					}
@@ -139,7 +141,6 @@ public:
 	AnalysisForm	*	form()						const	{ return _form;						}
 	QQuickItem		*	childControlsArea()			const	{ return _childControlsArea;		}
 	JASPListControl	*	parentListView()			const	{ return _parentListView;			}
-	JASPControl		*	parentListViewEx()			const;
 	QString				parentListViewKey()			const	{ return _parentListViewKey;		}
 	QQuickItem		*	innerControl()				const	{ return _innerControl;				}
 	QQuickItem		*	background()				const	{ return _background;				}
@@ -159,10 +160,11 @@ public:
 	QVector<JASPControl::ParentKey>	getParentKeys();
 
 	static QString					ControlTypeToFriendlyString(ControlType controlType);
-	static QList<JASPControl*>		getChildJASPControls(const QQuickItem* item, bool removeUnecessaryGroups = false);
+	static QList<JASPControl*>		getChildJASPControls(const QQuickItem* item, bool collapseStructuralControls = false);
 
 	virtual void					setUp()										{}
 	void							setInitialized(const Json::Value& value = Json::nullValue);
+	void							setUnitialized();
 	virtual void					cleanUp()									{ disconnect(); }
 	virtual BoundControl		*	boundControl();
 	virtual bool					encodeValue()						const	{ return false; }
@@ -178,6 +180,7 @@ public:
 
 	virtual QString					friendlyName() const;
 	void							addExplicitDependency();
+	bool							hasLabelOrInfo() const;
 
 public slots:
 	void	setControlType(			ControlType			controlType)		{ _controlType = controlType; }
@@ -257,21 +260,22 @@ signals:
 	void	usedVariablesChanged();
 	void	explicitDependsChanged();
 
-	void				requestColumnCreation(std::string columnName, columnType columnType);
-	void				requestComputedColumnCreation(std::string columnName);
-	void				requestComputedColumnDestruction(std::string columnName);
+	void					requestColumnCreation(std::string columnName, columnType columnType);
+	void					requestComputedColumnCreation(std::string columnName);
+	void					requestComputedColumnDestruction(std::string columnName);
 
 protected:
-	void				componentComplete()									override;
-	void				setCursorShape(int shape);
-	void				setParentDebugToChildren(bool debug);
-	void				focusInEvent(QFocusEvent* event)					override;
-	bool				eventFilter(QObject *watched, QEvent *event)		override;
-	bool				checkOptionName(const QString& name);
-	void				_addExplicitDependency(const QVariant& depends);
-	bool				dependingControlsAreInitialized();
-	virtual void		_setInitialized(const Json::Value &value);
-	bool				printLabelMD(QStringList& md, int depth)			const;
+	void					componentComplete()									override;
+	void					setCursorShape(int shape);
+	void					setParentDebugToChildren(bool debug);
+	void					focusInEvent(QFocusEvent* event)					override;
+	bool					eventFilter(QObject *watched, QEvent *event)		override;
+	bool					checkOptionName(const QString& name);
+	void					_addExplicitDependency(const QVariant& depends);
+	bool					dependingControlsAreInitialized();
+	virtual void			_setInitialized(const Json::Value &value);
+	virtual QString			printLabelMD(int depth)												const;
+	virtual JASPControls	getMDSubItems(const QQuickItem* parentItem = nullptr)	const;
 
 protected:
 	Set						_depends;
@@ -284,7 +288,7 @@ protected:
 	bool					_isBound					= true,
 							_indent						= false,
 							_initialized				= false,
-							_initializedWithValue	= false,
+							_initializedWithValue		= false,
 							_debug						= false,
 							_parentDebug				= false,
 							_hasError					= false,
@@ -318,12 +322,12 @@ protected:
 	QString					_info,
 							_infoLabel;
 
-
 	static QMap<QQmlEngine*, QQmlComponent*>		_mouseAreaComponentMap;
 	static QByteArray								_mouseAreaDef;
 	static QQmlComponent*							getMouseAreaComponent(QQmlEngine* engine);
 	static const QStringList						_optionReservedNames;
 };
 
+typedef std::vector<JASPControl*> JASPControls;
 
 #endif // JASPCONTROL_H

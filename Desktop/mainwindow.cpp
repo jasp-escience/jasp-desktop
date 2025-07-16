@@ -28,7 +28,7 @@
 #include <QtWebEngineQuick/qtwebenginequickglobal.h>
 #include <QAction>
 #include <QMenuBar>
-
+#include <exception>
 #include <iostream>
 
 #include "log.h"
@@ -39,37 +39,14 @@
 
 #include "mainwindow.h"
 
-#include "analysisform.h"
-#include "controls/jaspcontrol.h"
-#include "controls/checkboxbase.h"
-#include "controls/comboboxbase.h"
-#include "controls/textinputbase.h"
-#include "controls/componentslistbase.h"
-#include "controls/rsyntaxhighlighter.h"
-#include "controls/factorsformbase.h"
-#include "controls/inputlistbase.h"
-#include "controls/textareabase.h"
-#include "controls/sliderbase.h"
-#include "controls/expanderbuttonbase.h"
-#include "controls/variableslistbase.h"
-#include "controls/variablesformbase.h"
-#include "controls/factorlevellistbase.h"
-#include "controls/tableviewbase.h"
-#include "controls/radiobuttonbase.h"
-#include "controls/radiobuttonsgroupbase.h"
-#include "controls/jaspdoublevalidator.h"
-#include "controls/groupboxbase.h"
-
 #include "gui/jaspversionchecker.h"
 #include "gui/preferencesmodel.h"
-#include "ALTNavigation/altnavigation.h"
 #include "ALTNavigation/altnavcontrol.h"
 #include "utilities/messageforwarder.h"
 
 #include "modules/activemodules.h"
 #include "modules/dynamicmodules.h"
 #include "modules/menumodel.h"
-#include "modules/description/entrybase.h"
 
 #include "qquick/datasetview.h"
 #include "qquick/rcommander.h"
@@ -99,12 +76,12 @@ MainWindow * MainWindow::_singleton	= nullptr;
 MainWindow::MainWindow(QApplication * application) : QObject(application), _application(application)
 {
 	std::cout << "MainWindow constructor started" << std::endl;
-
 	connect(this, &MainWindow::exitSignal, this, &QApplication::exit, Qt::QueuedConnection);
 
 	assert(!_singleton);
 	_singleton = this;
 	JASPTIMER_START(MainWindowConstructor);
+
 	
 	QQuickStyle::setStyle("Basic");
 	QQuickWindow::setTextRenderType(Settings::value(Settings::GUI_USE_QT_TEXTRENDER).toBool() ?
@@ -150,6 +127,7 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 	_resultMenuModel		= new ResultMenuModel(this);
 	_plotEditorModel		= new PlotEditorModel();
 	_columnTypesModel		= new ColumnTypesModel(this);
+	_jaspConfiguration		= JASPConfiguration::getInstance(this);
 
 #ifdef WIN32
 	_windowsWorkaroundCPs	= new CodePagesWindows(this);
@@ -161,40 +139,18 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 
 	makeConnections();
 
-	qmlRegisterUncreatableType<JASPControl>						("JASP",			1, 0, "JASP",				"Impossible to create JASP Object"	); //This is here to keep JASP.enum short I guess?
 	qmlRegisterUncreatableType<MessageForwarder>				("JASP",			1, 0, "MessageForwarder",	"You can't touch this"				);
 
 	qmlRegisterType<DataSetView>								("JASP",			1, 0, "DataSetView"						);
 	qmlRegisterType<JaspTheme>									("JASP",			1, 0, "JaspTheme"						);
-	qmlRegisterType<AnalysisForm>								("JASP",			1, 0, "AnalysisForm"					);
 	qmlRegisterType<RCommander>									("JASP",			1, 0, "RCommander"						);
-	qmlRegisterType<JASPControl>								("JASP",			1, 0, "JASPControl"						);
-	qmlRegisterType<GroupBoxBase>								("JASP",			1, 0, "GroupBoxBase"					);
-	qmlRegisterType<ExpanderButtonBase>							("JASP",			1, 0, "ExpanderButtonBase"				);
-	qmlRegisterType<CheckBoxBase>								("JASP",			1, 0, "CheckBoxBase"					);
-	qmlRegisterType<SliderBase>									("JASP",			1, 0, "SliderBase"						);
-	qmlRegisterType<TextInputBase>								("JASP",			1, 0, "TextInputBase"					);
-	qmlRegisterType<TextAreaBase>								("JASP",			1, 0, "TextAreaBase"					);
-	qmlRegisterType<ComboBoxBase>								("JASP",			1, 0, "ComboBoxBase"					);
-	qmlRegisterType<RadioButtonBase>							("JASP",			1, 0, "RadioButtonBase"					);
-	qmlRegisterType<RadioButtonsGroupBase>						("JASP",			1, 0, "RadioButtonsGroupBase"			);
-	qmlRegisterType<RSyntaxHighlighterQuick>					("JASP",			1, 0, "RSyntaxHighlighterQuick"			);
-	qmlRegisterType<ComponentsListBase>							("JASP",			1, 0, "ComponentsListBase"				);
-	qmlRegisterType<FactorsFormBase>							("JASP",			1, 0, "FactorsFormBase"					);
-	qmlRegisterType<InputListBase>								("JASP",			1, 0, "InputListBase"					);
-	qmlRegisterType<FactorLevelListBase>						("JASP",			1, 0, "FactorLevelListBase"				);
-	qmlRegisterType<VariablesListBase>							("JASP",			1, 0, "VariablesListBase"				);
-	qmlRegisterType<VariablesFormBase>							("JASP",			1, 0, "VariablesFormBase"				);
-	qmlRegisterType<TableViewBase>								("JASP",			1, 0, "TableViewBase"					);
-	qmlRegisterType<JASPDoubleValidator>						("JASP",			1, 0, "JASPDoubleValidator"				);
 	qmlRegisterType<ResultsJsInterface>							("JASP",			1, 0, "ResultsJsInterface"				);
 	qmlRegisterType<ColumnModel>								("JASP",			1, 0, "ColumnModel"						);
-	qmlRegisterType<FormulaBase>								("JASP",			1, 0, "Formula"							);
 	qmlRegisterUncreatableType<PlotEditor::AxisModel>			("JASP.PlotEditor",	1, 0, "AxisModel",					"Can't make it");
 	qmlRegisterUncreatableType<PlotEditor::PlotEditorModel>		("JASP.PlotEditor",	1, 0, "PlotEditorModel",			"Can't make it");
 
-	ALTNavigation::registerQMLTypes("JASP");
 	ALTNavControl::ctrl()->enableAlTNavigation(_preferences->ALTNavModeActive());
+	QmlUtils::setGlobalPropertiesInQMLContext(_qml->rootContext());
 
 	_dynamicModules->registerQMLTypes();
 
@@ -206,6 +162,10 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 	
 	checkForUpdates();
 
+	QTimer::singleShot(0, this, [&]() { _jaspConfiguration->processConfiguration();  });
+	
+	_languageModel->setDefaultLocaleFromCurrent(); //Make sure (Q)ColumnUtils knows whats up
+
 	Log::log() << "JASP Desktop started and Engines initalized." << std::endl;
 
 	JASPTIMER_FINISH(MainWindowConstructor);
@@ -214,6 +174,9 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 
 void MainWindow::checkForUpdates()
 {
+	if(resultXmlCompare::compareResults::theOne()->testMode())
+		return;
+	
 	if(PreferencesModel::prefs()->checkUpdatesAskUser())
 	{
 		bool answer = MessageForwarder::showYesNo(
@@ -242,8 +205,20 @@ This setting can always be changed in the Interface Preferences.)MultiLine"),
 MainWindow::~MainWindow()
 {
 	Log::log() << "MainWindow::~MainWindow()" << std::endl;
+	
+	_engineSync->killProcessTimer();
 
-	_analyses->destroyAllForms();
+	try
+	{
+		DatabaseInterface::closeInterfaces();
+	}
+	catch(...) {}
+
+	try
+	{
+		_analyses->destroyAllForms();
+	}
+	catch(...) {}
 
 	_singleton = nullptr;
 
@@ -264,11 +239,6 @@ MainWindow::~MainWindow()
 		_odm->clearAuthenticationOnExit(OnlineDataManager::OSF);
 
 		delete _resultsJsInterface;
-
-		if (_package->hasDataSet())
-			_package->reset(false);
-
-		//delete _engineSync; it will be deleted by Qt!
 	}
 	catch(...)	{}
 }
@@ -421,6 +391,7 @@ void MainWindow::makeConnections()
 	connect(_package,				&DataSetPackage::checkForDependentColumnsToBeSent,	_computedColumnsModel,	&ComputedColumnModel::checkForDependentColumnsToBeSentSlot	);
 	connect(_package,				&DataSetPackage::datasetChanged,					_columnsModel,			&ColumnsModel::datasetChanged								);
 	connect(_package,				&DataSetPackage::isModifiedChanged,					this,					&MainWindow::packageChanged									);
+	connect(_package,				&DataSetPackage::isModifiedChanged,					_fileMenu,				&FileMenu::workspaceModified								);
 	connect(_package,				&DataSetPackage::windowTitleChanged,				this,					&MainWindow::windowTitleChanged								);
 	connect(_package,				&DataSetPackage::columnDataTypeChanged,				_computedColumnsModel,	&ComputedColumnModel::recomputeColumn						);
 	connect(_package,				&DataSetPackage::checkDoSync,						_loader,				&AsyncLoader::checkDoSync,									Qt::DirectConnection); //Force DirectConnection because the signal is called from Importer which means it is running in AsyncLoaderThread...
@@ -435,11 +406,13 @@ void MainWindow::makeConnections()
 	connect(_package,				&DataSetPackage::showWarning,						_msgForwarder,			&MessageForwarder::showWarningQML,							Qt::QueuedConnection);
 	connect(_package,				&DataSetPackage::synchingExternallyChanged,			_fileMenu,				&FileMenu::dataAutoSynchronizationChanged					);
 	connect(_package,				&DataSetPackage::workspaceEmptyValuesChanged,		_analyses,				&Analyses::refreshAllAnalyses								);
+	connect(_package,				&DataSetPackage::refreshAllAnalyses,				_analyses,				&Analyses::refreshAllAnalyses,								Qt::QueuedConnection);
+	connect(_package,				&DataSetPackage::refreshAllCompCols,				_computedColumnsModel,	&ComputedColumnModel::invalidateAllColumns,					Qt::QueuedConnection);
 	
 	connect(_engineSync,			&EngineSync::computeColumnSucceeded,				_computedColumnsModel,	&ComputedColumnModel::computeColumnSucceeded				);
 	connect(_engineSync,			&EngineSync::computeColumnRemoved,					_computedColumnsModel,	&ComputedColumnModel::computeColumnRemoved					);
 	connect(_engineSync,			&EngineSync::computeColumnFailed,					_computedColumnsModel,	&ComputedColumnModel::computeColumnFailed					);
-	connect(_engineSync,			&EngineSync::engineTerminated,						this,					&MainWindow::fatalError,									Qt::QueuedConnection); //To give the process some time to realize it has crashed or something
+	connect(_engineSync,			&EngineSync::engineTerminated,						this,					&MainWindow::fatalError										);
 	connect(_engineSync,			&EngineSync::columnDataTypeChanged,					_columnsModel,			&ColumnsModel::columnTypeChanged							);
 	connect(_engineSync,			&EngineSync::refreshAllPlotsExcept,					_analyses,				&Analyses::refreshAllPlots									);
 	connect(_engineSync,			&EngineSync::processNewFilterResult,				_filterModel,			&FilterModel::processFilterResult							);
@@ -459,6 +432,7 @@ void MainWindow::makeConnections()
 	connect(_computedColumnsModel,	&ComputedColumnModel::chooseColumn,					_columnModel,			&ColumnModel::setChosenColumnByName,						Qt::QueuedConnection);
 			
 	connect(_languageModel,			&LanguageModel::currentLanguageChanged,				_columnModel,			&ColumnModel::languageChangedHandler,						Qt::QueuedConnection);
+	connect(_languageModel,			&LanguageModel::currentLocaleChanged,				_resultsJsInterface,	&ResultsJsInterface::setLocale,								Qt::QueuedConnection);
 
 	connect(_resultsJsInterface,	&ResultsJsInterface::packageModified,				this,					&MainWindow::setPackageModified								);
 	connect(_resultsJsInterface,	&ResultsJsInterface::analysisChangedDownstream,		this,					&MainWindow::analysisChangedDownstreamHandler				);
@@ -478,7 +452,7 @@ void MainWindow::makeConnections()
 	connect(_resultsJsInterface,	&ResultsJsInterface::showPlotEditor,				_plotEditorModel,		&PlotEditorModel::showPlotEditor							);
 	connect(_resultsJsInterface,	&ResultsJsInterface::resultsMetaChanged,			_analyses,				&Analyses::resultsMetaChanged								);
 	connect(_resultsJsInterface,	&ResultsJsInterface::allUserDataChanged,			_analyses,				&Analyses::allUserDataChanged								);
-	connect(_resultsJsInterface,	&ResultsJsInterface::resultsPageLoadedSignal,		_languageModel,			&LanguageModel::resultsPageLoaded							);
+	connect(_resultsJsInterface,	&ResultsJsInterface::resultsPageLoadedSignal,		_languageModel,			&LanguageModel::resultsPageLoaded,							Qt::QueuedConnection);
 	connect(_resultsJsInterface,	&ResultsJsInterface::showRSyntaxInResults,			_analyses,				&Analyses::showRSyntaxInResults								);
 
 	connect(_analyses,				&Analyses::countChanged,							this,					&MainWindow::analysesCountChangedHandler					);
@@ -516,6 +490,7 @@ void MainWindow::makeConnections()
 	connect(_preferences,			&PreferencesModel::plotBackgroundChanged,			this,					&MainWindow::setImageBackgroundHandler						);
 	connect(_preferences,			&PreferencesModel::plotPPIChanged,					this,					&MainWindow::plotPPIChangedHandler							);
 	connect(_preferences,			&PreferencesModel::exactPValuesChanged,				_resultsJsInterface,	&ResultsJsInterface::setExactPValuesHandler					);
+	connect(_preferences,			&PreferencesModel::normalizedNotationChanged,		_resultsJsInterface,	&ResultsJsInterface::setNormalizedNotationHandler			);
 	connect(_preferences,			&PreferencesModel::fixedDecimalsChangedString,		_resultsJsInterface,	&ResultsJsInterface::setFixDecimalsHandler					);
 	connect(_preferences,			&PreferencesModel::uiScaleChanged,					_resultsJsInterface,	&ResultsJsInterface::uiScaleChangedHandler					);
 	connect(_preferences,			&PreferencesModel::developerModeChanged,			_analyses,				&Analyses::refreshAllAnalyses								);
@@ -526,12 +501,15 @@ void MainWindow::makeConnections()
 	connect(_preferences,			&PreferencesModel::resultFontChanged,				_resultsJsInterface,	&ResultsJsInterface::setFontFamily							);
 	connect(_preferences,			&PreferencesModel::resultFontChanged,				_engineSync,			&EngineSync::refreshAllPlots								);
 	connect(_preferences,			&PreferencesModel::restartAllEngines,				_engineSync,			&EngineSync::haveYouTriedTurningItOffAndOnAgain				);
-	connect(_preferences,			&PreferencesModel::normalizedNotationChanged,		_resultsJsInterface,	&ResultsJsInterface::setNormalizedNotationHandler			);
 	connect(_preferences,			&PreferencesModel::developerFolderChanged,			_dynamicModules,		&DynamicModules::uninstallJASPDeveloperModule				);
 	connect(_preferences,			&PreferencesModel::showRSyntaxInResultsChanged,		_analyses,				&Analyses::showRSyntaxInResults								);
 	connect(_preferences,			&PreferencesModel::ALTNavModeActiveChanged,			ALTNavControl::ctrl(),	&ALTNavControl::enableAlTNavigation							);
+	connect(_preferences,			&PreferencesModel::remoteConfigurationChanged,		_jaspConfiguration,		&JASPConfiguration::remoteChanged							);
+	connect(_preferences,			&PreferencesModel::remoteConfigurationURLChanged,	_jaspConfiguration,		&JASPConfiguration::remoteChanged							);
+	connect(_preferences,			&PreferencesModel::useConfigurationFileChanged,		_jaspConfiguration,		&JASPConfiguration::processConfiguration					);
 	connect(_preferences,			&PreferencesModel::orderByValueByDefaultChanged,	[&](){	Column::setAutoSortByValuesByDefault(PreferencesModel::prefs()->orderByValueByDefault()); });
-	
+
+
 	Column::setAutoSortByValuesByDefault(PreferencesModel::prefs()->orderByValueByDefault());
 	
 	auto * dCSingleton = DesktopCommunicator::singleton();
@@ -541,8 +519,11 @@ void MainWindow::makeConnections()
 	connect(_preferences,			&PreferencesModel::interfaceFontChanged,			dCSingleton,			&DesktopCommunicator::interfaceFontChanged		);
 	connect(_preferences,			&PreferencesModel::currentJaspThemeChanged,			dCSingleton,			&DesktopCommunicator::currentJaspThemeChanged	);
 	connect(dCSingleton,			&DesktopCommunicator::useNativeFileDialogSignal,	_preferences,			&PreferencesModel::useNativeFileDialog			);
+	connect(dCSingleton,			&DesktopCommunicator::engineSandboxSignal,			_preferences,			&PreferencesModel::engineSandbox				);
+
 
 	connect(_filterModel,			&FilterModel::refreshAllAnalyses,					_analyses,				&Analyses::refreshAllAnalyses,								Qt::QueuedConnection);
+	connect(_filterModel,			&FilterModel::refreshAllCompCols,					_computedColumnsModel,	&ComputedColumnModel::invalidateAllColumns,					Qt::QueuedConnection);
 	connect(_filterModel,			&FilterModel::updateColumnsUsedInConstructedFilter, _package,				&DataSetPackage::setColumnsUsedInEasyFilter					);
 	connect(_filterModel,			&FilterModel::filterUpdated,						_package,				&DataSetPackage::refresh									);
 	connect(_filterModel,			&FilterModel::filterUpdated,						[&]() { _package->resetFilterCounters(); emit _columnsModel->filterChanged(); }		);
@@ -569,16 +550,18 @@ void MainWindow::makeConnections()
 
 	connect(_languageModel,			&LanguageModel::currentLanguageChanged,				_fileMenu,				&FileMenu::refresh											);
 	connect(_languageModel,			&LanguageModel::aboutToChangeLanguage,				_analyses,				&Analyses::prepareForLanguageChange							);
+	connect(_languageModel,			&LanguageModel::aboutToChangeLanguage,				_package,				&DataSetPackage::prepareForLanguageChange					);
+	connect(_languageModel,			&LanguageModel::languageChangeDone,					_package,				&DataSetPackage::languageChangeDone							);
 	connect(_languageModel,			&LanguageModel::currentLanguageChanged,				_analyses,				&Analyses::languageChangedHandler,							Qt::QueuedConnection);
 	connect(_languageModel,			&LanguageModel::currentLanguageChanged,				_helpModel,				&HelpModel::generateJavascript,								Qt::QueuedConnection);
 	connect(_languageModel,			&LanguageModel::currentLanguageChanged,				this,					&MainWindow::contactTextChanged,							Qt::QueuedConnection); //Probably not necessary but we can check once there actually are translations
-	connect(_languageModel,			&LanguageModel::pauseEngines,						_engineSync,			&EngineSync::pauseEngines									);
 	connect(_languageModel,			&LanguageModel::stopEngines,						_engineSync,			&EngineSync::stopEngines									);
 	connect(_languageModel,			&LanguageModel::resumeEngines,						_engineSync,			&EngineSync::resumeEngines,									Qt::QueuedConnection);
 
 	connect(_qml,					&QQmlApplicationEngine::warnings,					this,					&MainWindow::printQmlWarnings								);
 
 	connect(_plotEditorModel,		&PlotEditorModel::saveImage,						this,					&MainWindow::analysisSaveImageHandler						);
+	connect(_jaspConfiguration,		&JASPConfiguration::configurationProcessed,			this,					&MainWindow::loadModulesFromUserConfiguration				);
 }
 
 void MainWindow::printQmlWarnings(const QList<QQmlError> &warnings)
@@ -617,7 +600,6 @@ void MainWindow::loadQML()
 	_qml->rootContext()->setContextProperty("engineSync",								_engineSync										);
 	_qml->rootContext()->setContextProperty("helpModel",								_helpModel										);
 	_qml->rootContext()->setContextProperty("jaspTheme",								nullptr											); //Will be set from jaspThemeChanged()!
-	_qml->rootContext()->setContextProperty("messages",									MessageForwarder::msgForwarder()				);
 	_qml->rootContext()->setContextProperty("qmlUtils",									new QmlUtils(this)								);
 
 	_qml->rootContext()->setContextProperty("baseBlockDim",								20												); //should be taken from Theme
@@ -635,31 +617,6 @@ void MainWindow::loadQML()
 	_qml->rootContext()->setContextProperty("computedColumnTypeNotComputed",			int(computedColumnType::notComputed)			);
 	_qml->rootContext()->setContextProperty("computedColumnTypeConstructorCode",		int(computedColumnType::constructorCode)		);
 	_qml->rootContext()->setContextProperty("computedColumnTypeAnalysisNotComputed",	int(computedColumnType::analysisNotComputed)	);
-
-
-	bool	debug	= false,
-			isMac	= false,
-			isLinux = false;
-
-#ifdef JASP_DEBUG
-	debug = true;
-#endif
-
-#ifdef __APPLE__
-	isMac = true;
-#endif
-
-#ifdef __linux__
-	isLinux = true;
-#endif
-
-	bool isWindows = !isMac && !isLinux;
-
-	_qml->rootContext()->setContextProperty("DEBUG_MODE",			debug);
-	_qml->rootContext()->setContextProperty("MACOS",				isMac);
-	_qml->rootContext()->setContextProperty("LINUX",				isLinux);
-	_qml->rootContext()->setContextProperty("WINDOWS",				isWindows);
-	_qml->rootContext()->setContextProperty("INTERACTION_SEPARATOR", Term::separator);
 
 	_qml->setOutputWarningsToStandardError(true);
 
@@ -710,6 +667,8 @@ void MainWindow::loadQML()
 	Log::log() << "Loading CommunityWindow"		<< std::endl; _qml->load(QUrl("qrc:///components/JASP/Widgets/CommunityWindow.qml"));
 	Log::log() << "Loading MainWindow"			<< std::endl; _qml->load(QUrl("qrc:///components/JASP/Widgets/MainWindow.qml"));
 
+	if(!DataSetView::mainDataViewer())
+		throw std::runtime_error("The main data viewer did not load, without which JASP cannot run.");
 	
 	//To make sure we connect to the "main datasetview":
 	connect(_preferences, &PreferencesModel::uiScaleChanged,			DataSetView::mainDataViewer(),	&DataSetView::viewportChangedDelayed);
@@ -760,6 +719,7 @@ void MainWindow::setQmlImportPaths()
 
 	QStringList newImportPaths = originalImportPaths;
 
+	newImportPaths.append(":/jasp-stats.org/imports");
 	newImportPaths.append("qrc:///components");
 	newImportPaths.append(_dynamicModules->importPaths());
 
@@ -881,16 +841,42 @@ void MainWindow::logRemoveSuperfluousFiles(int maxFilesToKeep)
 		logFileDir.remove(logs[i].fileName());
 }
 
-void MainWindow::openFolderExternally(QDir folder)
+void MainWindow::openFolderExternally(QDir folder) const
 {
 	QDesktopServices::openUrl(QUrl::fromLocalFile(folder.absolutePath()));
 }
 
-void MainWindow::showLogFolder()
+void MainWindow::showLogFolder() const
 {
 	openFolderExternally(AppDirs::logDir());
 }
 
+void MainWindow::openURLFile(QString fileURLPath)
+{
+	QUrl fileUrl = fileURLPath.startsWith("file:") ? QUrl(fileURLPath) : QUrl::fromLocalFile(fileURLPath);
+	if (!fileUrl.isLocalFile())
+	{
+		MessageForwarder::showWarning(tr("Open file"), tr("Cannot access file %1").arg(fileURLPath));
+		return;
+	}
+
+	QString filePath = fileUrl.toLocalFile();
+	QFileInfo fileInfo(filePath);
+
+	if (!fileInfo.exists())
+	{
+		MessageForwarder::showWarning(tr("Open file"), tr("File %1 is not found.").arg(filePath));
+		return;
+	}
+
+	if (!FileTypeBaseValidName(fileInfo.suffix().toLower().toStdString()))
+	{
+		MessageForwarder::showWarning(tr("Open file"), tr("JASP does not support this file type %1.").arg(filePath));
+		return;
+	}
+
+	open(filePath);
+}
 
 void MainWindow::open(QString filepath)
 {
@@ -1053,7 +1039,11 @@ void MainWindow::refreshPlotsHandler(bool askUserForRefresh)
 void MainWindow::checkEmptyWorkspace()
 {
 	if (!analysesAvailable() && !dataAvailable())
-		_fileMenu->close();
+	{
+		if(DataSetPackage::pkg()->hasAnalysesWithoutData())
+			_fileMenu->close();
+
+	}
 }
 
 void MainWindow::analysisResultsChangedHandler(Analysis *analysis)
@@ -1071,6 +1061,7 @@ void MainWindow::analysisResultsChangedHandler(Analysis *analysis)
 		showInstructions = false;
 	}
 
+	_resultsJsInterface->setLocale(_languageModel->currentLocale().bcp47Name(), _languageModel->useThousandSeps());
 	_resultsJsInterface->analysisChanged(analysis);
 
 	setPackageModified();
@@ -1178,12 +1169,34 @@ void MainWindow::connectFileEventCompleted(FileEvent * event)
 	connect(event, &FileEvent::completed, this, &MainWindow::dataSetIOCompleted, Qt::QueuedConnection);
 }
 
+bool MainWindow::startDetached(const QString & applicationPath, const QStringList & args) const
+{
+	QProcess detachMe;
+
+	detachMe.setProgram(applicationPath);
+	detachMe.setArguments(args);
+#ifdef __unix__
+	detachMe.setUnixProcessParameters(QProcess::UnixProcessFlag::IgnoreSigPipe | QProcess::UnixProcessFlag::CreateNewSession | QProcess::UnixProcessFlag::ResetSignalHandlers | QProcess::UnixProcessFlag::DisconnectControllingTerminal);
+#endif
+	detachMe.setStandardErrorFile(QProcess::nullDevice());
+	detachMe.setStandardInputFile(QProcess::nullDevice());
+	detachMe.setStandardOutputFile(QProcess::nullDevice());
+
+	qint64 pidResult;
+	bool worked = detachMe.startDetached(&pidResult);
+
+
+	Log::log() << (worked ? "Started" : "Failed to start" ) << " application " << applicationPath << " with args: (" << args.join(", ") << ") and got pid: " << pidResult << std::endl;
+
+	return worked;
+}
+
 void MainWindow::dataSetIORequestHandler(FileEvent *event)
 {
 	if (event->operation() == FileEvent::FileNew)
 	{
 		if (_package->isLoaded())
-			QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList("--newData"));
+			MainWindow::startDetached(QCoreApplication::applicationFilePath(), QStringList("--newData"));
 		else
 			showNewData();
 	}
@@ -1196,8 +1209,8 @@ void MainWindow::dataSetIORequestHandler(FileEvent *event)
 
 			// begin new instance
 			
-			if(event->isDatabase())		QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList(tq(event->databaseStr())));
-			else						QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList(event->path()));
+			if(event->isDatabase())		MainWindow::startDetached(QCoreApplication::applicationFilePath(), QStringList(tq(event->databaseStr())));
+			else						MainWindow::startDetached(QCoreApplication::applicationFilePath(), QStringList(event->path()));
 		}
 		else
 		{
@@ -1242,6 +1255,8 @@ void MainWindow::dataSetIORequestHandler(FileEvent *event)
 	}
 	else if (event->operation() == FileEvent::FileClose)
 	{
+		connectFileEventCompleted(event);
+
 		if (_package->isModified() && (dataAvailable() || analysesAvailable()))
 		{
 			QString title = windowTitle();
@@ -1252,24 +1267,20 @@ void MainWindow::dataSetIORequestHandler(FileEvent *event)
 			default:
 			case MessageForwarder::DialogResponse::Cancel:
 				event->setComplete(false);
-				dataSetIOCompleted(event);
 				return;
 
 			case MessageForwarder::DialogResponse::Save:
 				event->chain(_fileMenu->save());
-				connectFileEventCompleted(event);
 				break;
 
 			case MessageForwarder::DialogResponse::Discard:
 				event->setComplete(true);
-				dataSetIOCompleted(event);
 				break;
 			}
 		}
 		else
 		{
 			event->setComplete();
-			dataSetIOCompleted(event);
 		}
 	}
 }
@@ -1312,7 +1323,7 @@ void MainWindow::closeVariablesPage()
 void MainWindow::dataSetIOCompleted(FileEvent *event)
 {
 	hideProgress();
-
+	
 	if (event->operation() == FileEvent::FileNew)
 	{
 	}
@@ -1321,7 +1332,7 @@ void MainWindow::dataSetIOCompleted(FileEvent *event)
 		if (event->isSuccessful())
 		{
 			populateUIfromDataSet();
-
+			
 			_package->setCurrentFile(event->path());
 
 			if(event->osfPath() != "")
@@ -1419,11 +1430,11 @@ void MainWindow::dataSetIOCompleted(FileEvent *event)
 			_package->dbDelete();
 			_package->reset(false);
 			_ribbonModel->showStatistics();
+			_fileMenu->buttonsForEmptyWorkspace();
 
 			if(!_applicationExiting)
 				_engineSync->cleanRestart();
-
-			if (_applicationExiting)	
+			else
 				emit exitSignal();
 		}
 		else
@@ -1443,7 +1454,7 @@ void MainWindow::populateUIfromDataSet()
 	JASPTIMER_SCOPE(MainWindow::populateUIfromDataSet);
 	bool errorFound = false;
 	stringstream errorMsg;
-
+	
 	_resultsJsInterface->setScrollAtAll(false);
 
 	_analyses->loadAnalysesFromDatasetPackage(errorFound, errorMsg, _ribbonModel);
@@ -1521,7 +1532,13 @@ void MainWindow::_openDbJson()
 
 void MainWindow::openGitHubBugReport() const
 {
-	bool openGitHubUserRegistration = false;
+	static bool alreadyOpened = false;
+
+	if (alreadyOpened) return;
+	alreadyOpened = true;
+
+	bool	openGitHubUserRegistration = false,
+			openBrowseFolder = false;
 
 	if(!Settings::value(Settings::USER_HAS_GITHUB_ACCOUNT).toBool())
 	{
@@ -1539,42 +1556,50 @@ void MainWindow::openGitHubBugReport() const
 		}
 	}
 
-	std::stringstream fillIt;
+	std::stringstream systemInfo, debugInfo;
 
-	try			{ fillIt << "* JASP version: " << AppInfo::version.asString()	<< std::endl; }
-	catch(...)	{ fillIt << "* JASP version: ???\n"; }
+	try			{ systemInfo << "* JASP version: " << AppInfo::version.asString()	<< std::endl; }
+	catch(...)	{ systemInfo << "* JASP version: ???" << std::endl; }
 
-	try			{ fillIt <<	"* OS name and version: " << QSysInfo::prettyProductName() << std::endl; }
-	catch(...)	{ fillIt << "* OS name and version: ???\n"; }
+	try			{ systemInfo <<	"* OS name and version: " << QSysInfo::prettyProductName() << std::endl; }
+	catch(...)	{ systemInfo << "* OS name and version: ???" << std::endl; }
 
-	fillIt	<<	"<!--- Please fill in the following fields: -->\n"
-				"* Analysis: \n"
-				"* Bug description:\n"
-				"* Expected behaviour:\n"
-				"<!--- Steps to reproduce means, what actions should we take in JASP to reproduce the bug you encountered? --->\n"
-				"#### Steps to reproduce:\n"
-				"1. Go to '...'\n"
-				"2. Click on '....'\n"
-				"3. Scroll down to '....'\n"
-				"4. See error\n";
-
-	fillIt <<	"\n\n\n"
-				"-----------------------------------------------------------------------\n"
-				"<!--- A note from the developers:\nIf possible please attach your data and/or JASP file to the issue, this makes solving the bug a lot easier."
-				" If you would prefer to not make your data publicly available then you could also mail us.\n"
-				"Note that github requires you to zip the file to upload it here.\n-->\n\n"
-				"### Debug information:\n" << _engineSync->currentStateForDebug();
-
-	try			{ fillIt << "\n[Commit used](" << AboutModel::commitUrl() << ")\n"; }
-	catch(...)	{ fillIt << "Commit couldn't be found\n"; }
+	try			{ systemInfo << "* Commit used: " << AboutModel::commitUrl() << std::endl; }
+	catch(...)	{ systemInfo << "Commit couldn't be found\n"; }
 
 	try
 	{
-		QString percentEncodedIssue = QUrl::toPercentEncoding(tq(fillIt.str()));
+		if (!_preferences->logToFile())
+			debugInfo << tr("No log files are available. To get more information, please turn logging on. For this: open the file menu (the blue hamburger button left top), navigate to Advanced Preferences and check the 'Log to file' checkbox.") << std::endl;
+		else
+		{
+			QDir logDir(AppDirs::logDir());
+			QFileInfoList files = logDir.entryInfoList(QDir::Files, QDir::Time);
 
-		const char * baseIssueUrl = "https://github.com/jasp-stats/jasp-issues/issues/new?labels=bug&title=JASP+crashed&body=";
+			debugInfo << tr("Please drag and drop these log files into this issue: ") << std::endl;
+			for (const QFileInfo& file : files)
+			{
+				debugInfo << "* " << file.fileName() << std::endl;
+				if (file.fileName().contains("Desktop")) // The Engine log files are newer, the Desktop file is the oldest log file
+					break;
+			}
+			debugInfo << std::endl;
+			openBrowseFolder = true;
+		}
+	}
+	catch(...)	{ debugInfo << "No Log files path found"; }
 
-		QUrl issueUrl = baseIssueUrl + percentEncodedIssue;
+	try			{ debugInfo << "Debug information: " << _engineSync->currentStateForDebug() << std::endl; }
+	catch(...)	{ debugInfo << "No debug information found"; }
+
+	try
+	{
+		QString systemInfoStr	= QUrl::toPercentEncoding(tq(systemInfo.str())),
+				debugInfoStr	= QUrl::toPercentEncoding(tq(debugInfo.str()));
+
+		QString baseIssueUrl = "https://github.com/jasp-stats/jasp-issues/issues/new?template=crash-report.yml&title=JASP+crashed";
+
+		QUrl issueUrl = baseIssueUrl + "&system-info=" + systemInfoStr + "&log=" + debugInfoStr;
 
 		QDesktopServices::openUrl(issueUrl);
 
@@ -1584,13 +1609,15 @@ void MainWindow::openGitHubBugReport() const
 				QDesktopServices::openUrl(QUrl("https://github.com/join"));
 			});
 
-		emit exitSignal(1);
+		if(openBrowseFolder)
+			showLogFolder();
 	}
 	catch(...)
 	{
 		MessageForwarder::showWarning(tr("GitHub couldn't be openend for you"), tr("Something went wrong with leading you to GitHub..\nYou can still report the bug by going to https://github.com/jasp-stats/jasp-issues/issues"));
-		emit exitSignal(1);
 	}
+	
+	emit exitSignal(1);
 }
 
 void MainWindow::fatalError()
@@ -1600,14 +1627,38 @@ void MainWindow::fatalError()
 	if (exiting == false)
 	{
 		exiting = true;
-		if(MessageForwarder::showYesNo(tr("Error"), tr("JASP has experienced an unexpected internal error:\n%1").arg(_fatalError) + "\n\n" +
-			tr("JASP cannot continue and will close.\n\nWe would be grateful if you could report this error to the JASP team."), tr("Report"), tr("Exit")))
+		
+		_engineSync->killProcessTimer();
+		
+		MessageForwarder::DialogResponse response = MessageForwarder::showYesNoCancel(
+					tr("Error"), 
+					tr("JASP has experienced an unexpected internal error:\n%1").arg(_fatalError) + "\n\n" +
+					tr("JASP had a serious error and cannot calculate anymore.\n\nWe would be grateful if you could report this error to the JASP team."), 
+					tr("Report"), tr("Salvage"), tr("Exit"), QMessageBox::Icon::Critical);
+		
+		switch(response)
 		{
-			//QDesktopServices::openUrl(QUrl("https://jasp-stats.org/bug-reports/"));
+		case MessageForwarder::DialogResponse::Yes:
 			openGitHubBugReport();
+			break;
+			
+		case MessageForwarder::DialogResponse::Cancel:
+			exit(2);
+			break;
+			
+		default:
+			break;
 		}
-		else
-			emit exitSignal(2);
+
+		MessageForwarder::showWarning(tr("Salvaging"), tr("We're very sorry JASP has had a fatal error.\n"
+														  "To allow you to salvage or recover something out of this mess JASP will stay partly functional.\n\n"
+														  "You can for instance save your current workspace, or try changing a setting to perhaps prevent the problem next time.\n\n"
+														  "Analyses or computed columns and the like will not function anymore until you restart JASP."),
+									  QMessageBox::Critical);
+		
+		
+		_hadFatalError = true;
+		emit hadFatalErrorChanged();
 	}
 }
 
@@ -1737,7 +1788,7 @@ bool MainWindow::startDataEditorHandler()
 			else
 			{
 				QString caption = "Find Data File";
-				QString filter = "Data File (*.csv *.txt *.tsv *.sav *.ods *.xls *.xlsx)";
+				QString filter = "Data File (*.csv *.txt *.tsv *.sav *.ods *.xls *.xlsx *.rdata *.rds)";
 
 				dataFilePath = MessageForwarder::browseOpenFile(caption, "", filter);
 				if (dataFilePath == "")
@@ -1785,12 +1836,17 @@ void MainWindow::clearModulesFoldersUser()
 	if(renvroot.exists())	renvroot.removeRecursively();
 	if(usermods.exists())	usermods.removeRecursively();
 
+#ifdef __APPLE__
+	QDir devModPatchDir(AppDirs::devModulePatchDir());
+	if(devModPatchDir.exists())	devModPatchDir.removeRecursively();
+#endif
+
 }
 
 /* the following does not seem to work: the new process crashes immediately... 
 void MainWindow::restartJASP()
 {
-	QProcess::startDetached(QCoreApplication::applicationFilePath());
+	MainWindow::startDetached(QCoreApplication::applicationFilePath());
 	QApplication::quit();
 }*/
 
@@ -1846,7 +1902,7 @@ void MainWindow::startDataEditor(QString path)
 #else
 		args = {path};
 #endif
-		if (!QProcess::startDetached(appname, args))
+		if (!MainWindow::startDetached(appname, args))
 			MessageForwarder::showWarning(tr("Start Editor"), tr("Unable to start the editor : %1. Please check your editor settings in the preference menu.").arg(appname));
 	}
 	else
@@ -2184,7 +2240,20 @@ void MainWindow::setDefaultWorkspaceEmptyValues()
 	DataSetPackage::pkg()->setDefaultWorkspaceEmptyValues();
 }
 
-void MainWindow::resetVariableTypes()
+void MainWindow::loadModulesFromUserConfiguration(configState state)
 {
-	DataSetPackage::pkg()->resetVariableTypes();
+	if(state == configState::FAIL)
+		return;
+
+	for(const QString& moduleName : *_jaspConfiguration->getAdditionalModules())
+	{
+		auto button = _ribbonModel->ribbonButtonModel(moduleName.toStdString());
+		_ribbonModel->setModuleEnabled(_ribbonModel->ribbonButtonModelIndex(button), true);
+	}
+}
+
+
+bool MainWindow::hadFatalError() const
+{
+	return _hadFatalError;
 }

@@ -1,6 +1,6 @@
-﻿import QtQuick						2.11
-import QtQuick.Controls				2.4
-import JASP.Controls				1.0
+﻿import QtQuick
+import QtQuick.Controls
+import JASP.Controls
 import Qt5Compat.GraphicalEffects
 
 DropArea
@@ -468,8 +468,9 @@ DropArea
 										{
 											if(formParent.myForm && helpModel.markdown !== formParent.myForm.helpMD)
 											{
+												helpModel.visible  = true;
 												helpModel.analysis	= formParent.myAnalysis;
-												helpModel.markdown  = Qt.binding(function(){ return formParent.myForm.helpMD; });
+												helpModel.markdown  = Qt.binding(function(){ return formParent.myForm ? formParent.myForm.helpMD : ""; });
 											}
 											else
 											{

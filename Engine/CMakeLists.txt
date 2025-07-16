@@ -9,24 +9,8 @@
 #
 list(APPEND CMAKE_MESSAGE_CONTEXT Engine)
 
-if(LINUX)
-
-  target_link_libraries(R-Interface PUBLIC ${_LIB_R})
-
-endif()
-
-make_includable(jaspBase/R/distributionSamplers.R			jaspBase_distributionSamplers.h)
-make_includable(jaspBase/R/friendlyConstructorFunctions.R	jaspBase_friendlyConstructorFunctions.h)
-make_includable(jaspBase/R/transformFunctions.R				jaspBase_transformFunctions.h)
-
 file(GLOB HEADER_FILES "${CMAKE_CURRENT_LIST_DIR}/*.h")
 file(GLOB SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
-
-file(GLOB JASPRESULTS_HEADER_FILES "${CMAKE_CURRENT_LIST_DIR}/jaspBase/src/*.h")
-file(GLOB JASPRESULTS_SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/jaspBase/src/*.cpp")
-
-# this target is not compiled and only exists so that the sources and headers of jaspResults show up in the project and can be opened with Ctrl+k
-add_custom_target(jaspResults ALL SOURCES ${JASPRESULTS_SOURCE_FILES} ${JASPRESULTS_HEADER_FILES})
 
 add_executable(
     JASPEngine
@@ -35,48 +19,26 @@ add_executable(
     $<$<PLATFORM_ID:Windows>:${CMAKE_SOURCE_DIR}/Engine/JASPEngine.exe.manifest>
 )
 
-add_dependencies(JASPEngine R-Interface)
-
 target_include_directories(
 	JASPEngine
-	PUBLIC ${PROJECT_SOURCE_DIR}/R-Interface
+	PUBLIC
+    ${PROJECT_SOURCE_DIR}/QMLComponents
 	${PROJECT_SOURCE_DIR}/CommonData
 	${PROJECT_SOURCE_DIR}/Common
 	${PROJECT_SOURCE_DIR}/Common/jaspColumnEncoder
 	${Boost_INCLUDE_DIRS})
 
-if(WIN32)
-
-  message(CHECK_START "Setting path to libR-Interface.dll")
-  set(_LIB_R_INTERFACE_DLL
-      "${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll"
-      CACHE STRING "Path to libR-Interface.dll")
-  message(STATUS "  ${_LIB_R_INTERFACE_DLL}")
-
-  message(CHECK_START "Setting path to libR-Interface.dll.a")
-  set(_LIB_R_INTERFACE_STATIC_DLL_A
-      "${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll.a"
-      CACHE STRING "Path to libR-Interface.dll.a")
-  message(STATUS "  ${_LIB_R_INTERFACE_STATIC_DLL_A}")
-
-  message(STATUS "libR-Interface will be build if it is missing.")
-
-endif()
-
 target_link_libraries(
-  JASPEngine
-  PUBLIC Common
-         CommonData
-         #
-         $<$<PLATFORM_ID:Windows>:${_LIB_R_INTERFACE_STATIC_DLL_A}>
-         $<$<NOT:$<PLATFORM_ID:Windows>>:R-Interface>
-         # Boost
-         Boost::system
-         Boost::date_time
-         Boost::timer
-         Boost::chrono
-         #
-         LibArchive::LibArchive)
+	JASPEngine
+	PUBLIC
+	QMLComponents
+	CommonData
+	Common
+	Boost::system
+	Boost::date_time
+	Boost::timer
+	Boost::chrono
+)
 
 if(IWYU_EXECUTABLE AND RUN_IWYU)
   set_target_properties(JASPEngine PROPERTIES CXX_INCLUDE_WHAT_YOU_USE
@@ -109,22 +71,18 @@ if(WINDOWS)
   add_custom_command(
     TARGET JASPEngine
     POST_BUILD DEPENDS ${CMAKE_BINARY_DIR}/R-Interface/libR-Interface.dll
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBGCC_S_SEH_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBSTDCPP_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_MSYS_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBWINPTHREAD_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBREADSTAT_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_ZLIB_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBICONV_DLL}
-            ${CMAKE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_LIB_R_INTERFACE_DLL}
-            ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBWINPTHREAD_DLL}       ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBGCC_S_SEH_DLL}        ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBREADSTAT_DLL}         ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBSTDCPP_DLL}           ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBRDATA_DLL}            ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_MSYS_DLL}                ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_ZLIB_DLL}                ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBBZ2_DLL}              ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBLZMA_DLL}             ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RTOOLS_LIBICONV_DLL}            ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_LIB_R_INTERFACE_DLL}           ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${_LIB_R_INTERFACE_NORINSIDE_DLL} ${CMAKE_BINARY_DIR}
     COMMENT "------ Re-installing the dependencies (if necessary)")
 
 endif()

@@ -12,10 +12,6 @@ msgctxt "SortMenuModel|"
 msgid "None"
 msgstr "Ningún"
 
-msgctxt "ModelTermsList|"
-msgid "Model Terms"
-msgstr "Elementos do Modelo"
-
 msgctxt "AnalysisForm|"
 msgid "Plot"
 msgstr "Gráfica"
@@ -122,7 +118,7 @@ msgstr "Eliminar"
 
 msgctxt "ResultMenuModel|"
 msgid "Remove"
-msgstr "Eliminar"
+msgstr "Quitar"
 
 msgctxt "ResourceButtons|"
 msgid "OSF"
@@ -336,17 +332,6 @@ msgstr ""
 "Portable Network Graphics (*.png);;Portable Document Format (*.pdf);;"
 "Encapsulated PostScript (*.eps);;300 dpi Tagged Image File (*.tiff);;"
 "PowerPoint (*.pptx);;Scalable Vector Graphics (*.svg)"
-
-msgctxt "MainWindow|"
-msgid ""
-"JASP cannot continue and will close.\n"
-"\n"
-"We would be grateful if you could report this error to the JASP team."
-msgstr ""
-"JASP non pode continuar e vai pecharse.\n"
-"\n"
-"Te estariamos moi agradecidos se puideras informar deste fallo ao equipo de "
-"JASP."
 
 #, qt-format
 msgctxt "MainWindow|"
@@ -844,11 +829,11 @@ msgstr "Definir unha columna mediante código de R"
 
 msgctxt "FilterWindow|"
 msgid "mean"
-msgstr "media"
+msgstr "Media"
 
 msgctxt "FilterWindow|"
 msgid "returns number of elements in y"
-msgstr "devolve o número de elementos de y"
+msgstr "Devolve o número de elementos de y"
 
 msgctxt "ComputeColumnWindow|"
 msgid "Compute column"
@@ -858,81 +843,81 @@ msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from a geometric distribution with specified probability prob"
 msgstr ""
-"xera datos dunha distribución Xeométrica coa probabilidade (Prob) indicada"
+"Xera datos dunha distribución Xeométrica coa probabilidade (Prob) indicada"
 
 msgctxt "FilterWindow|"
 msgid "standard deviation"
-msgstr "desvío padrón"
+msgstr "Desvío padrón"
 
 msgctxt "FilterWindow|"
 msgid "summation"
-msgstr "suma"
+msgstr "Suma"
 
 msgctxt "FilterWindow|"
 msgid "rounds y to n decimals"
-msgstr "arredonda y a n decimais"
+msgstr "Arredonda y a n decimais"
 
 msgctxt "ComputeColumnWindow|"
 msgid "break your data up in numBreaks levels"
-msgstr "separa os teus datos en niveles de numBreaks"
+msgstr "Separa os teus datos en niveles de numBreaks"
 
 msgctxt "ComputeColumnWindow|"
 msgid "exponential"
-msgstr "exponencial"
+msgstr "Exponencial"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from a chi-squared distribution with degrees of freedom df "
 "and non-centrality parameter ncp"
 msgstr ""
-"xera datos dunha distribución Khi-cadrado cos graos de liberdade (gl) e "
+"Xera datos dunha distribución Khi-cadrado cos graos de liberdade (gl) e "
 "parámetro de non centrado (ncp)"
 
 msgctxt "ComputeColumnWindow|"
 msgid "replace any missing values (NA) in column by the value in replaceWith"
 msgstr ""
-"substitúe calquera valor ausente (NA) da columna polo valor de replaceWith"
+"Substitúe calquera valor ausente (NA) da columna polo valor de replaceWith"
 
 msgctxt "ComputeColumnWindow|"
 msgid "natural logarithm"
-msgstr "logaritmo natural"
+msgstr "Logaritmo natural"
 
 msgctxt "ComputeColumnWindow|"
 msgid "generates data from a Poisson distribution with specified rate lambda"
-msgstr "xera datos dunha distribución Poisson coa frecuencia (lambda) indicada"
+msgstr "Xera datos dunha distribución Poisson coa frecuencia (lambda) indicada"
 
 msgctxt "FilterWindow|"
 msgid "median"
-msgstr "mediana"
+msgstr "Mediana"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from a beta distribution with specified shapes alpha and beta"
 msgstr ""
-"xera datos dunha distribución Beta cos parámetros de forma (alfa e beta) "
+"Xera datos dunha distribución Beta cos parámetros de forma (alfa e beta) "
 "indicados"
 
 msgctxt "FilterWindow|"
 msgid "variance"
-msgstr "varianza"
+msgstr "Varianza"
 
 msgctxt "ComputeColumnWindow|"
 msgid "generates data from a gamma distribution with specified shape and scale"
 msgstr ""
-"xera datos dunha distribución Gamma cos parámetros (de forma e escala) "
+"Xera datos dunha distribución Gamma cos parámetros (de forma e escala) "
 "indicados"
 
 msgctxt "ComputeColumnWindow|"
 msgid "generates data from an exponential distribution with specified rate"
-msgstr "xera datos dunha distribución Exponencial coa taxa indicada"
+msgstr "Xera datos dunha distribución Exponencial coa taxa indicada"
 
 msgctxt "ComputeColumnWindow|"
 msgid "base 2 logarithm"
-msgstr "logaritmo en base 2"
+msgstr "Logaritmo en base 2"
 
 msgctxt "ComputeColumnWindow|"
 msgid "generates data from a uniform distribution between min and max"
-msgstr "xera datos dunha distribución Uniforme entre Min e Max"
+msgstr "Xera datos dunha distribución Uniforme entre Min e Max"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
@@ -944,14 +929,14 @@ msgstr ""
 
 msgctxt "FilterWindow|"
 msgid "if-else statement"
-msgstr "enunciado se-entón"
+msgstr "Enunciado se-entón"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from t distribution with degrees of freedom df and non-"
 "centrality parameter ncp"
 msgstr ""
-"xera datos dunha distribución t cos graos de liberdade (gl) e parámetro de "
+"Xera datos dunha distribución t cos graos de liberdade (gl) e parámetro de "
 "non centrado (ncp)"
 
 msgctxt "ComputeColumnWindow|"
@@ -959,23 +944,23 @@ msgid ""
 "generates data from an F distribution with specified degrees of freedoms "
 "df1, df2 and non-centrality parameter ncp"
 msgstr ""
-"xera datos dunha distribución F cos graos de liberdade (gl1, gl2) e o "
+"Xera datos dunha distribución F cos graos de liberdade (gl1, gl2) e o "
 "parámetro de non centrado (ncp) indicados"
 
 msgctxt "FilterWindow|"
 msgid "product of values"
-msgstr "produto de valores"
+msgstr "Produto de valores"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from a Weibull distribution with specified shape and scale"
 msgstr ""
-"xera datos dunha distribución Weibull cos parámetros (de forma e escala) "
+"Xera datos dunha distribución Weibull cos parámetros (de forma e escala) "
 "indicados"
 
 msgctxt "ComputeColumnWindow|"
 msgid "logarithm of y in 'base'"
-msgstr "logaritmo de y en 'base'"
+msgstr "Logaritmo de y en 'base'"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
@@ -990,7 +975,7 @@ msgid ""
 "generates data from a negative binomial distribution with specified trials "
 "and probability prob"
 msgstr ""
-"xera datos dunha distribución Binomial Negativa cos ensaios e a "
+"Xera datos dunha distribución Binomial Negativa cos ensaios e a "
 "probabilidade (Prob) indicados"
 
 msgctxt "ComputeColumnWindow|"
@@ -998,31 +983,31 @@ msgid ""
 "generates data from a log-normal distribution with specified logarithmic "
 "mean meanLog and standard deviation sdLog"
 msgstr ""
-"xera datos dunha distribución Log-Normal coa media logarítmica (meanLog) e o "
+"Xera datos dunha distribución Log-Normal coa media logarítmica (meanLog) e o "
 "desvío padrón (sdLog) indicados"
 
 msgctxt "ComputeColumnWindow|"
 msgid "base 10 logarithm"
-msgstr "logaritmo en base 10"
+msgstr "Logaritmo en base 10"
 
 msgctxt "FilterWindow|"
 msgid "returns minimum of values"
-msgstr "devolve o mínimo dos valores"
+msgstr "Devolve o mínimo dos valores"
 
 msgctxt "FilterWindow|"
 msgid "returns maximum of values"
-msgstr "devolve o máximo dos valores"
+msgstr "Devolve o máximo dos valores"
 
 msgctxt "FilterWindow|"
 msgid "absolute value"
-msgstr "valor absoluto"
+msgstr "Valor absoluto"
 
 msgctxt "ComputeColumnWindow|"
 msgid ""
 "generates data from a binomial distribution with specified trials and "
 "probability prob"
 msgstr ""
-"xera datos dunha distribución Binomial cos ensaios e a probabilidade (Prob) "
+"Xera datos dunha distribución Binomial cos ensaios e a probabilidade (Prob) "
 "indicados"
 
 msgctxt "ComputeColumnWindow|"
@@ -1030,7 +1015,7 @@ msgid ""
 "generates data from a Gaussian distribution with specified mean and standard "
 "deviation sd"
 msgstr ""
-"xera datos dunha distribución Normal coa media e o desvío padrón (sd) "
+"Xera datos dunha distribución Normal coa media e o desvío padrón (sd) "
 "indicados"
 
 msgctxt "ComputeColumnWindow|"
@@ -1985,10 +1970,6 @@ msgstr ""
 "Non se poden atopar as opcións de edición da gráfica %1, entón a edición de "
 "gráficas non funcionará..."
 
-msgctxt "ModelTermsList|"
-msgid "Add to null model"
-msgstr "Engadir ao modelo nulo"
-
 #, qt-format
 msgctxt "TextField|"
 msgid "Restoring last correct value: %1"
@@ -2057,23 +2038,6 @@ msgstr "O ficheiro cambiou"
 msgctxt "MenuHeader|"
 msgid "Show info about these preferences"
 msgstr "Amosar a información sobre estas preferencias"
-
-#, qt-format
-msgctxt "ModuleInstaller|"
-msgid "<i>%1 is not a (correct) JASP Module!</i>"
-msgstr "<i>%1 non é un Módulo (correcto) de JASP!</i>"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module"
-msgstr "Escoller un Módulo de JASP"
-
-msgctxt "ModuleInstaller|"
-msgid "<i>Browse for a JASP Module to see more information here</i>"
-msgstr "<i>Procurar un Módulo de JASP para ver aquí máis información</i>"
-
-msgctxt "ModuleInstaller|"
-msgid "Browse for JASP Module"
-msgstr "Procurar o Módulo de JASP"
 
 msgctxt "DataLibraryBreadCrumbsListModel|"
 msgid "Categories"
@@ -2159,23 +2123,23 @@ msgstr "Restablecer"
 
 msgctxt "ComputeColumnWindow|"
 msgid "absolute value"
-msgstr "valor absoluto"
+msgstr "Valor absoluto"
 
 msgctxt "ComputeColumnWindow|"
 msgid "standard deviation"
-msgstr "desvío padrón"
+msgstr "Desvío padrón"
 
 msgctxt "ComputeColumnWindow|"
 msgid "variance"
-msgstr "varianza"
+msgstr "Varianza"
 
 msgctxt "ComputeColumnWindow|"
 msgid "summation"
-msgstr "adición"
+msgstr "Suma"
 
 msgctxt "ComputeColumnWindow|"
 msgid "product of values"
-msgstr "produto de valores"
+msgstr "Produto de valores"
 
 msgctxt "ComputeColumnWindow|"
 msgid "Standardizes the variable"
@@ -2183,40 +2147,40 @@ msgstr "Tipifica a variable"
 
 msgctxt "ComputeColumnWindow|"
 msgid "returns minimum of values"
-msgstr "devolve o mínimo dos valores"
+msgstr "Devolve o mínimo dos valores"
 
 msgctxt "ComputeColumnWindow|"
 msgid "returns maximum of values"
-msgstr "devolve o máximo dos valores"
+msgstr "Devolve o máximo dos valores"
 
 msgctxt "ComputeColumnWindow|"
 msgid "mean"
-msgstr "media"
+msgstr "Media"
 
 msgctxt "ComputeColumnWindow|"
 msgid "returns the sign of values"
-msgstr "devolve o signo dos valores"
+msgstr "Devolve o signo dos valores"
 
 msgctxt "ComputeColumnWindow|"
 msgid "rounds y to n decimals"
-msgstr "arredonda y a n decimais"
+msgstr "Arredonda y a n decimais"
 
 msgctxt "ComputeColumnWindow|"
 msgid "returns number of elements in y"
-msgstr "devolve o número de elementos de y"
+msgstr "Devolve o número de elementos de y"
 
 msgctxt "ComputeColumnWindow|"
 msgid "median"
-msgstr "mediana"
+msgstr "Mediana"
 
 msgctxt "ComputeColumnWindow|"
 msgid "if-else statement"
-msgstr "enunciado se-entón"
+msgstr "Enunciado se-entón"
 
 msgctxt "ComputeColumnWindow|"
 msgid "returns true if string contains substring at least once"
 msgstr ""
-"devolve Verdadeiro se a cadea contén unha subcadea, cando menos unha vez"
+"Devolve verdadeiro se a cadea contén unha subcadea, cando menos unha vez"
 
 msgctxt "ComputeColumnWindow|"
 msgid "Open Documentation"
@@ -2287,10 +2251,6 @@ msgid "Clear installed modules and packages"
 msgstr "Borrar os módulos e paquetes instalados"
 
 msgctxt "PrefsAdvanced|"
-msgid "This will erase the 'renv' and 'Modules' folders in the appdata."
-msgstr "Isto vai borrar os cartafoles 'renv' e 'Módulos' de appdata."
-
-msgctxt "PrefsAdvanced|"
 msgid "Engine options"
 msgstr "Opcións de rexistro"
 
@@ -2325,10 +2285,6 @@ msgstr "Esquema escuro de cores"
 msgctxt "PrefsUI|"
 msgid "Preferred language"
 msgstr "Idioma preferido"
-
-msgctxt "PrefsUI|"
-msgid "Choose language  "
-msgstr "Elixir idioma  "
 
 msgctxt "PrefsUI|"
 msgid "Safe graphics mode"
@@ -2421,11 +2377,12 @@ msgstr "Tipifica a variable"
 
 msgctxt "FilterWindow|"
 msgid "returns the sign of values"
-msgstr "devolve o signo dos valores"
+msgstr "Devolve o signo dos valores"
 
 msgctxt "FilterWindow|"
 msgid "returns true if string contains substring at least once"
-msgstr "devolve Verdadeiro se a cadea contén a subcadea, cando menos unha vez"
+msgstr ""
+"Devolve verdadeiro se a cadea contén unha subcadea, cando menos unha vez"
 
 msgctxt "FilterWindow|"
 msgid "Hide filter"
@@ -2515,11 +2472,11 @@ msgstr "Límite superior"
 
 msgctxt "PlotEditor|"
 msgid "x-axis"
-msgstr "eixe x"
+msgstr "Eixe X"
 
 msgctxt "PlotEditor|"
 msgid "y-axis"
-msgstr "eixe y"
+msgstr "Eixe Y"
 
 msgctxt "RibbonBar|"
 msgid "Show main menu"
@@ -2773,25 +2730,6 @@ msgstr ""
 "A instalación do Módulo %1 fallou coa seguinte mensaxe de fallo:\n"
 "%2"
 
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid "Cannot install module because %1 does not exist."
-msgstr "Non pode instalarse o módulo porque %1 non existe."
-
-#, qt-format
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"Cannot install module because it is named '%1' and that name is reserved for "
-"installing the development module.\n"
-"Change the name (in DESCRIPTION and description.json) and try it again. If "
-"you are not the author of this module and do not know how to do this, "
-"contact: %2"
-msgstr ""
-"Non pode instalarse o módulo porque se chama '%1' e ese nome está reservado "
-"para instalar o módulo de desenvolvemento.\n"
-"Troca o nome (en DESCRICIÓN e description.json) e proba de novo. Se non es o "
-"autor deste módulo e non sabes como se fai isto, contacta con: %2"
-
 msgctxt "Modules::DynamicModules|"
 msgid "Select a folder"
 msgstr "Escoller un cartafol"
@@ -2940,23 +2878,6 @@ msgstr ""
 "<h3>%1</h3><i>Versión %2</i><br><p>%3</p><br><br><i>Creada por %4 e mantida "
 "por %5.</i> <br><i>Mira no sitio web para máis detalles: <a href=\"http://"
 "%6\">%6</a></i><br>"
-
-msgctxt "RibbonModel|"
-msgid "Module missing"
-msgstr "Módulo ausente"
-
-#, qt-format
-msgctxt "RibbonModel|"
-msgid ""
-"It seems the bundled module %1 wasn't correctly installed, and thus cannot "
-"be loaded.\n"
-"If you installed this version of JASP via an official installer let the JASP "
-"team know."
-msgstr ""
-"Semella que o módulo %1 empaquetado non estaba instalado correctamente, polo "
-"que non se pode cargar.\n"
-"Se instalaches esta versión de JASP a partir dun instalador oficial, informa "
-"ao equipo de JASP."
 
 #, qt-format
 msgctxt "RibbonModel|"
@@ -3126,10 +3047,6 @@ msgid "Percentage Field"
 msgstr "Campo de Porcentaxe"
 
 msgctxt "TextInputBase|"
-msgid "Integers Field"
-msgstr "Campo de Enteiros"
-
-msgctxt "TextInputBase|"
 msgid "Doubles Field"
 msgstr "Campo de Dobres Precisións"
 
@@ -3144,10 +3061,6 @@ msgstr "Engadir Campo de Columna Calculada"
 msgctxt "TextInputBase|"
 msgid "Formula Field"
 msgstr "Campo de Fórmula"
-
-msgctxt "TextInputBase|"
-msgid "Formulas Field"
-msgstr "Campo de Fórmulas"
 
 msgctxt "TextInputBase|"
 msgid "Text Field"
@@ -3309,18 +3222,6 @@ msgstr "Compoñentes de Código Aberto"
 msgctxt "PrefsUI|"
 msgid "Help us translate or improve JASP in your language"
 msgstr "Axúdanos a traducir ou mellorar JASP no teu idioma"
-
-msgctxt "ModuleInstaller|"
-msgid "Install"
-msgstr "Instalar"
-
-msgctxt "ModuleInstaller|"
-msgid "Press this to install your selected Module"
-msgstr "Preme isto para instalar o Módulo escollido"
-
-msgctxt "ModuleInstaller|"
-msgid "Select a JASP Module to install"
-msgstr "Escolle un Módulo de JASP para instalar"
 
 msgctxt "ErrorMessage|"
 msgid "Don't show again"
@@ -3636,14 +3537,6 @@ msgstr "Amosar os procedementos"
 msgctxt "Modules::DynamicModules|"
 msgid "Select an exisiting folder"
 msgstr "Escoller un cartafol xa existente"
-
-msgctxt "Modules::DynamicModules|"
-msgid ""
-"To install a development module you need to select and existing folder, you "
-"selected '$1' but it doesn't exist."
-msgstr ""
-"Para instalar un módulo de desenvolvemento, precisas escoller un cartafol xa "
-"existente; escolliches '$1' pero non existe."
 
 msgctxt "AnalysisFormExpander|"
 msgid "Show R syntax"
@@ -4063,11 +3956,11 @@ msgstr "Quitar Sangrado"
 
 msgctxt "MainPage|"
 msgid "Font Size"
-msgstr "Tamaño da Fonte"
+msgstr "Tamaño da fonte"
 
 msgctxt "MainPage|"
 msgid "Clear Formatting"
-msgstr "Limpar o Formato"
+msgstr "Limpar o formato"
 
 msgctxt "MainPage|"
 msgid "Click here to add text"
@@ -4751,7 +4644,7 @@ msgid "JASP Community"
 msgstr "A Comunidade de JASP"
 
 msgctxt "Supporters|"
-msgid "Suggest your institution joins the JASP Community"
+msgid "Suggest your institution join the JASP Community"
 msgstr "Suxire á túa institución que se una á Comunidade de JASP"
 
 #, qt-format
@@ -5086,7 +4979,7 @@ msgstr "Táboa de entrada de datos filtrados"
 
 msgctxt "TableViewBase|"
 msgid "Grid Table"
-msgstr "Táboa de cuadrícula"
+msgstr "Táboa de grella"
 
 msgctxt "TableViewBase|"
 msgid "Table"
@@ -5458,10 +5351,6 @@ msgctxt "JASPColumn|"
 msgid "Click icon to change column type"
 msgstr "Fai clic na icona para cambiar o tipo de columna"
 
-msgctxt "JASPColumn|"
-msgid "Transformed to"
-msgstr "Transformado en"
-
 msgctxt "FilterModel|"
 msgid ""
 "Above you see the code that JASP generates for both value filtering and the "
@@ -5548,10 +5437,6 @@ msgid "Development module"
 msgstr "Módulo de Desenvolvemento"
 
 msgctxt "PrefsAdvanced|"
-msgid "Enable direct libpath mode"
-msgstr "Habilitar o módulo libpah directo"
-
-msgctxt "PrefsAdvanced|"
 msgid ""
 "Load modules from a binary in an R-library instead of installing it from "
 "sources."
@@ -5562,10 +5447,6 @@ msgstr ""
 msgctxt "PrefsAdvanced|"
 msgid "Source folder:"
 msgstr "Cartafol da fonte:"
-
-msgctxt "PrefsAdvanced|"
-msgid "Libpath:"
-msgstr "Libpath:"
 
 msgctxt "PrefsAdvanced|"
 msgid "Choose the R library where you installed the development module"
@@ -5607,3 +5488,464 @@ msgstr "Establecer a escala da altura da cinta."
 msgctxt "TabView|"
 msgid "Double click to edit this name"
 msgstr "Fai dobre clic para editar este nome"
+
+msgctxt "PrefsUI|"
+msgid "Choose language"
+msgstr "Elixir idioma"
+
+msgctxt "PrefsUI|"
+msgid "Use an alternative language and territory dependent display for numbers"
+msgstr ""
+"Usar un idioma alternativo e unha visualización dependente do territorio "
+"para os números"
+
+msgctxt "PrefsUI|"
+msgid "Use the locale specified below for display of numbers and currency."
+msgstr "Usar o localismo indicado abaixo para amosar os números e a moeda."
+
+msgctxt "PrefsUI|"
+msgid "Alt. language"
+msgstr "Idioma alternativo"
+
+msgctxt "PrefsUI|"
+msgid "Alt. territory"
+msgstr "Territorio alternativo"
+
+msgctxt "JASPColumn|"
+msgid "Column description: "
+msgstr "Descripción de columna: "
+
+msgctxt "VariablesList|"
+msgid "Click icon to change column type"
+msgstr "Fai clic na icona para cambiar o tipo de columna"
+
+msgctxt "VariablesList|"
+msgid "Column description: "
+msgstr "Descripción de columna: "
+
+#, qt-format
+msgctxt "Modules::DynamicModules|"
+msgid ""
+"To install a development module you need to select and existing folder, you "
+"selected '%1' but it doesn't exist."
+msgstr ""
+"Para instalar un módulo de desenvolvemento necesitas escoller un cartafol "
+"existente; escolliches '%1' pero non existe."
+
+msgctxt "MainPage|"
+msgid "Remove this note"
+msgstr "Eliminar esta nota"
+
+msgctxt "MainWindow|"
+msgid ""
+"No log files are available. To get more information, please turn logging on. "
+"For this: open the file menu (the blue hamburger button left top), navigate "
+"to Advanced Preferences and check the 'Log to file' checkbox."
+msgstr ""
+"Non hai dispoñibles ficheiros de rexistro. Para obter máis información, por "
+"favor, activa o rexistro. Para iso: abre o menú de ficheiro (no botón tipo "
+"hamburguesa azul, arriba á esquerda), desprázate a Preferencias Avanzadas e "
+"marca a caixiña 'Rexistrar no ficheiro'."
+
+msgctxt "MainWindow|"
+msgid "Please drag and drop these log files into this issue: "
+msgstr ""
+"Por favor, arrastra e solta estes ficheiros de rexistro nesta cuestión: "
+
+msgctxt "ComputeColumnWindow|"
+msgid "Select a filter to use for this computed column"
+msgstr "Elixe un filtro para utilizar para esta columna calculada"
+
+msgctxt "LabelEditorWindow|"
+msgid "Remove"
+msgstr "Quitar"
+
+msgctxt "LabelEditorWindow|"
+msgid "Add new level:"
+msgstr "Engadir novo nivel:"
+
+msgctxt "LabelEditorWindow|"
+msgid "Add a level that's missing from the data"
+msgstr "Engadir un nivel que está ausente nos datos"
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Keeping levels, so all levels are passed to the analysis, both filtered out "
+"ones and those added later manually."
+msgstr ""
+"Mantendo os niveis, de xeito que tódolos niveis se pasan á análise, tanto os "
+"filtrados como os engadidos manualmente despois."
+
+msgctxt "LabelEditorWindow|"
+msgid ""
+"Dropping levels, so only those levels in the (possibly filtered) data get "
+"sent to the analysis."
+msgstr ""
+"Quitando niveis, de xeito que só se envían á análise aqueles niveis nos "
+"datos (posiblemente filtrados)."
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to reverse order of all labels"
+msgstr ""
+"Desactivar a ordenación automática para a ordenación inversa de tódalas "
+"etiquetas"
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels up manually"
+msgstr ""
+"Desactivar a ordenación automática para mover arriba as etiquetas manualmente"
+
+msgctxt "LabelEditorWindow|"
+msgid "Turn automatically ordering off to move labels down manually"
+msgstr ""
+"Desactivar a ordenación automática para mover abaixo as etiquetas manualmente"
+
+msgctxt "QObject|"
+msgid "No filter"
+msgstr "Sen filtro"
+
+msgctxt "QObject|"
+msgid "Use filter"
+msgstr "Usar filtro"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column compute filter of '%1' from '%2' to '%3'"
+msgstr "Trocar o filtro de cálculo de columnas de '%1' de '%2' a '%3'"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Change column drop levels of '%1' from '%2' to '%3'"
+msgstr "Trocar os niveis de eliminación de columnas de '%1' de '%2' a '%3'"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Delete label %1 of column '%2'"
+msgstr "Eliminar a etiqueta %1 da columna '%2'"
+
+#, qt-format
+msgctxt "QObject|"
+msgid "Adding value + label '%1' + '%2' to column '%3'"
+msgstr "Engadir valor + etiqueta '%1' + '%2' á columna '%3'"
+
+msgctxt "PrefsAdvanced|"
+msgid "Sandbox engines"
+msgstr "Facer un contorno seguro para Motores"
+
+msgctxt "PrefsAdvanced|"
+msgid "Strengthen security on Windows by isolating Engines running R-code"
+msgstr ""
+"Reforzar a seguridade en Windows illando os Motores que executan código R"
+
+msgctxt "PrefsUI|"
+msgid "Use thousands separators"
+msgstr "Usar separadores de millares"
+
+msgctxt "PrefsUI|"
+msgid "Disable to remove thousands separators from all numbers."
+msgstr "Inhabilitar eliminar os separadores de millares para tódolos números."
+
+msgctxt "PreferencesModel|"
+msgid "Select a file..."
+msgstr "Seleccionar un ficheiro..."
+
+msgctxt "PreferencesModel|"
+msgid "Select a folder..."
+msgstr "Seleccionar un cartafol..."
+
+msgctxt "PreferencesModel|"
+msgid "Select a R-library..."
+msgstr "Elixir unha biblioteca de R..."
+
+msgctxt "PreferencesModel|"
+msgid "Safe Graphics mode changed"
+msgstr "Cambio no modo gráfico seguro"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"You've changed the Safe Graphics mode of JASP, for this option to take "
+"effect you need to restart JASP"
+msgstr ""
+"Trocaches o modo gráfico seguro de JASP; para que teña efecto esta opción "
+"necesitas reiniciar JASP"
+
+msgctxt "PreferencesModel|"
+msgid "Text rendering setting changed"
+msgstr "Cambio na configuración do procesamento de texto"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The textrendering setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr ""
+"Trocou a configuración do procesamento de texto; isto só terá un efecto "
+"completo despois de reiniciar JASP."
+
+msgctxt "PreferencesModel|"
+msgid "Engine Sandbox setting changed"
+msgstr "Trocou a configuración do contorno seguro para motores"
+
+msgctxt "PreferencesModel|"
+msgid ""
+"The Engine Sandbox setting has been changed, this will only take full effect "
+"after JASP is restarted."
+msgstr ""
+"Trocou a configuración do contorno seguro para motores; isto só terá un "
+"efecto completo despois de reiniciar JASP."
+
+msgctxt "MessageForwarder|"
+msgid "Sandbox warning"
+msgstr "Advertencia de contorno seguro"
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to save a file outside of the sandbox directory! We will correct "
+"the path to: "
+msgstr ""
+"Pretendes gardar un ficheiro fóra do directorio de contorno seguro! Imos "
+"corrixir a ruta a: "
+
+msgctxt "MessageForwarder|"
+msgid ""
+"You want to load a file outside of the sandbox directory! This will fail "
+"please move the file to: "
+msgstr ""
+"Pretendes cargar un ficheiro de fóra do directorio de contorno seguro! Isto "
+"vai fallar; por favor, move o ficheiro a: "
+
+msgctxt "MessageForwarder|"
+msgid ""
+"The jasp engine is running in security sandbox mode and only has access to: "
+msgstr ""
+"O motor de JASP está executándose en modo de contorno seguro e só ten acceso "
+"a: "
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise mean"
+msgstr "Media por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise sum"
+msgstr "Suma por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise standard deviation"
+msgstr "Desvío padrón por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise variance"
+msgstr "Varianza por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise median"
+msgstr "Mediana por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise minimum"
+msgstr "Mínimo por filas"
+
+msgctxt "ComputeColumnWindow|"
+msgid "Rowwise maximum"
+msgstr "Máximo por filas"
+
+msgctxt "PrefsAdvanced|"
+msgid "Use a configuration file."
+msgstr "Usar un ficheiro de configuración."
+
+msgctxt "PrefsAdvanced|"
+msgid "Use remote configuration file."
+msgstr "Usar ficheiro remoto de configuración."
+
+msgctxt "PrefsAdvanced|"
+msgid "Use the remote configuration file pointed to by URL"
+msgstr "Usar o ficheiro remoto de configuración sinalado por URL"
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration URL: "
+msgstr "URL de configuración: "
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file"
+msgstr "Selecciona o ficheiro de configuración"
+
+msgctxt "PrefsAdvanced|"
+msgid "Select configuration file."
+msgstr "Selecciona o ficheiro de configuración."
+
+msgctxt "FilterWindow|"
+msgid "Rowwise mean"
+msgstr "Media por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise sum"
+msgstr "Suma por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise standard deviation"
+msgstr "Desvío padrón por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise variance"
+msgstr "Varianza por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise median"
+msgstr "Mediana por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise minimum"
+msgstr "Mínimo por filas"
+
+msgctxt "FilterWindow|"
+msgid "Rowwise maximum"
+msgstr "Máximo por filas"
+
+msgctxt "PrefsUI|"
+msgid "Should JASP open its window maximized on startup?"
+msgstr "Debe JASP abrir esta xanela maximizada ao inicio?"
+
+msgctxt "PrefsAdvanced|"
+msgid ""
+"This will erase the 'renv', 'Modules' and development Module folders in the "
+"appdata."
+msgstr ""
+"Isto vai borrar os cartafoles 'renv', 'Modules' e Módulo de desenvolvemento "
+"no appdata."
+
+msgctxt "PrefsAdvanced|"
+msgid "Enable renv mode"
+msgstr "Habilitar o modo renv"
+
+msgctxt "PrefsAdvanced|"
+msgid "Project library:"
+msgstr "Biblioteca do proxecto:"
+
+msgctxt "PrefsAdvanced|"
+msgid "Configuration file options"
+msgstr "Opcións do ficheiro de configuración"
+
+msgctxt "PrefsUI|"
+msgid "Start maximized"
+msgstr "Iniciar maximizado"
+
+msgctxt "MainWindow|"
+msgid ""
+"JASP had a serious error and cannot calculate anymore.\n"
+"\n"
+"We would be grateful if you could report this error to the JASP team."
+msgstr ""
+"JASP tivo un fallo grave e non pode facer máis cálculos.\n"
+"\n"
+"Te estaríamos moi agradecidos se puideses comunicar este fallo ao equipo de "
+"JASP."
+
+msgctxt "MainWindow|"
+msgid "Salvage"
+msgstr "Rescatar"
+
+msgctxt "Modules::DynamicModules|"
+msgid "Install complete"
+msgstr "Instalación completa"
+
+msgctxt "Modules::DynamicModules|"
+msgid "Completed installation of Bundles: "
+msgstr "Completada a instalación de Paquetes: "
+
+msgctxt "QObject|"
+msgid "Security Sandbox Failure"
+msgstr "Fallo do Contorno seguro de protección"
+
+msgctxt "QObject|"
+msgid ""
+"Failed to activate Security Sandbox. Your system does not allow security "
+"sandboxing. Do you wish to continue with out is? (probably fine)"
+msgstr ""
+"Fallo ao activar o Contorno seguro de protección. O teu sistema non permite "
+"usar un contorno seguro de protección. Queres continuar sen isto? "
+"(probablemente mellor)"
+
+msgctxt "QObject|"
+msgid "Continue"
+msgstr "Continuar"
+
+msgctxt "QObject|"
+msgid "Exit"
+msgstr "Saír"
+
+#, qt-format
+msgctxt "ComboBoxBase|"
+msgid "Possible values are: %1"
+msgstr "Valores posibles son: %1"
+
+#, qt-format
+msgctxt "ImportDataSet|"
+msgid "Originally imported into %1 on %2"
+msgstr "Orixinariamente importado a %1 en %2"
+
+msgctxt "FileEvent|"
+msgid "Loading R Data File"
+msgstr "Cargando ficheiro de datos de R"
+
+msgctxt "RDataImporter|"
+msgid "0 valid columns were read from the file, please check your data file."
+msgstr ""
+"Léronse 0 columnas válidas do ficheiro; por favor, comproba teu ficheiro de "
+"datos."
+
+msgctxt "MainWindow|"
+msgid "Salvaging"
+msgstr "Rescate"
+
+msgctxt "MainWindow|"
+msgid ""
+"We're very sorry JASP has had a fatal error.\n"
+"To allow you to salvage or recover something out of this mess JASP will stay "
+"partly functional.\n"
+"\n"
+"You can for instance save your current workspace, or try changing a setting "
+"to perhaps prevent the problem next time.\n"
+"\n"
+"Analyses or computed columns and the like will not function anymore until "
+"you restart JASP."
+msgstr ""
+"Lamentamos moito que JASP tivese un fallo fatal.\n"
+"Para permitirche salvar ou recuperar algo deste desastre, JASP vai funcionar "
+"parcialmente.\n"
+"\n"
+"Por exemplo, podes gardar teu espazo de traballo vixente, ou tentar de "
+"trocar a configuración para quizais previr o problema a próxima vez.\n"
+"\n"
+"As análises ou columnas calculadas e a apariencia non van funcionar máis ata "
+"que se volva iniciar JASP."
+
+#, qt-format
+msgctxt "Computer|"
+msgid "R Data files %1"
+msgstr "Ficheiros %1 de datos de R"
+
+msgctxt "ModelTermsList|"
+msgid "Model Terms"
+msgstr "Elementos do modelo"
+
+msgctxt "ModelTermsList|"
+msgid "Add to null model"
+msgstr "Engadir ao modelo nulo"
+
+msgctxt "MainWindow|"
+msgid "Open file"
+msgstr "Abrir ficheiro"
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "Cannot access file %1"
+msgstr "Non pode accederse ao ficheiro %1"
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "File %1 is not found."
+msgstr "Non se atopa o ficheiro %1."
+
+#, qt-format
+msgctxt "MainWindow|"
+msgid "JASP does not support this file type %1."
+msgstr "JASP non admite este tipo de ficheiro %1."

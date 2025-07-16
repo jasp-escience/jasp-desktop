@@ -222,7 +222,40 @@ FocusScope
 						event.accepted = true;
 						mainWindowRoot.changeFocusToFileMenu();
 						break;
-
+									
+				
+				case Qt.Key_PageUp:
+					event.accepted = true;
+					if(shiftPressed)	contentX = Math.max(0, contentX - width)
+					else				contentY = Math.max(0, contentY - height)
+					break;
+								
+				case Qt.Key_PageDown:
+					event.accepted = true; 
+					if(shiftPressed)	contentX = Math.min(contentWidth  - width,  contentX + width)
+					else				contentY = Math.min(contentHeight - height, contentY + height)
+					break;
+				
+				case Qt.Key_Down:
+					event.accepted = true;
+					budgeDown();
+					break;
+				
+				case Qt.Key_Up:
+					event.accepted = true;
+					budgeUp();
+					break;
+				
+				case Qt.Key_Left:
+					event.accepted = true;
+					budgeLeft();
+					break;
+				
+				case Qt.Key_Right:
+					event.accepted = true;
+					budgeRight();
+					break;
+									
 				default:
 					event.accepted = false;
 					break;
@@ -236,25 +269,38 @@ FocusScope
 			columnHeaderDelegate:	DataTableViewColumnHeader {}
 
 			leftTopCornerItem:
-				JaspControls.RectangularButton
+				Item
 				{
-					id:				filterToggleButton
 					width:			dataTableView.rowNumberWidth
-					toolTip:		filterWindow.opened ? qsTr("Hide filter") : qsTr("Show filter")
-					iconSource:		jaspTheme.iconPath + "filter.png"
-					onClicked:		filterWindow.toggle()
-					border.width:	0
+					
+					JaspControls.RectangularButton
+					{
+						id:				filterToggleButton
+						
+						toolTip:		filterWindow.opened ? qsTr("Hide filter") : qsTr("Show filter")
+						iconSource:		jaspTheme.iconPath + "filter.png"
+						onClicked:		filterWindow.toggle()
+						border.width:	1
+						
+						anchors
+						{
+							fill:		parent
+							margins:	-1
+						}
+					}
 				}
 
 			extraColumnItem:
 				JaspControls.RectangularButton
 				{
 					id:				addColumnButton
-					width:			visible ? height : 0
+					x:				2.5
+					y:				-1
+					width:			visible ? height + 2 : 0
 					toolTip:		qsTr("Add computed column")
 					iconSource:		jaspTheme.iconPath + "/addition-sign.svg"
 					onClicked:		createComputeDialog.open()
-					border.width:	0
+					border.width:	1
 					visible:		!dataTableView.expandDataSet
 				}
 

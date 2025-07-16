@@ -32,12 +32,12 @@ CREATE TABLE Columns
 	name				TEXT, 
 	title				TEXT, 
 	description			TEXT, 
-	columnType			TEXT, 
+	columnType			TEXT,
+	computeFilter		TEXT DEFAULT "",
 	colIdx				INT, 
-	isComputed			INT, 
-	autoSortByValue		INT,	
+	autoSortByValue		INT,
+	dropLevels			INT,
 	invalidated			INT		NULL,
-	forceSourceColType	INT		NULL,
 	codeType			TEXT	NULL, 
 	rCode				TEXT	NULL, 
 	error				TEXT	NULL, 
@@ -55,10 +55,13 @@ CREATE TABLE Labels
 	columnId			INT, 
 	value				INT, 
 	ordering			INT, 
-	filterAllows		INT, 
+	filterAllows		INT,
+	userAdded			INT DEFAULT 0,
 	label				TEXT, 
 	originalValueJson	TEXT, 
 	description			TEXT, 
 	
 	FOREIGN KEY(columnId) REFERENCES Columns(id)
 );
+
+

@@ -253,6 +253,15 @@ else()
             "${FRAMEWORK_RESOURCES}/opt/R/x86_64/lib/"
             NEW_ID
             ${FILE})
+	    
+      elseif(FILE MATCHES "/opt/R/x86_64/gfortran/lib/")
+
+        string(
+          REPLACE
+            "${R_HOME_PATH}/opt/R/x86_64/gfortran/lib/"
+			"${FRAMEWORK_RESOURCES}/opt/R/x86_64/gfortran/lib/"
+            NEW_ID
+            ${FILE})	    
 
       elseif(FILE MATCHES "/Modules/jasp")
 
@@ -357,28 +366,8 @@ else()
           ERROR_QUIET OUTPUT_QUIET
           WORKING_DIRECTORY ${PATH}
           COMMAND
-            install_name_tool -change
-            "${R_HOME_PATH}/opt/R/arm64/gfortran/lib/libgfortran.dylib"
-            "${FRAMEWORK_RESOURCES}/lib/libgfortran.5.dylib"
-            "${FILE}")
-
-        execute_process(
-          # COMMAND_ECHO STDOUT
-          ERROR_QUIET OUTPUT_QUIET
-          WORKING_DIRECTORY ${PATH}
-          COMMAND
             bash ${NAME_TOOL_PREFIX_PATCHER} "${FILE}"
-            "/opt/R/arm64/gfortran/lib"
-            "${FRAMEWORK_RESOURCES}/opt/R/arm64/gfortran/lib"
-        )
-
-        execute_process(
-          # COMMAND_ECHO STDOUT
-          ERROR_QUIET OUTPUT_QUIET
-          WORKING_DIRECTORY ${PATH}
-          COMMAND
-            bash ${NAME_TOOL_PREFIX_PATCHER} "${FILE}"
-            "${R_HOME_PATH}/opt/R/arm64/gfortran/lib"
+            "/opt/gfortran/lib/gcc/aarch64-apple-darwin20.0/14.2.0"
             "${FRAMEWORK_RESOURCES}/opt/R/arm64/gfortran/lib"
         )
 
@@ -389,29 +378,9 @@ else()
           ERROR_QUIET OUTPUT_QUIET
           WORKING_DIRECTORY ${PATH}
           COMMAND
-            install_name_tool -change
-            "${R_HOME_PATH}/opt/local/gfortran/lib/libgfortran.dylib"
-            "${FRAMEWORK_RESOURCES}/lib/libgfortran.5.dylib"
-            "${FILE}")
-
-        execute_process(
-          # COMMAND_ECHO STDOUT
-          ERROR_QUIET OUTPUT_QUIET
-          WORKING_DIRECTORY ${PATH}
-          COMMAND
-            install_name_tool -change
-            "${R_HOME_PATH}/opt/local/gfortran/lib/libquadmath.dylib"
-            "${FRAMEWORK_RESOURCES}/lib/libquadmath.0.dylib"
-            "${FILE}")
-
-        execute_process(
-          # COMMAND_ECHO STDOUT
-          ERROR_QUIET OUTPUT_QUIET
-          WORKING_DIRECTORY ${PATH}
-          COMMAND
             bash ${NAME_TOOL_PREFIX_PATCHER} "${FILE}"
-            "/usr/local/gfortran/lib"
-            "${FRAMEWORK_RESOURCES}/opt/local/gfortran/lib"
+            "/opt/gfortran/lib/gcc/x86_64-apple-darwin20.0/14.2.0"
+            "${FRAMEWORK_RESOURCES}/opt/R/x86_64/gfortran/lib"
         )
         # For whatever reason, the above command cannot replace the prefix of these libraries. I have tried to
         # directly changed their 'id' even, and that didn't help either!
@@ -490,25 +459,14 @@ else()
         message(CHECK_START "--- Signing  ${FILE_SHORT_PATH}")
 
         while(${SIGNING_RESULT} MATCHES "timeout")
-          if(RUNTIMEHARDENING)
-            execute_process(
-              COMMAND_ECHO STDOUT
-              #ERROR_QUIET OUTPUT_QUIET
-              TIMEOUT 30
-              WORKING_DIRECTORY ${PATH}
-              COMMAND codesign --deep --force ${CODESIGN_TIMESTAMP_FLAG} --sign ${APPLE_CODESIGN_IDENTITY} --options runtime "${FILE}"
-              RESULT_VARIABLE SIGNING_RESULT
-              OUTPUT_VARIABLE SIGNING_OUTPUT)
-          else()
-            execute_process(
-              COMMAND_ECHO STDOUT
-              #ERROR_QUIET OUTPUT_QUIET
-              TIMEOUT 30
-              WORKING_DIRECTORY ${PATH}
-              COMMAND codesign --deep --force ${CODESIGN_TIMESTAMP_FLAG} --sign ${APPLE_CODESIGN_IDENTITY}   "${FILE}"
-              RESULT_VARIABLE SIGNING_RESULT
-              OUTPUT_VARIABLE SIGNING_OUTPUT)
-          endif()
+	    execute_process(
+	      COMMAND_ECHO STDOUT
+	      #ERROR_QUIET OUTPUT_QUIET
+	      TIMEOUT 30
+	      WORKING_DIRECTORY ${PATH}
+	      COMMAND codesign --deep --force ${CODESIGN_TIMESTAMP_FLAG} --sign ${APPLE_CODESIGN_IDENTITY}   "${FILE}"
+	      RESULT_VARIABLE SIGNING_RESULT
+	      OUTPUT_VARIABLE SIGNING_OUTPUT)
         endwhile()
 
         if(SIGNING_RESULT STREQUAL "0")

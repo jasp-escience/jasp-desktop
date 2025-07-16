@@ -160,11 +160,13 @@ void TempFiles::deleteOrphans()
 
 				if (std::filesystem::exists(statusFile, error))
 				{
-					long modTime	= Utils::getFileModificationTime(Utils::osPath(statusFile));
-					long now		= Utils::currentSeconds();
+					int64_t modTime	= Utils::getFileModificationTime(Utils::osPath(statusFile)),
+							now		= Utils::currentSeconds();
 
 					if (now - modTime > outOfDateDelta)
 					{
+						Log::log() << "Removing folder because status indicates it is out of date: " << statusFile.string() << std::endl;
+						
 						std::filesystem::remove_all(p, error);
 						if (error)
 							Log::log() << "Error when deleting directory: " << error.message() << std::endl;
@@ -302,15 +304,23 @@ vector<string> TempFiles::retrieveList(int id)
 	if (error)
 		return files;
 
+    std::string sessionPath = std::filesystem::path(_sessionDirName).generic_string();
+
+    Log::log() << "TempFiles::retrieveList uses sessionpath " << sessionPath << " and finds: ";
+
 	for (; itr != std::filesystem::directory_iterator(); itr++)
 		if (std::filesystem::is_regular_file(itr->status()))
 		{
 			std::filesystem::path pad = itr->path();
 			string absPath = pad.generic_string();
-			string relPath = absPath.substr(_sessionDirName.size()+1);
+            string relPath = absPath.substr(sessionPath.size()+1);
+
+            Log::log(false) << relPath << " from " << absPath << " || ";
 
 			files.push_back(relPath);
 		}
+
+    Log::log(false) << std::endl;
 
 	return files;
 }
@@ -354,8 +364,8 @@ void TempFiles::deleteStrayRootFiles(const stringvec& validIDs, long outOfDateDe
 
 		if (!is_directory)
 		{					
-			long modTime	= Utils::getFileModificationTime(Utils::osPath(p));
-			long now		= Utils::currentSeconds();
+			int64_t	modTime	= Utils::getFileModificationTime(Utils::osPath(p)),
+					now		= Utils::currentSeconds();
 
 			if (now - modTime <= outOfDateDelta || fileName.substr(0, 5).compare("JASP-") != 0)
 				continue;

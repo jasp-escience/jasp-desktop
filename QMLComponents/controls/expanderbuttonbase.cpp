@@ -33,10 +33,12 @@ void ExpanderButtonBase::setUp()
 	setInitialized();
 }
 
-QString ExpanderButtonBase::helpMD(int depth) const
+QString ExpanderButtonBase::generateMDHelp(int depth) const
 {
-	if (!hasInfo()) return "";
+	return JASPControl::generateMDHelp(depth) + "\n" + (QString{depth * 2, ' '}) + "</details>\n";
+}
 
-	// For Section, draw first a line, and reset the depth to 0.
-	return "\n---\n\n" + JASPControl::helpMD(0);
+QString ExpanderButtonBase::printLabelMD(int depth) const
+{
+	return "<details><summary><b>" + fullLabel() + "</b></summary>";
 }

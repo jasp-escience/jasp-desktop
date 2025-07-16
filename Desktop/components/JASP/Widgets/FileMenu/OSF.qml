@@ -16,13 +16,11 @@
 // <http://www.gnu.org/licenses/>.
 //
 
-import QtQuick 2.0
-import QtQuick.Controls 2.2
+import QtQuick
+import QtQuick.Controls as QtC
+import JASP.Controls
+import JASP.Widgets
 
-import JASP.Controls 1.0
-import JASP.Widgets 1.0
-
-//import QtQuick.Layouts  1.3
 
 Item
 {
@@ -120,7 +118,7 @@ Item
 		sortMenuModel:	fileMenuModel.osf.sortedMenuModel
 	}
 
-	ToolSeparator
+	QtC.ToolSeparator
 	{
 		id			: firstSeparator
 		visible		: loggedin
@@ -354,6 +352,34 @@ Item
 		anchors.verticalCenter		: osfList.verticalCenter
 		width						: parent.width  / 2
 		height						: parent.height / 2
+	}
+	
+	
+	ScrollMoreIndicator
+	{
+		anchors
+		{
+			top:			fileExportDialog.visible ? fileExportDialog.bottom  :  firstSeparator.bottom
+			topMargin:		fileExportDialog.visible ? 0						: -firstSeparator.height/2
+			left:			parent.left
+			right:			parent.right
+		}
+		
+		upsideDown:	true
+		extraSpace:	osfList.contentY
+	}
+	
+	ScrollMoreIndicator
+	{
+		anchors
+		{
+			left:			 parent.left
+			right:			 parent.right
+			bottom:			 parent.bottom
+		}
+		
+		upsideDown:	false
+		extraSpace:	osfList.contentHeight - (osfList.contentY + osfList.height)
 	}
 
 	FileList
