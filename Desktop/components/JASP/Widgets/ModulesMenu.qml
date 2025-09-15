@@ -210,6 +210,23 @@ FocusScope
 				property int buttonWidth:	width - (buttonMargin * 2)
 				property int buttonHeight:	40  * preferencesModel.uiScale
 
+				// Catalog refresh / info button showing last update time
+				MenuButton
+				{
+					id:                 catalogRefreshButton
+					text:               catalog.lastUpdatedAt ? qsTr("Catalog: %1").arg(catalog.lastUpdatedAt) : qsTr("Catalog: (no data)")
+					width:              modules.buttonWidth
+					height:             modules.buttonHeight
+					anchors.leftMargin: modules.buttonMargin
+					anchors.left:       parent.left
+					onClicked:          catalog.fetchCatalog()
+					toolTip:            qsTr("Download the latest module catalog")
+					showIconAndText:    true
+					iconLeft:           false
+					iconSource:         jaspTheme.iconPath + "/redo.svg"
+					activeFocusOnTab:   false
+				}
+
 				MenuButton
 				{
 					id:					addModuleButton

@@ -47,6 +47,7 @@
 #include "modules/activemodules.h"
 #include "modules/dynamicmodules.h"
 #include "modules/menumodel.h"
+#include "modules/catalog.h"
 
 #include "qquick/datasetview.h"
 #include "qquick/rcommander.h"
@@ -603,6 +604,9 @@ void MainWindow::loadQML()
 	_qml->rootContext()->setContextProperty("helpModel",								_helpModel										);
 	_qml->rootContext()->setContextProperty("jaspTheme",								nullptr											); //Will be set from jaspThemeChanged()!
 	_qml->rootContext()->setContextProperty("qmlUtils",									new QmlUtils(this)								);
+	// Expose catalog singleton to QML (created here if not existing yet)
+	static Modules::Catalog *catalogInstance = new Modules::Catalog(this);
+	_qml->rootContext()->setContextProperty("catalog", catalogInstance);
 
 	_qml->rootContext()->setContextProperty("baseBlockDim",								20												); //should be taken from Theme
 	_qml->rootContext()->setContextProperty("baseFontSize",								16												);
