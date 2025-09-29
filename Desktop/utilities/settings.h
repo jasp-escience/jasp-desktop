@@ -96,7 +96,8 @@ public:
 		START_MAXIMIZED,
 		STORE_STATE_ETC,
 		AUTOSAVE_ON,
-		AUTOSAVE_INTERVAL_SEC
+		AUTOSAVE_INTERVAL_SEC,
+		CATALOG_URL
 	};
 
 	static QVariant value(Settings::Type key);

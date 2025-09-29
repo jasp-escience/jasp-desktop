@@ -537,6 +537,60 @@ PrefsScrollView
 				text:				qsTr("Show engines")
 				onClicked:			mainWindow.showEnginesWindow()
 				activeFocusOnTab:		true
+				KeyNavigation.tab:		catalogUrlItem
+			}
+		}
+
+		PrefsGroupRect {
+			title:	qsTr("Catalog options")
+
+			Item
+			{
+				id:		catalogUrlItem
+				width:	parent.width
+				height:	catalogUrl.height
+
+				Label
+				{
+					id:		catalogUrlLabel
+					text:	qsTr("Change the catalog url: ")
+
+					anchors
+					{
+						left:			parent.left
+						verticalCenter:	parent.verticalCenter
+						margins:		jaspTheme.generalAnchorMargin
+					}
+				}
+
+				PrefsTextInput
+				{
+					id:					catalogUrl
+
+					text:				preferencesModel.catalogURL
+					onEditingFinished:	preferencesModel.catalogURL = text
+					nextEl:				downloadCatalog
+
+					height:				browseDeveloperFolderButton.height
+					anchors
+					{
+						left:			catalogUrlLabel.right
+						right:			parent.right
+						margins:		jaspTheme.generalAnchorMargin
+					}
+
+					KeyNavigation.tab:	downloadCatalog
+				}
+			}
+
+			RoundedButton
+			{
+				id: downloadCatalog
+				text:				qsTr("Download catalog")
+				onClicked:			mainWindow.downloadCatalog()
+				activeFocusOnTab:	true
+				KeyNavigation.tab:	rememberModulesSelected
+
 			}
 		}
 	}

@@ -103,6 +103,11 @@ QString AppDirs::bundledModulesLibDir()
 	return AppDirs::bundledModulesDir() + "/module_libs/";
 }
 
+QString Appdirs::catalogCacheLocation()
+{
+	return AppDirs::bundledModulesDir() + "/catalog.json";
+}
+
 QString AppDirs::processPath(const QString & path)
 {
 	return path;

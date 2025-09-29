@@ -86,6 +86,7 @@ class PreferencesModel : public PreferencesModelBase
 	
 	Q_PROPERTY(int			autoSaveIntervalSec		READ autoSaveIntervalSec		WRITE setAutoSaveIntervalSec		NOTIFY autoSaveIntervalSecChanged		)
 	Q_PROPERTY(bool			autoSaveAtAll			READ autoSaveAtAll				WRITE setAutoSaveAtAll				NOTIFY autoSaveAtAllChanged				)
+	Q_PROPERTY(QString		catalogURL				READ catalogURL					WRITE setCatalogURL					NOTIFY catalogURLChanged				)
 	
 
 
@@ -119,6 +120,7 @@ public:
 	QStringList		modulesRemembered()						const;
 	bool			safeGraphics()							const;
 	QString			cranRepoURL()							const;
+	QString			catalogURL()							const;
 	QString			githubPatResolved()						const;
 	QString			githubPatCustom()						const;
 	bool			githubPatUseDefault()					const;
@@ -215,6 +217,7 @@ public slots:
 	void setModulesRemembered(			QStringList modulesRemembered);
 	void setSafeGraphics(				bool		safeGraphics);
 	void setCranRepoURL(				QString		cranRepoURL);
+	void setCatalogURL(					QString		catalogURL);
 	void setGithubPatUseDefault(		bool		useDefault);
 	void setGithubPatCustom(			QString		pat);
 	void moduleEnabledChanged(			QString		moduleName, bool enabled);
@@ -280,6 +283,7 @@ signals:
 	void modulesRememberedChanged();
 	void safeGraphicsChanged(			bool		safeGraphics);
 	void cranRepoURLChanged(			QString		cranRepoURL);
+	void catalogURLChanged(				QString		catalogURL);
 	void githubPatUseDefaultChanged(	bool		githubPatUseDefault);
 	void githubPatCustomChanged();
 	void codeFontChanged(				QString		codeFont);

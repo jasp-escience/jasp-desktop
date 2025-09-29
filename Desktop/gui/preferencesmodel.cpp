@@ -195,6 +195,7 @@ GET_PREF_FUNC_BOOL(	storeStateEtc,				Settings::STORE_STATE_ETC							)
 
 GET_PREF_FUNC_BOOL(	autoSaveAtAll,				Settings::AUTOSAVE_ON								)
 GET_PREF_FUNC_INT(	autoSaveIntervalSec,		Settings::AUTOSAVE_INTERVAL_SEC						)
+GET_PREF_FUNC_STR(	catalogURL,					Settings::CATALOG_URL								)
 
 bool PreferencesModel::engineSandbox() const
 {
@@ -404,6 +405,7 @@ SET_PREF_FUNCTION(				bool,   	setStartMaximized,			startMaximized,				startMaxi
 SET_PREF_FUNCTION(				bool,   	setStoreStateEtc,			storeStateEtc,				storeStateEtcChanged,			Settings::STORE_STATE_ETC		  					)
 SET_PREF_FUNCTION(				bool,   	setAutoSaveAtAll,			autoSaveAtAll,				autoSaveAtAllChanged,			Settings::AUTOSAVE_ON			  					)
 SET_PREF_FUNCTION(				int,		setAutoSaveIntervalSec,		autoSaveIntervalSec,		autoSaveIntervalSecChanged,		Settings::AUTOSAVE_INTERVAL_SEC	  					)
+SET_PREF_FUNCTION(				QString,	setCatalogURL,				catalogURL,					catalogURLChanged,				Settings::CATALOG_URL								)
 
 
 void PreferencesModel::setGithubPatCustom(QString newPat)

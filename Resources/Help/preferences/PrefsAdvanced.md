@@ -155,3 +155,9 @@ This is entirely disableable by changing JASP's configuration per `flatpak overr
 This opens a window the developers use to keep an eye on what each engine is up top.
 It could be interesting to see what engines are busy and with what, although the level isn't very detailed. It does however give you the option to manually kill and engine by right-clicking it. 
 This can be helpful if it stopped responding during some particularly heavy yet unnecessary calculation.
+
+## Catalog options
+
+### Catalog URL
+
+Here you can set the URL to the module catalog that JASP uses to show you available modules for installation.

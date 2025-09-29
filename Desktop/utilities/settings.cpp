@@ -117,6 +117,7 @@ const Settings::Setting Settings::Values[] = {
 	{"storeStateEtc",				false	},
 	{"autoSaveOn",					true	},
 	{"autoSaveInterval",			60	},
+	{"catalogURL",					"https://jasp-stats-modules.github.io/modules-app/index.json"},
 };	
 
 QVariant Settings::value(Settings::Type key)
