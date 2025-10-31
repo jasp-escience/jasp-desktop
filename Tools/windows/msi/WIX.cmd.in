@@ -3,6 +3,8 @@ rem that it will be overwritten. You can edit the template file, and rerun the C
 rem to see your changes here.
 rem 
 
+C:\"Program Files"\Python312\python.exe C:\signInternal.py  @JASP_INSTALL_DIR_NATIVE@
+
 rem @echo off
 rem autorun
 setlocal EnableDelayedExpansion

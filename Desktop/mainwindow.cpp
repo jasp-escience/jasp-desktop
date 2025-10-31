@@ -36,11 +36,11 @@
 #include "appinfo.h"
 #include "tempfiles.h"
 #include "processinfo.h"
-
 #include "mainwindow.h"
 
-#include "gui/jaspversionchecker.h"
 #include "gui/preferencesmodel.h"
+#include "utilities/application.h"
+#include "gui/jaspversionchecker.h"
 #include "ALTNavigation/altnavcontrol.h"
 #include "utilities/messageforwarder.h"
 
@@ -73,7 +73,7 @@ using namespace Modules;
 
 MainWindow * MainWindow::_singleton	= nullptr;
 
-MainWindow::MainWindow(QApplication * application) : QObject(application), _application(application)
+MainWindow::MainWindow(Application * application) : QObject(application), _application(application)
 {
 	std::cout << "MainWindow constructor started" << std::endl;
 	connect(this, &MainWindow::exitSignal, this, &QApplication::exit, Qt::QueuedConnection);
@@ -158,7 +158,7 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 
 	_languageModel->setApplicationEngine(_qml);
 
-	_engineSync->start(_preferences->plotPPI());
+	_engineSync->start();
 	
 	checkForUpdates();
 
@@ -174,7 +174,7 @@ MainWindow::MainWindow(QApplication * application) : QObject(application), _appl
 
 void MainWindow::checkForUpdates()
 {
-	if(resultXmlCompare::compareResults::theOne()->testMode())
+	if(resultXmlCompare::compareResults::theOne()->testMode() || QCoreApplication::applicationName() == "JASPTest")
 		return;
 	
 	if(PreferencesModel::prefs()->checkUpdatesAskUser())
@@ -402,6 +402,8 @@ void MainWindow::makeConnections()
 	connect(_package,				&DataSetPackage::dataModeChanged,					_engineSync,			&EngineSync::dataModeChanged								);
 	connect(_package,				&DataSetPackage::dataModeChanged,					this,					&MainWindow::onDataModeChanged								);
 	connect(_package,				&DataSetPackage::askUserForExternalDataFile,		this,					&MainWindow::startDataEditorHandler							);
+	connect(_package,				&DataSetPackage::makeAnAutoSave,					this,					&MainWindow::saveTmpFileHandler								);
+	
 	connect(_package,				&DataSetPackage::runFilter,							_filterModel,			&FilterModel::sendGeneratedAndRFilter						);
 	connect(_package,				&DataSetPackage::showWarning,						_msgForwarder,			&MessageForwarder::showWarningQML,							Qt::QueuedConnection);
 	connect(_package,				&DataSetPackage::synchingExternallyChanged,			_fileMenu,				&FileMenu::dataAutoSynchronizationChanged					);
@@ -1081,7 +1083,11 @@ void MainWindow::analysisSaveImageHandler(int id, QString options)
 
 	if (analysis->needsRefresh())
 	{
-		if(MessageForwarder::showYesNo(tr("Version incompatibility"), tr("This analysis was created in an older version of JASP, to save the image it must be refreshed first.\n\nRefresh the analysis?")))
+		if(		analysis->storedWithoutState() 
+			?	MessageForwarder::showYesNo(tr("Stored without state"), tr("This analysis was saved without state, to save the image it must be refreshed first.\n\nRefresh the analysis?"))
+			:	MessageForwarder::showYesNo(tr("Version incompatibility"), tr("This analysis was created in an older version of JASP, to save the image it must be refreshed first.\n\nRefresh the analysis?"))
+				
+		)
 			analysis->refresh();
 	}
 	else
@@ -1147,7 +1153,10 @@ void MainWindow::analysisEditImageHandler(int id, QString options)
 
 	if (analysis->needsRefresh())
 	{
-		if (MessageForwarder::showYesNo(tr("Version incompatibility"), tr("This analysis was created in an older version of JASP, to resize the image it must be refreshed first.\n\nRefresh the analysis?")))
+		if (	analysis->storedWithoutState() 
+			?	MessageForwarder::showYesNo(tr("Stored without state"), tr("This analysis was stored without state, to resize the image it must be refreshed first.\n\nRefresh the analysis?"))
+			:	MessageForwarder::showYesNo(tr("Version incompatibility"), tr("This analysis was created in an older version of JASP, to resize the image it must be refreshed first.\n\nRefresh the analysis?"))
+		)
 			analysis->refresh();
 		else
 			emit editImageCancelled(id);
@@ -1274,6 +1283,7 @@ void MainWindow::dataSetIORequestHandler(FileEvent *event)
 				break;
 
 			case MessageForwarder::DialogResponse::Discard:
+				FileEvent::removeAutoSaveIfItExists();
 				event->setComplete(true);
 				break;
 			}
@@ -1311,7 +1321,11 @@ bool MainWindow::checkPackageModifiedBeforeClosing()
 	case MessageForwarder::DialogResponse::Cancel:			return false;
 
 	default:												[[fallthrough]];
-	case MessageForwarder::DialogResponse::Discard:			return true;
+	case MessageForwarder::DialogResponse::Discard:			
+	{
+		FileEvent::removeAutoSaveIfItExists();	
+		return true;
+	}
 	}
 }
 
@@ -1332,8 +1346,12 @@ void MainWindow::dataSetIOCompleted(FileEvent *event)
 		if (event->isSuccessful())
 		{
 			populateUIfromDataSet();
-			
+
 			_package->setCurrentFile(event->path());
+			
+
+			if(_package->currentFile().startsWith(AppDirs::autoSaveDir()))
+				_package->setModified(true); //Its autosaved after all
 
 			if(event->osfPath() != "")
 				_package->setFolder("OSF://" + event->osfPath()); //It is also set by setCurrentPath, but then we get some weirdlooking OSF path
@@ -1389,17 +1407,36 @@ void MainWindow::dataSetIOCompleted(FileEvent *event)
 
 		if (event->isSuccessful())
 		{
-			_package->setCurrentFile(event->path());
-			if(event->osfPath() != "")
-				_package->setFolder("OSF://" + event->osfPath()); //It is also set by setCurrentPath, but then we get some weirdlooking OSF path
+			if(!event->isTmp())
+			{
+				{ //Before changing the currentfile in DataSetPackage we first check this was a recovery file and if so delete it now. The user succesfully saved after all
+					QFileInfo	curFileI	( _package->currentFile());
+					bool		wasRecovery = curFileI.dir() == QDir(AppDirs::autoSaveDir());
 
-			_package->setModified(false);
+					if(wasRecovery && curFileI.exists())
+					{
+						QFile removeRecoveryFile(curFileI.absoluteFilePath());
+						if(!removeRecoveryFile.moveToTrash())
+							removeRecoveryFile.remove();
+					}
+				}
 
-			if(testingAndSaving)
-				std::cerr << "Tested and saved " << event->path().toStdString() << " succesfully!" << std::endl;
-
-			if(_savingForClose)
-				emit exitSignal(0);
+				_package->setCurrentFile(event->path());
+				if(event->osfPath() != "")
+					_package->setFolder("OSF://" + event->osfPath()); //It is also set by setCurrentPath, but then we get some weirdlooking OSF path
+	
+				_package->setModified(false);
+				
+				FileEvent::removeAutoSaveIfItExists();	
+	
+				if(testingAndSaving)
+					std::cerr << "Tested and saved " << event->path().toStdString() << " succesfully!" << std::endl;
+	
+				if(_savingForClose)
+					emit exitSignal(0);
+			}
+			else
+				_package->setModifiedAfterAutoSave(false);
 
 		}
 		else
@@ -1428,9 +1465,10 @@ void MainWindow::dataSetIOCompleted(FileEvent *event)
 			_analyses->setVisible(false);
 			_analyses->clear();
 			_package->dbDelete();
-			_package->reset(false);
+			_package->reset(true);
 			_ribbonModel->showStatistics();
 			_fileMenu->buttonsForEmptyWorkspace();
+			_filterModel->reset();
 
 			if(!_applicationExiting)
 				_engineSync->cleanRestart();
@@ -2042,6 +2080,15 @@ void MainWindow::saveJaspFileHandler()
 	FileEvent * saveEvent = new FileEvent(this, FileEvent::FileSave);
 
 	saveEvent->setPath(resultXmlCompare::compareResults::theOne()->filePath());
+
+	dataSetIORequestHandler(saveEvent);
+}
+
+void MainWindow::saveTmpFileHandler()
+{
+	FileEvent * saveEvent = new FileEvent(this, FileEvent::FileSave);
+
+	saveEvent->setTmp(true);
 
 	dataSetIORequestHandler(saveEvent);
 }

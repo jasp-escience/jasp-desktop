@@ -76,23 +76,23 @@ void ListModel::addControlError(const QString &error) const
 	_listView->addControlError(error);
 }
 
-void ListModel::initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap, bool)
+void ListModel::initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap)
 {
-	_initTerms(terms, allValuesMap, true);
+    _initTerms(terms, allValuesMap, true);
 }
 
 void ListModel::_initTerms(const Terms &terms, const Terms::RelatedValuesPerTerm& allValuesMap, bool initRowControls)
 {
 	beginResetModel();
 	if (initRowControls)
-	{
-		_rowControlsMap.clear();
+		// If some row controls are not used anymore, they will be removed during setUpRowControls
 		_rowControlsValues = allValuesMap;
-	}
+
 	_setTerms(terms);
 	endResetModel();
 
-	if (initRowControls)	_connectAllSourcesControls();
+	if (initRowControls)	
+		_connectAllSourcesControls();
 }
 
 void ListModel::_connectAllSourcesControls()
@@ -123,6 +123,12 @@ Terms ListModel::checkTermsTypes(const std::vector<Term>& terms) const
 		checkedTerms.add(_checkTermType(term));
 
 	return checkedTerms;
+}
+
+void ListModel::checkTermsTypes()
+{
+	_terms.set(checkTermsTypes(_terms));
+	setUpRowControls();
 }
 
 
@@ -158,6 +164,7 @@ void ListModel::_connectSourceControls(SourceItem* sourceItem)
 				{
 					connect(control, &JASPControl::boundValueChanged, this, &ListModel::sourceTermsReset);
 					_rowControlsConnected.push_back(boundControl);
+					
 				}
 			}
 			else
@@ -193,22 +200,21 @@ void ListModel::setUpRowControls()
 	{
 		if (!_rowControlsMap.contains(term.value()))
 		{
-			bool hasOptions = _rowControlsValues.contains(term.value());
-			RowControls* rowControls = new RowControls(this, _rowComponent, _rowControlsValues[term.value()]);
+			RowControls* rowControls = new RowControls(this, _rowComponent);
 			_rowControlsMap[term.value()] = rowControls;
-			rowControls->init(row, term, !hasOptions);
+			rowControls->initValues(row, term, _rowControlsValues[term.value()]);
 		}
 		else
-			_rowControlsMap[term.value()]->setContext(row, term);
+			_rowControlsMap[term.value()]->resetValues(row, term, _rowControlsValues[term.value()]);
+
 		row++;
 	}
-
+	
+	// Disconnect and delete all controls that are not used anymore
 	QStringList removedKeys;
 	for (const QString& key : _rowControlsMap.keys())
 		if (!terms().containsValue(key))
 		{
-			// If some row controls are not used anymore, if they use some sources, they must be disconnected from these sources
-			// If a source changes and emits a signal, these controls should not be activated (cf. https://github.com/jasp-stats/jasp-test-release/issues/1786)
 			_rowControlsMap[key]->disconnectAndDeleteControls();
 			removedKeys.append(key);
 		}
@@ -437,6 +443,11 @@ void ListModel::selectAllItems()
 
 	emit dataChanged(index(0, 0), index(nbTerms - 1, 0), { ListModel::SelectedRole });
 	emit selectedItemsChanged();
+}
+
+void ListModel::cleanUp()
+{
+	disconnect();
 }
 
 void ListModel::sourceTermsReset()

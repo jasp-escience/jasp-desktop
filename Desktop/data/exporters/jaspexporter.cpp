@@ -31,6 +31,7 @@
 #include "utilities/qutils.h"
 #include <fstream>
 #include "appinfo.h"
+#include "gui/preferencesmodel.h"
 
 
 const Version JASPExporter::jaspArchiveVersion = Version("5.0.0");
@@ -156,7 +157,7 @@ void JASPExporter::makeEntry(archive * a, const std::string & filename, const st
 
 void JASPExporter::saveAnalyses(archive *a)
 {
-	const Json::Value & analysesJson = DataSetPackage::pkg()->analysesData();
+	const Json::Value analysesJson = DataSetPackage::pkg()->analysesData();
 
 	makeEntry(a, "analyses.json", analysesJson.toStyledString());
 
@@ -164,7 +165,8 @@ void JASPExporter::saveAnalyses(archive *a)
 
 	for (const Json::Value & analysisJson : analysesDataList)
 		for (const std::string & path : TempFiles::retrieveList(analysisJson["id"].asInt()))
-			saveTempFile(a, path);
+			if(PreferencesModel::prefs()->storeStateEtc() || !stringUtils::endsWith(path, "/state"))
+				saveTempFile(a, path);
 }
 
 void JASPExporter::saveDatabase(archive * a)

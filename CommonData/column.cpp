@@ -1,10 +1,10 @@
 ﻿#include "log.h"
+#include <cassert>
 #include "column.h"
 #include "timers.h"
 #include "dataset.h"
 #include "columnutils.h"
 #include "databaseinterface.h"
-#include <cassert>
 
 bool Column::_autoSortByValuesByDefault = true;
 
@@ -64,7 +64,6 @@ void Column::dbLoad(int id, bool getValues)
 	
 	
 	_emptyValues->fromJson(emptyVals);
-	_resetLabelValueMap();
 	
 	if(getValues)
 	{
@@ -72,6 +71,7 @@ void Column::dbLoad(int id, bool getValues)
 		db().columnGetValues(_id, _ints, _dbls);
 	}
 
+	_resetLabelValueMap();
 
 	db().transactionReadEnd();
 }
@@ -132,7 +132,7 @@ bool Column::setName(const std::string &name)
 	if (orgName == _name) // Special case when the getUniqueName gives back the original name (e.g 2 columns 'test' and 'test 2' and the user rename 'test 2' to 'test')
 		return false;
 
-	if(_title.empty() || _title == orgName)
+	if(!_title.empty() && (_title == orgName || _title == _name)) 
 		setTitle(_name);
 
 	db().columnSetName(_id, _name);
@@ -144,11 +144,11 @@ bool Column::setName(const std::string &name)
 void Column::setTitle(const std::string &title)
 {
 	JASPTIMER_SCOPE(Column::setTitle);
-
-	if(_title == title)
+	
+	if(Column::title() == title)
 		return;
 
-	_title = title;
+	_title = _name != title ? title : "";
 	db().columnSetTitle(_id, _title);
 	incRevision();
 }
@@ -204,6 +204,8 @@ void Column::setHasCustomEmptyValues(bool hasCustom)
 	
 	_emptyValues->setHasCustomEmptyValues(hasCustom);
 	db().columnSetEmptyVals(_id, _emptyValues->toJson().toStyledString());
+	
+	nonFilteredCountersReset();
 	
 	incRevision();
 }
@@ -494,17 +496,7 @@ stringset Column::mergeOldMissingDataMap(const Json::Value &missingData)
 	return foundEmpty;
 }
 
-void Column::updateLabelsPostLocaleChange()
-{
-	beginBatchedLabelsDB();
-	
-	for(Label * label : _labels)
-		label->updateDoubleLabelsPostLocaleChange();
-	
-	endBatchedLabelsDB(true);	
-}
-
-columnType Column::setValues(const stringvec & values, const stringvec & labels, int thresholdScale, bool * aChange)
+columnType Column::setValues(const stringvec & values, const stringvec & labels, int thresholdScale, bool * aChange, bool useLocale)
 {
 	assert(values.size() == labels.size() || labels.size() == 0);
 	
@@ -513,11 +505,12 @@ columnType Column::setValues(const stringvec & values, const stringvec & labels,
 				[&values](size_t r){return values[r];},
 				[&labels](size_t r){return r < labels.size() ? labels[r] : "";},
 				thresholdScale,
-				aChange
+				aChange,
+				useLocale
 				);
 }
 
-columnType Column::setValues(size_t rows, const std::function<std::string(size_t)> valueLookup, const std::function<std::string(size_t)> labelLookup, int thresholdScale, bool * aChange)
+columnType Column::setValues(size_t rows, const std::function<std::string(size_t)> valueLookup, const std::function<std::string(size_t)> labelLookup, int thresholdScale, bool * aChange, bool useLocale)
 {
 	JASPTIMER_SCOPE(Column::setValues);
 
@@ -555,7 +548,7 @@ columnType Column::setValues(size_t rows, const std::function<std::string(size_t
 		const std::string	value = valueLookup(i),
 							label = labelLookup(i);
 
-		if(setValue(i, value, label, false) && aChange)
+		if(setValue(i, value, label, false, useLocale) && aChange)
 			(*aChange) = true;
 				
 		if(value != "" || label != "")
@@ -565,7 +558,7 @@ columnType Column::setValues(size_t rows, const std::function<std::string(size_t
 			else if(!isEmptyValue(value))
 				onlyInts = false;
 			
-			if(!ColumnUtils::getDoubleValue(value, tmpDbl) && !isEmptyValue(value))
+			if(!ColumnUtils::getDoubleValue(value, tmpDbl, useLocale) && !isEmptyValue(value))
 				onlyDoubles = false;
 		}
 	}
@@ -712,10 +705,14 @@ bool Column::overwriteDataAndType(stringvec colData, columnType colType)
 	for(size_t i=0; i<colData.size(); i++)
 		otherData[i] = getOther(colData[i]);
 	
-	setValues(values, labels, 0, &changes);
+	// overwriteDataAndType is called only by the Engine, when R computes some values for a column (computed columns)
+	// In this case, the locale used is just UTF-8/C, so the locale chosen by the user should not be used to convert the values.
+	beginBatchedLabelsDB();
+	setValues(values, labels, 0, &changes, false);
 	setType(colType);
 	nonFilteredCountersReset();
 	labelsHandleAutoSort();
+	endBatchedLabelsDB();
 	
 	
 	return changes;
@@ -886,6 +883,8 @@ int Column::_labelMapIt(Label * label)
 	_labelsByDisplay	[ label->label()				].insert(	label);
 	_labelByValDis		[ label->origValDisplay()		] =			label;
 	_labelsByValue		[ label->originalValueAsString()].insert(	label);
+	
+	label->rememberCurrentOrigValDisplay(); 
 
 	_highestIntsId = std::max(_highestIntsId, label->intsId());
 	_maxWidthValue = std::max(_maxWidthValue, int(stringUtils::approximateVisualLength(label->originalValueAsString(true, false))));
@@ -901,7 +900,9 @@ int Column::labelsAdd(int value, const std::string & display, bool filterAllows,
 {
 	JASPTIMER_SCOPE(Column::labelsAdd lotsa arg);
 
-	auto valDisplay = std::make_pair(Label::originalValueAsString(this, originalValue), display);
+	std::string oriString			= Label::originalValueAsString(this, originalValue),
+				displayProcessed	= Label::processLabel(display, oriString);
+	auto		valDisplay			= std::make_pair(oriString, displayProcessed);
 
 	if(_labelByValDis.count(valDisplay))
 		return _labelByValDis.at(valDisplay)->intsId();
@@ -1068,10 +1069,13 @@ stringvec Column::nonFilteredLevels()
 	return _nonFilteredLevels;
 }
 
-void Column::nonFilteredCountersReset()
+void Column::nonFilteredCountersReset(bool updateLabelIndexes)
 {
 	_nonFilteredLevels.clear();
 	_nonFilteredNumericsCount = -1;
+	
+	if(updateLabelIndexes)
+		_updateNonEmptyIndexesAndLabelOrder();
 }
 
 int Column::labelIndexNonEmpty(Label *label) const
@@ -1218,7 +1222,7 @@ stringvec Column::displaysAsStrings() const
 	return returnMe;
 }
 
-stringvec Column::dataAsRLevels(intvec & values, const boolvec & filter, bool useLabels )
+stringvec Column::dataAsRLevels(intvec & values, const boolvec & filter)
 {
 	JASPTIMER_SCOPE(Column::dataAsRLevels);
 
@@ -1228,7 +1232,8 @@ stringvec Column::dataAsRLevels(intvec & values, const boolvec & filter, bool us
 	const bool 	useFilter 	= filter.size() == rowCount();
 	int  		valuesSize	= 0;
 
-	intset ids, usedIds;
+	intset		ids;
+	stringset	usedLevels; //https://github.com/jasp-stats/jasp-issues/issues/3721 points out rightly that if you map multiple values to the same label, they should then be 1 label in ordinal/nominal!
 
 	for(size_t row=0; row<rowCount(); row++)
 		if(!useFilter || filter[row])
@@ -1241,21 +1246,21 @@ stringvec Column::dataAsRLevels(intvec & values, const boolvec & filter, bool us
 		if(id != Label::NO_LABEL && id != EmptyValues::missingValueInteger)
 		{
 			Label * label = labelByIntsId(id);
-			
+
 			if(label && !label->isEmptyValue())
-				usedIds.insert(id);
+				usedLevels.insert(label->label());
 		}
 	
 	stringvec levels;
-	levels.reserve(usedIds.size());
+	levels.reserve(usedLevels.size());
 
-	intintmap idToLevel;
+	strintmap labelToLevel;
 
 	for(Label * label : _labels)
-		if(usedIds.count(label->intsId()) || !shouldDropLevels())
+		if(!labelToLevel.count(label->label()) && (usedLevels.count(label->label()) || !shouldDropLevels()))
 		{
-			levels.push_back(useLabels ? label->label() : label->originalValueAsString(false));
-			idToLevel[label->intsId()] = levels.size();
+			levels.push_back(label->label());
+			labelToLevel[label->label()] = levels.size();
 		}
 		
 	values.resize(valuesSize);
@@ -1265,8 +1270,13 @@ stringvec Column::dataAsRLevels(intvec & values, const boolvec & filter, bool us
 		{
 			values[valueRow] = EmptyValues::missingValueInteger;
 
-			if(_ints[row] != Label::NO_LABEL && _ints[row] != EmptyValues::missingValueInteger && idToLevel.count(_ints[row]))
-				values[valueRow] = idToLevel.at(_ints[row]);
+			if(_ints[row] != Label::NO_LABEL && _ints[row] != EmptyValues::missingValueInteger)
+			{
+				Label * label = labelByIntsId(_ints[row]);
+
+				if(label && labelToLevel.count(label->label()))
+					values[valueRow] = labelToLevel.at(label->label());
+			}
 			
 			valueRow++;
 		}
@@ -1300,11 +1310,11 @@ void Column::labelValueChanged(Label *label, const Json::Value & previousOrigina
 	auto oldValDis	= std::make_pair(prevOrigV, label->label());
 	bool merged		= _labelByValDis.count(label->origValDisplay()) != 0;
 	
-	if(merged)
+	if(merged && _labelByValDis.at(label->origValDisplay()) != label)
 		labelsMergeDuplicateInto(label);
 	
 	//Make sure it was registered before:
-	assert(_labelByValDis[oldValDis] == label);
+	assert(_labelByValDis[label->lastOrigValDisplay()] == label);
 	//And that its new location is free:
 	assert(_labelByValDis.count(label->origValDisplay()) == 0 || _labelByValDis.at(label->origValDisplay()) == label);
 
@@ -1314,7 +1324,7 @@ void Column::labelValueChanged(Label *label, const Json::Value & previousOrigina
 		if(_ints[r] == label->intsId())
 			_dbls[r] = theDouble;
 
-	_labelMapUpdates(label, label->label(), prevOrigV);
+	_labelMapUpdates(label, label->lastOrigValDisplay().second, label->lastOrigValDisplay().first);
 
 	if(merged)
 		_dbUpdateLabelOrder();
@@ -1334,7 +1344,7 @@ void Column::_labelMapUpdates(Label * label, const std::string & previousDisplay
 	bool	valueChanged	= previousOriginal		!= label->originalValueAsString(),
 			displayChanged	= previousDisplay		!= label->label(),
 			previousSame	= previousOriginal		== previousDisplay,
-			newSame			= label->label()	== label->originalValueAsString();
+			newSame			= label->label()		== label->originalValueAsString();
 
 	if(valueChanged)
 	{
@@ -1524,7 +1534,7 @@ bool Column::setStringValue(size_t row, const std::string & userEntered, const s
 	return setValue(row, userEntered, labelButOnlyFromSpreadsheetPaste, writeToDB);
 }
 
-bool Column::setValue(size_t row, std::string value, const std::string & label, bool writeToDB)
+bool Column::setValue(size_t row, std::string value, const std::string & label, bool writeToDB, bool useLocale)
 {
 	JASPTIMER_SCOPE(Column::setValue(stringstring));
     
@@ -1535,7 +1545,7 @@ bool Column::setValue(size_t row, std::string value, const std::string & label, 
 		return setValue(row, EmptyValues::missingValueDouble, writeToDB);
 	
 	double	newDoubleToSet	= EmptyValues::missingValueDouble;
-	bool	itsADouble		= ColumnUtils::getDoubleValue(value, newDoubleToSet);
+	bool	itsADouble		= ColumnUtils::getDoubleValue(value, newDoubleToSet, useLocale);
 	bool	labelIsValue	= value == label,
 			justAValue		= label == "";			///< To help us handle updates from synchronisation from csv (users might have added different label-texts
 
@@ -1702,8 +1712,20 @@ std::set<size_t> Column::labelsMoveRows(std::vector<size_t> rows, bool up)
 	int mod = up ? -1 : 1;
 
 	std::sort(rows.begin(), rows.end(), [&](const auto & l, const auto & r) { return up ? l < r : r < l; });
-	
-	std::vector<Label*> new_labels(_labels.begin(), _labels.end());
+
+    std::vector<Label*> new_labels;
+
+    // Put the empty labels at the end of the vector
+    for (Label* label : _labels)
+    {
+        if (!label->isEmptyValue())
+            new_labels.push_back(label);
+    }
+    for (Label* label : _labels)
+    {
+        if (label->isEmptyValue())
+            new_labels.push_back(label);
+    }
 
 	for (size_t row : rows)
 		if(int(row) + mod < 0 || int(row) + mod >= int(labelsNonEmptyCount()))
@@ -1719,6 +1741,7 @@ std::set<size_t> Column::labelsMoveRows(std::vector<size_t> rows, bool up)
 	}
 
 	_labels = new_labels;
+
 	_dbUpdateLabelOrder();
 
 	return rowsChanged;
@@ -1819,6 +1842,7 @@ void Column::valuesReverse()
 	for(size_t i=0; i<asc.size(); i++)
 		flipIt[asc[i]] = dsc[i];
 	
+	beginBatchedLabelsDB();
 	//and now to write them back into the data
 	for(Label * label : _labels)
 	{
@@ -1830,10 +1854,21 @@ void Column::valuesReverse()
 			ColumnUtils::getDoubleValue(label->originalValueAsString(), aValue);
 		
 		if(!std::isnan(aValue)) //not isEmptyValue because we want to use the output to rewrite the data again
-			label->setOriginalValue(flipIt[aValue]);
+		{
+			std::string oldLabel = label->label();
+			label->_setOriginalValue(flipIt[aValue]); //Dont trigger the mapping stuff!
+			label->_label = Label::processLabel(oldLabel, label->originalValueAsString());
+		}
 	}
 	
-	_dbUpdateLabelOrder();
+	upgradeExtractDoublesIntsFromLabels(); //Make sure _dbls reflect _ints
+	dbUpdateValues();
+	
+	labelsHandleAutoSort(false);
+	_resetLabelValueMap();
+	nonFilteredCountersReset(false); //dont update indexes because its done in _dbUpdateLabelOrder()
+	endBatchedLabelsDB();
+
 }
 
 
@@ -2041,13 +2076,53 @@ Json::Value Column::serialize() const
 	return json;
 }
 
-Json::Value	Column::serializeLabels() const
+Json::Value	Column::serializeLabels(bool forCompare) const
 {
 	Json::Value jsonLabels(Json::arrayValue);
 	for (const Label* label : _labels)
-		jsonLabels.append(label->serialize());
+		jsonLabels.append(label->serialize(forCompare));
 	
 	return jsonLabels;
+}
+
+Json::Value Column::jsonForCompare() const
+{
+	Json::Value json(Json::objectValue);
+
+	json["name"]				= _name;
+	json["title"]				= _title;
+	json["rCode"]				= _rCode;
+	//json["analysisId"]			= _analysisId;
+	//json["invalidated"]			= _invalidated;
+	json["constructorJson"]		= _constructorJson;
+	json["autoSortByValue"]		= _autoSortByValue;
+	json["description"]			= _description;
+	json["codeType"]			= computedColumnTypeToString(_codeType);
+	//json["error"]				= _error;
+	json["type"]				= columnTypeToString(_type);
+	json["customEmptyValues"]	= _emptyValues->toJson();
+	json["labels"]				= serializeLabels(true);
+	json["data"]				= Json::arrayValue;
+
+	for(int i=0; i<rowCount(); i++)
+	{
+		std::string label		= getLabel(i, true),
+					value		= getValue(i, true);
+		Json::Value row			= label == value ? Json::Value(label) : Json::objectValue;
+		if(row.type() == Json::objectValue)
+		{
+			row["l"] = label;
+			row["v"] = value;
+		}
+
+		json["data"].append(row);
+	}
+	
+	json["nonEmptyLabels"]		= Json::arrayValue;
+	for(const std::string & nonEmptyLabel : nonEmptyLevelsStrings())
+		json["nonEmptyLabels"].append(nonEmptyLabel);
+
+	return json;
 }
 
 void Column::deserializeLabelsForCopy(const Json::Value & labels)

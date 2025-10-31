@@ -65,7 +65,7 @@ public:
 			void			setDataFileSynch(	bool synchronizing)					{ _dataFileSynch	= synchronizing;		dbUpdate(); }
 
 			void			setColumnCount(	size_t colCount);
-			void			setRowCount(	size_t rowCount);
+			void			setRowCount(	size_t rowCount, bool alsoLoadData = true);
 
 			void			incRevision() override;
 			bool			checkForUpdates(stringvec * colsChanged = nullptr, stringvec * colsRemoved = nullptr, bool * newColumns = nullptr, bool * rowCountChanged = nullptr);
@@ -87,9 +87,9 @@ public:
 			void					setWorkspaceEmptyValues(	const stringset& values);
 	const	std::string			&	description()																	const	{ return _description; }
 			void					setDescription(				const std::string& desc);
-			void					updateLabelsPostLocaleChange();
+			Json::Value				jsonForCompare() const;
 			
-private:			
+private:
 			void					upgradeTo019(const Json::Value & emptyVals);
 			void					upgrade019To095();
 			void					setEmptyValuesJsonOldStuff(	const Json::Value & emptyValues);

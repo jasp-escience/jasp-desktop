@@ -6,6 +6,7 @@
 #include "preferencesmodelbase.h"
 #include <QQmlProperty>
 #include <QQmlContext>
+#include <QQmlEngine>
 #include <QTimer>
 #include <QQuickWindow>
 
@@ -42,20 +43,21 @@ JASPControl::JASPControl(QQuickItem *parent) : QQuickItem(parent)
 {
 	setFlag(ItemIsFocusScope);
 	setActiveFocusOnTab(true);
-
-	connect(this, &JASPControl::titleChanged,			this, &JASPControl::helpMDChanged);
-	connect(this, &JASPControl::infoChanged,			this, &JASPControl::helpMDChanged);
+								 
 	//connect(this, &JASPControl::visibleChanged,			this, &JASPControl::helpMDChanged);
 	//connect(this, &JASPControl::visibleChildrenChanged,	this, &JASPControl::helpMDChanged);
-	connect(this, &JASPControl::backgroundChanged,		[this] () { if (!_focusIndicator)		setFocusIndicator(_background); });
-	connect(this, &JASPControl::infoChanged,			[this] () { if (_toolTip.isEmpty())	setToolTip(info());					});
-	connect(this, &JASPControl::toolTipChanged,			[this] () { setShouldStealHover(!_toolTip.isEmpty());					});
-	connect(this, &JASPControl::hasErrorChanged,		this, &JASPControl::_hightlightBorder);
-	connect(this, &JASPControl::hasWarningChanged,		this, &JASPControl::_hightlightBorder);
-	connect(this, &JASPControl::isDependencyChanged,	this, &JASPControl::_hightlightBorder);
-	connect(this, &JASPControl::activeFocusChanged,		this, &JASPControl::_hightlightBorder);
 	//connect(this, &JASPControl::implicitWidthChanged,	[this] () { setWidth(implicitWidth());		if (_preferredWidthBinding) setPreferredWidth(int(implicitWidth()), true);		});
 	//connect(this, &JASPControl::implicitHeightChanged,	[this] () { setHeight(implicitHeight());	if (_preferredHeightBinding) setPreferredHeight(int(implicitHeight()), true);	});
+
+	connect(this, &JASPControl::titleChanged,			this, &JASPControl::helpMDChanged);
+	connect(this, &JASPControl::infoChanged,				this, &JASPControl::helpMDChanged);
+	connect(this, &JASPControl::backgroundChanged,		[this] () { if (!_focusIndicator)		setFocusIndicator(_background); });
+	connect(this, &JASPControl::infoChanged,				[this] () { if (_toolTip.isEmpty())	setToolTip(info());					});
+	connect(this, &JASPControl::toolTipChanged,			[this] () { setShouldStealHover(!_toolTip.isEmpty());					});
+	connect(this, &JASPControl::hasErrorChanged,			this, &JASPControl::_hightlightBorder);
+	connect(this, &JASPControl::hasWarningChanged,		this, &JASPControl::_hightlightBorder);
+	connect(this, &JASPControl::isDependencyChanged,		this, &JASPControl::_hightlightBorder);
+	connect(this, &JASPControl::activeFocusChanged,		this, &JASPControl::_hightlightBorder);
 	connect(this, &JASPControl::indentChanged,			[this] () { QQmlProperty(this, "Layout.leftMargin", qmlContext(this)).write( (indent() && JaspTheme::currentTheme()) ? JaspTheme::currentTheme()->indentationLength() : 0); });
 	connect(this, &JASPControl::debugChanged,			[this] () { _setBackgroundColor(); _setVisible(); } );
 	connect(this, &JASPControl::parentDebugChanged,		[this] () { _setBackgroundColor(); _setVisible(); } );
@@ -74,9 +76,9 @@ JASPControl::~JASPControl()
 	//first we disconnect the children because reconnectWithYourChildren connected them to the parent
 	//These might get triggered during the destructor of QQuickItem and then crash jasp...
 	for (JASPControl* child : getChildJASPControls(_childControlsArea))
-		child->disconnect();
+		child->cleanUp();
 
-	disconnect();
+	cleanUp();
 }
 
 void JASPControl::setFocusOnTab(bool focus)
@@ -247,10 +249,13 @@ void JASPControl::componentComplete()
 
 		JASPListControl* listControl = qobject_cast<JASPListControl*>(this);
 		if (listControl)
-			listControl->setUpModel();
+			listControl->setUpModel(); // setUpModel must be called before setUp.
+
+		// For controls made via row components, wait for all controls to be created before calling the setUp: setUp links the controls together via their sources. So in this case, the rowControls calls the setUp once all the controls are made.
 		if (parentlistView)
 			parentlistView->addRowControl(_parentListViewKey, this);
-
+		else
+			setUp(); // For controls not made via a row components (as in FactorsForm), setUp must be called
 	}
 
 	if (_background == nullptr && _innerControl != nullptr)
@@ -863,6 +868,11 @@ void JASPControl::setUnitialized()
 {
 	_initialized = false;
 	_initializedWithValue = Json::nullValue;
+}
+								 
+void JASPControl::cleanUp()									
+{ 
+	disconnect();
 }
 
 void JASPControl::_setInitialized(const Json::Value &value)

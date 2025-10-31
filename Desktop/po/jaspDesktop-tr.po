@@ -3743,10 +3743,9 @@ msgctxt "AnalysisFormExpander|"
 msgid "Hide R Syntax"
 msgstr "R Sözdizimini Gizle"
 
-#, fuzzy
 msgctxt "Form|"
 msgid "Generate Wrapper"
-msgstr "Kılıfı Oluştur"
+msgstr "Sarmalayıcı Oluştur"
 
 msgctxt "Computer|"
 msgid "Save"
@@ -5675,101 +5674,83 @@ msgstr ""
 "Jasp motoru güvenlik deneme modunda çalışıyor ve yalnızca şunlara "
 "erişebiliyor: "
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise mean"
-msgstr "Satırlar boyunca ortalama"
+msgstr "Satır bazında ortalama"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise sum"
-msgstr "Satırlar boyunca toplam"
+msgstr "Satır bazında toplam"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise standard deviation"
-msgstr "Satırlar boyunca standart sapma"
+msgstr "Satır bazında standart sapma"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise variance"
-msgstr "Satırlar boyunca varyans"
+msgstr "Satır bazında varyans"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise median"
-msgstr "Satırlar boyunca medyan"
+msgstr "Satır bazında medyan"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise minimum"
-msgstr "Satırlar boyunca en küçük değer"
+msgstr "Satır bazında minimum"
 
-#, fuzzy
 msgctxt "ComputeColumnWindow|"
 msgid "Rowwise maximum"
-msgstr "Satırlar boyunca en büyük değer"
+msgstr "Satır bazında maksimum"
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Use a configuration file."
-msgstr "Bir yapılandırma (ayar) dosyası kullanın."
+msgstr "Bir yapılandırma (ayar/kurulum) dosyası kullanın."
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Use remote configuration file."
-msgstr "Uzak yapılandırma (ayar) dosyasını kullanın."
+msgstr "Uzak yapılandırma (ayar/kurulum) dosyasını kullanın."
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Use the remote configuration file pointed to by URL"
 msgstr ""
-"URL tarafından işaret edilen uzak yapılandırma (ayar) dosyasını kullanın"
+"URL tarafından işaret edilen uzak yapılandırma (ayar/kurulum) dosyasını "
+"kullanın"
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Configuration URL: "
-msgstr "Yapılandırma (Ayar) URL'si: "
+msgstr "Yapılandırma (Ayar/Kurulum) URL'si: "
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Select configuration file"
-msgstr "Yapılandırma (Ayar) dosyasını seçin"
+msgstr "Yapılandırma (Ayar/Kurulum) dosyası seçin"
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Select configuration file."
-msgstr "Yapılandırma (Ayar) dosyasını seçin."
+msgstr "Yapılandırma (Ayar/Kurulum) dosyasını seçin."
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise mean"
-msgstr "Satırlar boyunca ortalama"
+msgstr "Satır bazında ortalama"
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise sum"
-msgstr "Satırlar boyunca toplam"
+msgstr "Satır bazında toplam"
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise standard deviation"
-msgstr "Satırlar boyunca standart sapma"
+msgstr "Satır bazında standart sapma"
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise variance"
-msgstr "Satırlar boyunca varyans"
+msgstr "Satır bazında varyans"
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise median"
-msgstr "Satırlar boyunca medyan"
+msgstr "Satır bazında medyan"
 
-#, fuzzy
 msgctxt "FilterWindow|"
 msgid "Rowwise minimum"
-msgstr "Satırlar boyunca en küçük değer"
+msgstr "Satır bazında minimum"
 
 msgctxt "FilterWindow|"
 msgid "Rowwise maximum"
@@ -5779,7 +5760,6 @@ msgctxt "PrefsUI|"
 msgid "Should JASP open its window maximized on startup?"
 msgstr "JASP başlangıçta penceresini tam ekran olarak açsın mı?"
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid ""
 "This will erase the 'renv', 'Modules' and development Module folders in the "
@@ -5788,7 +5768,6 @@ msgstr ""
 "Bu, appdata'daki 'renv', 'Modules' ve geliştirme Modülü klasörlerini "
 "silecektir."
 
-#, fuzzy
 msgctxt "PrefsAdvanced|"
 msgid "Enable renv mode"
 msgstr "Renv modunu etkinleştir"
@@ -5801,7 +5780,6 @@ msgctxt "PrefsAdvanced|"
 msgid "Configuration file options"
 msgstr "Yapılandırma (Ayar) dosyası seçenekleri"
 
-#, fuzzy
 msgctxt "PrefsUI|"
 msgid "Start maximized"
 msgstr "Tam ekran olarak başla"
@@ -5812,60 +5790,63 @@ msgid ""
 "\n"
 "We would be grateful if you could report this error to the JASP team."
 msgstr ""
+"JASP'ta ciddi bir hata meydana geldi ve artık hesaplama yapamıyor.\n"
+"\n"
+"Bu hatayı JASP ekibine bildirirseniz çok minnettar oluruz."
 
 msgctxt "MainWindow|"
 msgid "Salvage"
-msgstr ""
+msgstr "Kurtarma"
 
 msgctxt "Modules::DynamicModules|"
 msgid "Install complete"
-msgstr ""
+msgstr "Kurulum tamamlandı"
 
 msgctxt "Modules::DynamicModules|"
 msgid "Completed installation of Bundles: "
-msgstr ""
+msgstr "Paketlerin kurulumu tamamlandı: "
 
 msgctxt "QObject|"
 msgid "Security Sandbox Failure"
-msgstr ""
+msgstr "Güvenlik Sandbox'ı Arızası"
 
 msgctxt "QObject|"
 msgid ""
 "Failed to activate Security Sandbox. Your system does not allow security "
-"sandboxing. Do you wish to continue with out is? (probably fine)"
+"sandboxing. Do you wish to continue without it? (probably fine)"
 msgstr ""
+"Güvenlik Sandbox'u etkinleştirilemedi. Sisteminiz güvenlik sandbox'u yapmaya "
+"izin vermiyor. Bu şekilde devam etmek istiyor musunuz? (muhtemelen iyi)"
 
 msgctxt "QObject|"
 msgid "Continue"
-msgstr ""
+msgstr "Devam et"
 
-#, fuzzy
 msgctxt "QObject|"
 msgid "Exit"
-msgstr "Çıkış"
+msgstr "Çıkış yap"
 
 #, qt-format
 msgctxt "ComboBoxBase|"
 msgid "Possible values are: %1"
-msgstr ""
+msgstr "Olası değerler şunlardır: %1"
 
 #, qt-format
 msgctxt "ImportDataSet|"
 msgid "Originally imported into %1 on %2"
-msgstr ""
+msgstr "Başlangıçta %2 tarihinde %1'e aktarıldı"
 
 msgctxt "FileEvent|"
 msgid "Loading R Data File"
-msgstr ""
+msgstr "R Veri Dosyası Yükleniyor"
 
-#, fuzzy
 msgctxt "RDataImporter|"
 msgid "0 valid columns were read from the file, please check your data file."
 msgstr "Dosyadan 0 geçerli sütun okundu, lütfen veri dosyanızı kontrol edin."
 
 msgctxt "MainWindow|"
 msgid "Salvaging"
-msgstr ""
+msgstr "Kurtarılıyor"
 
 msgctxt "MainWindow|"
 msgid ""
@@ -5879,11 +5860,20 @@ msgid ""
 "Analyses or computed columns and the like will not function anymore until "
 "you restart JASP."
 msgstr ""
+"JASP'ta ölümcül bir hata meydana geldiği için çok üzgünüz.\n"
+"Bu karışıklıktan bir şeyler kurtarabilmeniz veya geri alabilmeniz için JASP "
+"kısmen çalışır durumda kalacaktır.\n"
+"\n"
+"Örneğin, mevcut çalışma alanınızı kaydedebilir veya bir ayarı değiştirerek "
+"bir dahaki sefere bu sorunun tekrar yaşanmasını önleyebilirsiniz.\n"
+"\n"
+"JASP'ı yeniden başlatana kadar analizler, hesaplanan sütunlar ve benzeri "
+"özellikler çalışmayacaktır."
 
 #, qt-format
 msgctxt "Computer|"
 msgid "R Data files %1"
-msgstr ""
+msgstr "R Veri dosyaları %1"
 
 msgctxt "ModelTermsList|"
 msgid "Model Terms"
@@ -5895,19 +5885,173 @@ msgstr "Boş modele ekle"
 
 msgctxt "MainWindow|"
 msgid "Open file"
-msgstr ""
+msgstr "Dosyayı aç"
 
 #, qt-format
 msgctxt "MainWindow|"
 msgid "Cannot access file %1"
-msgstr ""
+msgstr "%1 dosyasına erişilemiyor"
 
 #, qt-format
 msgctxt "MainWindow|"
 msgid "File %1 is not found."
-msgstr ""
+msgstr "%1 dosyası bulunamadı."
 
 #, qt-format
 msgctxt "MainWindow|"
 msgid "JASP does not support this file type %1."
+msgstr "JASP bu %1 dosya türünü desteklemiyor."
+
+msgctxt "PrefsResults|"
+msgid "Store analysis state and plot in jasp-files"
+msgstr "Analiz durumunu ve grafiği jasp dosyalarında sakla"
+
+msgctxt "PrefsResults|"
+msgid ""
+"Enabling this can cause filesize of jaspfiles to increase, sometimes by a "
+"lot."
+msgstr ""
+"Bunu etkinleştirmek jasp dosyalarının boyutunu artırabilir, bazen oldukça "
+"fazla."
+
+msgctxt "MainWindow|"
+msgid "Stored without state"
+msgstr "Durum olmadan saklandı"
+
+msgctxt "MainWindow|"
+msgid ""
+"This analysis was saved without state, to save the image it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Bu analiz durum olmadan kaydedildi, görüntüyü kaydetmek için önce "
+"yenilenmesi gerekir.\n"
+"\n"
+"Analizi yenilemek ister misiniz?"
+
+msgctxt "MainWindow|"
+msgid ""
+"This analysis was stored without state, to resize the image it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Bu analiz durum olmadan saklandı, görüntüyü yeniden boyutlandırmak için önce "
+"yenilenmesi gerekir.\n"
+"\n"
+"Analizi yenilemek ister misiniz?"
+
+msgctxt "AutoSaves|"
+msgid "Recovery"
+msgstr "Kurtarma"
+
+msgctxt "AutoSaves|"
+msgid "No recovery files found"
+msgstr "Kurtarma dosyaları bulunmadı"
+
+msgctxt "AutoSaves|"
+msgid "Recovery files are deleted after a month"
+msgstr "Kurtarma dosyaları bir aydan sonra silinir"
+
+msgctxt "PrefsData|"
+msgid "Save settings"
+msgstr "Kaydetme ayarları"
+
+msgctxt "PrefsData|"
+msgid "Automatically save a backup of your workspace"
+msgstr "Çalışma alanınızın yedeğini otomatik olarak kaydedin"
+
+msgctxt "PrefsData|"
+msgid ""
+"When enabled this will save a copy of your workspace in a folder next to the "
+"logs. If JASP crashes with otherwise unsaved changes this backup will make "
+"sure you don't lose all your work."
+msgstr ""
+"Etkinleştirildiğinde, çalışma alanınızın bir kopyası log dosyalarının "
+"bulunduğu klasöre kaydedilir. JASP kaydedilmemiş değişikliklerle birlikte "
+"çökerse, bu yedek tüm çalışmalarınızı kaybetmenizi önleyecektir."
+
+msgctxt "PrefsData|"
+msgid "Autosave interval in minutes"
+msgstr "Otomatik kaydetme aralığı (dakika cinsinden)"
+
+msgctxt "PrefsData|"
+msgid "Interval in minutes between autosaves."
+msgstr "Otomatik kaydetmeler arasındaki süre (dakika cinsinden)."
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "%1 autosaved"
+msgstr "%1 otomatik kaydedildi"
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "Full path: %1"
+msgstr "Tam yol: %1"
+
+msgctxt "DataSetPackage|"
+msgid "Unsaved workspace"
+msgstr "Kaydedilmemiş çalışma alanı"
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "Unsaved workspace of datafile %1"
+msgstr "%1 veri dosyasının kaydedilmemiş çalışma alanı"
+
+msgctxt "DataSetPackage|"
+msgid "Autosave"
+msgstr "Otomatik Kaydetme"
+
+msgctxt "FileEvent|"
+msgid "Saving autosave JASP File"
+msgstr "Otomatik kaydetme JASP dosyası kaydediliyor"
+
+#, qt-format
+msgctxt "AutoSaveFileSystem|"
+msgid "Saved at %1"
+msgstr "%1 konumunda kaydedildi"
+
+#, qt-format
+msgctxt "AutoSaveFileSystem|"
+msgid "Saved %1 seconds ago, might still be loaded in another JASP."
+msgstr ""
+"%1 saniye önce kaydedildi, hâlâ başka bir JASP oturumunda açık olabilir."
+
+msgctxt "ResourceButtons|"
+msgid "Recovery"
+msgstr "Kurtarma"
+
+msgctxt "RibbonModel|"
+msgid "Test"
+msgstr "Test"
+
+msgctxt "RibbonModel|"
+msgid "Run tests"
+msgstr "Testleri çalıştır"
+
+#, fuzzy
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid "Stored without state"
+msgstr "Durum olmadan saklandı"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid ""
+"This analysis was stored without state, to edit the plot it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+
+#, fuzzy
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid "Version incompatibility"
+msgstr "Sürüm uyumsuzluğu"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid ""
+"This analysis was created in an older version of JASP, to edit the plot it "
+"must be refreshed first.\n"
+"\n"
+"Refresh the analysis?"
 msgstr ""

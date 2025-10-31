@@ -183,8 +183,8 @@ Rectangle
 
 				if(dataSetModel.columnUsedInEasyFilter(columnIndex))
 				{
-					filterWindow.showEasyFilter = true
-					filterWindow.open()
+					filterModel.showEasyFilter = true
+					filterModel.filterVisible = true
 				}
 				
 				//A button in VariablesWindow will do this? in any case, it is kind of annoying to have the analysis always pop up instead of variableswindow...
@@ -238,8 +238,8 @@ Rectangle
 									  )
 									+ (columnError == "" ? "" : "<br><br>" + qsTr("Computed column has error:<br>") + "<code'>" + columnError.replace("\n","<br>") + "</code>")
 								  )
-		ToolTip.timeout:	30000
-		ToolTip.delay:		500
+		ToolTip.timeout:			jaspTheme.toolTipTimeout
+		ToolTip.delay:				jaspTheme.toolTipDelay
 		cursorShape:		Qt.PointingHandCursor
 	}
 }

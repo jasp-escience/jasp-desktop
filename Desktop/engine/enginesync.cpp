@@ -53,26 +53,37 @@ EngineSync::EngineSync(QObject *parent)
 	
 	using namespace Modules;
 
-	connect(Analyses::analyses(),		&Analyses::sendRScript,								this,						&EngineSync::sendRCode							);
-	connect(Analyses::analyses(),		&Analyses::sendFilterByName,						this,						&EngineSync::sendFilterByName					);
+	if(Analyses::analyses())
+	{
+		connect(Analyses::analyses(),		&Analyses::sendRScript,								this,						&EngineSync::sendRCode							);
+		connect(Analyses::analyses(),		&Analyses::sendFilterByName,						this,						&EngineSync::sendFilterByName					);
+	}
+	
 	connect(this,						&EngineSync::moduleInstallationFailed,				this,						&EngineSync::moduleInstallationFailedHandler	);
-	connect(this,						&EngineSync::moduleInstallationFailed,				DynamicModules::dynMods(),	&DynamicModules::installationPackagesFailed,	Qt::DirectConnection);
-	connect(this,						&EngineSync::moduleInstallationSucceeded,			DynamicModules::dynMods(),	&DynamicModules::installationPackagesSucceeded,	Qt::DirectConnection);
-
-
-	connect(PreferencesModel::prefs(),	&PreferencesModel::plotPPIChanged,					this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::plotBackgroundChanged,			this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::resultFontChanged,				this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::languageCodeChanged,				this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::developerModeChanged,			this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::githubPatCustomChanged,			this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::githubPatUseDefaultChanged,		this,						&EngineSync::settingsChanged					);
-
-	connect(PreferencesModel::prefs(),	&PreferencesModel::numDecimalsChanged,				this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::fixedDecimalsChanged,			this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::exactPValuesChanged,				this,						&EngineSync::settingsChanged					);
-	connect(PreferencesModel::prefs(),	&PreferencesModel::normalizedNotationChanged,		this,						&EngineSync::settingsChanged					);
-
+	
+	if(DynamicModules::dynMods())
+	{
+		connect(this,						&EngineSync::moduleInstallationFailed,				DynamicModules::dynMods(),	&DynamicModules::installationPackagesFailed,	Qt::DirectConnection);
+		connect(this,						&EngineSync::moduleInstallationSucceeded,			DynamicModules::dynMods(),	&DynamicModules::installationPackagesSucceeded,	Qt::DirectConnection);
+	}
+	
+	if(PreferencesModel::prefs())
+	{
+		connect(PreferencesModel::prefs(),	&PreferencesModel::plotPPIChanged,					this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::plotBackgroundChanged,			this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::resultFontChanged,				this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::languageCodeChanged,				this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::developerModeChanged,			this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::githubPatCustomChanged,			this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::githubPatUseDefaultChanged,		this,						&EngineSync::settingsChanged					);
+	
+		connect(PreferencesModel::prefs(),	&PreferencesModel::numDecimalsChanged,				this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::fixedDecimalsChanged,			this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::exactPValuesChanged,				this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::normalizedNotationChanged,		this,						&EngineSync::settingsChanged					);
+		connect(PreferencesModel::prefs(),	&PreferencesModel::maxEnginesChanged,					this,					&EngineSync::maxEngineCountChanged,				Qt::DirectConnection	);
+	}
+	
 	// delay start so as not to increase program start up time 10sec is better than 100ms, because they are orphaned anyway
 	// Except, that it might somehow cause a crash? If the timer goes off while waiting for a download from OSF than it might remove the files while making them..
 	// So lets put it on 500ms...
@@ -177,7 +188,7 @@ QHash<int, QByteArray> EngineSync::roleNames() const
 
 size_t EngineSync::maxEngineCount() const
 {
-	size_t maxEngines = std::max(1, PreferencesModel::prefs()->maxEngines());	
+	size_t maxEngines = PreferencesModel::prefs() ? std::max(1, PreferencesModel::prefs()->maxEngines()) : 1;	
 	return maxEngines;
 }
 
@@ -243,8 +254,12 @@ EngineRepresentation * EngineSync::createNewEngine(bool addToEngines, int overri
 		if(addToEngines)
 			_engines.insert(engine);
 
-		connect(engine,						&EngineRepresentation::rCodeReturned,					Analyses::analyses(),	&Analyses::rCodeReturned												);
-		connect(engine,						&EngineRepresentation::filterByNameDone,				Analyses::analyses(),	&Analyses::filterByNameDone,					Qt::QueuedConnection	);
+		if(Analyses::analyses()) //Could be missing if testing
+		{
+			connect(engine,						&EngineRepresentation::rCodeReturned,					Analyses::analyses(),	&Analyses::rCodeReturned												);
+			connect(engine,						&EngineRepresentation::filterByNameDone,				Analyses::analyses(),	&Analyses::filterByNameDone,					Qt::QueuedConnection	);
+			connect(Analyses::analyses(),		&Analyses::analysisRemoved,								engine,					&EngineRepresentation::analysisRemoved									);
+		}
 		connect(engine,						&EngineRepresentation::engineTerminated,				this,					&EngineSync::engineTerminated											);
 		connect(engine,						&EngineRepresentation::processNewFilterResult,			this,					&EngineSync::processNewFilterResult										);
 		connect(engine,						&EngineRepresentation::filterDone,						this,					&EngineSync::filterDone													);
@@ -270,9 +285,7 @@ EngineRepresentation * EngineSync::createNewEngine(bool addToEngines, int overri
 		connect(engine,						&EngineRepresentation::stopModuleEngine,				this,					&EngineSync::stopModuleEngine											);
 		connect(this,						&EngineSync::reloadData,								engine,					&EngineRepresentation::reloadData										);
 		connect(this,						&EngineSync::settingsChanged,							engine,					&EngineRepresentation::settingsChanged									);
-		connect(Analyses::analyses(),		&Analyses::analysisRemoved,								engine,					&EngineRepresentation::analysisRemoved									);
-		connect(PreferencesModel::prefs(),	&PreferencesModel::maxEnginesChanged,					this,					&EngineSync::maxEngineCountChanged,				Qt::DirectConnection	);
-
+		
 		connect(engine,						&EngineRepresentation::stateChanged,					this,					&EngineSync::resetListModel,					Qt::QueuedConnection	);
 		connect(engine,						&EngineRepresentation::analysisStatusChanged,			this,					&EngineSync::resetListModel,					Qt::QueuedConnection	);
 
@@ -288,7 +301,7 @@ EngineRepresentation * EngineSync::createNewEngine(bool addToEngines, int overri
 	}
 }
 
-void EngineSync::start(int )
+void EngineSync::start()
 {
 	JASPTIMER_SCOPE(EngineSync::start);
 
@@ -308,7 +321,7 @@ void EngineSync::start(int )
 	_timerProcess	= new QTimer(this);
 	_timerBeat		= new QTimer(this);
 
-	connect(_timerProcess,	&QTimer::timeout, this, &EngineSync::process,				Qt::QueuedConnection);
+	connect(_timerProcess,	&QTimer::timeout, this, &EngineSync::process,				Qt::DirectConnection);
 	connect(_timerBeat,		&QTimer::timeout, this, &EngineSync::heartbeatTempFiles,	Qt::QueuedConnection);
 
 	_timerProcess->start(100);
@@ -434,11 +447,8 @@ void EngineSync::process()
 
 	if(_stopProcessing || _dataMode || _filterRunning)
 	{
-		bool needEngine = processComputedColumnQueue();
-		
-		if(needEngine)
-			createNewEngine();
-		
+		if ((_dataMode) && processComputedColumnQueue())
+			startExtraEngines(1);
 		return;
 	}
 
@@ -458,6 +468,9 @@ void EngineSync::process()
 	notEnoughIdlesSet.merge(notEnoughIdlesForScript);
 	
 	int			wantThisManyEngines			=	notEnoughIdlesSet.size();
+
+	if (notEnoughIdlesForCompCol) // Need an angine for a computed column: create one!
+		wantThisManyEngines++;
 
 	if(notEnoughIdles)
 		Log::log() << "Not enough idle engines! Need " << (notEnoughIdlesForScript.size() ? " one for script" : "") << (notEnoughIdlesForCompCol ? " one for compcol" : "") << (notEnoughIdlesForModule.size() ? std::to_string(notEnoughIdlesForModule.size()) + " for installing modules" : "") <<  (notEnoughIdlesForAnalysis.size() ? std::to_string(notEnoughIdlesForAnalysis.size()) + " for analysis" : "") << ", one will " << ( !anEngineIdleSoon() ? "NOT " : "")  << "be idle soon..." << std::endl;
@@ -754,7 +767,10 @@ bool EngineSync::processComputedColumnQueue()
 stringset EngineSync::processDynamicModules()
 {
 	using DynMods = Modules::DynamicModules;
-
+	
+	if(!DynMods::dynMods())
+		return {}; //Only for testing!
+	
 	try
 	{
 		stringset	wantToRunInstall	= DynMods::dynMods()->moduleBundlesNeedingInstall();
@@ -778,7 +794,9 @@ stringset EngineSync::processDynamicModules()
 }
 
 std::set<std::string> EngineSync::processAnalysisRequests()
-{	
+{
+	if(!Analyses::analyses())
+		return {}; //Only for testing!
 
 	std::set<std::string> modulesNeedingEngines;
 	
@@ -856,7 +874,7 @@ IPCChannel *EngineSync::channel(size_t channelNumber)
 	if(_rCmderChannel && channelNumber == _rCmderChannel->channelNumber())
 		return _rCmderChannel;
 
-	if(channelNumber > _channels.size())
+	if(channelNumber >= _channels.size())
 	{
 		Log::log() << "IPCChannel requested for channel #" + std::to_string(channelNumber) + " but only " + std::to_string(_channels.size()) + " exist...";
 		return nullptr;
@@ -1327,6 +1345,8 @@ void EngineSync::cleanRestart()
 
 	delete _waitingFilter;
 	_waitingFilter = nullptr;
+	_filterRunning = false;
+	
 
 	TempFiles::clearSessionDir();
 
@@ -1338,6 +1358,7 @@ void EngineSync::cleanRestart()
 	catch(unexpectedEngineReply e) {}
 
 	resetListModel();
+	_stopProcessing = false;
 }
 
 std::string	EngineSync::currentStateForDebug() const

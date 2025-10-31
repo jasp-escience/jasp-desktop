@@ -618,11 +618,11 @@ msgstr "Trocar o repositorio CRAN: "
 
 msgctxt "PrefsAdvanced|"
 msgid "Max logfiles to keep: "
-msgstr "Máximo de ficheiros de inicio a conservar: "
+msgstr "Máx. ficheiros inicio a manter: "
 
 msgctxt "PrefsAdvanced|"
 msgid "Show logs"
-msgstr "Amosar rexistros de inicio"
+msgstr "Amosar rexistros inicio"
 
 msgctxt "PrefsAdvanced|"
 msgid "Generate markdown files for help"
@@ -1080,15 +1080,15 @@ msgstr "Fai clic para aplicar un filtro"
 
 msgctxt "ContrastsList|"
 msgid "polynomial"
-msgstr "polinómico"
+msgstr "Polinómico"
 
 msgctxt "ContrastsList|"
 msgid "custom"
-msgstr "personalizado"
+msgstr "Personalizado"
 
 msgctxt "ContrastsList|"
 msgid "simple"
-msgstr "simple"
+msgstr "Simple"
 
 #, qt-format
 msgctxt "ContrastsList|"
@@ -1097,15 +1097,15 @@ msgstr "Personalizado para %1"
 
 msgctxt "ContrastsList|"
 msgid "repeated"
-msgstr "repetido"
+msgstr "Repetido"
 
 msgctxt "ContrastsList|"
 msgid "difference"
-msgstr "diferenza"
+msgstr "Diferenza"
 
 msgctxt "ContrastsList|"
 msgid "deviation"
-msgstr "desvío"
+msgstr "Desvío"
 
 msgctxt "ContrastsList|"
 msgid "Helmert"
@@ -1338,7 +1338,7 @@ msgstr ""
 
 msgctxt "PrefsUI|"
 msgid "Themes"
-msgstr "Esquemas de cores"
+msgstr "Temas"
 
 msgctxt "PrefsUI|"
 msgid ""
@@ -1357,8 +1357,7 @@ msgctxt "PrefsUI|"
 msgid ""
 "Switches to a light theme, this is the default and original flavour of JASP."
 msgstr ""
-"Cambiarse a un esquema claro de cores, que é a vista orixinal e por defecto "
-"de JASP."
+"Cambiarse a un tema claro, que é a vista orixinal e por defecto de JASP."
 
 msgctxt "PrefsUI|"
 msgid "Miscellaneous options"
@@ -1401,8 +1400,7 @@ msgid ""
 "Switches to a dark theme, makes JASP a lot easier on the eyes for those "
 "night owls out there."
 msgstr ""
-"Cambiarse a un esquema escuro de cores, fai JASP máis agradable á vista dos "
-"noctámbulos."
+"Cambiarse a un tema escuro, fai JASP máis agradable á vista dos noctámbulos."
 
 msgctxt "WelcomePage|"
 msgid "Free:"
@@ -1496,7 +1494,7 @@ msgstr "Eliminar o valor ausente"
 
 msgctxt "PrefsMissingValues|"
 msgid "Missing Value List"
-msgstr "Lista para Valores Ausentes"
+msgstr "Lista para valores ausentes"
 
 msgctxt "TableView|"
 msgid "Row #"
@@ -1544,7 +1542,7 @@ msgstr ""
 
 msgctxt "PrefsResults|"
 msgid "Plot options"
-msgstr "Opcións de gráfica"
+msgstr "Opcións de gráficas"
 
 msgctxt "PrefsResults|"
 msgid "Use the Pixels Per Inch of your screen to render your plots."
@@ -1578,11 +1576,11 @@ msgstr "PPI personalizado : "
 
 msgctxt "PrefsResults|"
 msgid "Table options"
-msgstr "Opcións de Táboas"
+msgstr "Opcións de táboas"
 
 msgctxt "PrefsResults|"
 msgid "Display exact p-values"
-msgstr "Presentar os valores p exactos"
+msgstr "Presentar os valores P exactos"
 
 msgctxt "EngineRepresentation|"
 msgid "Error saving plot"
@@ -2276,11 +2274,11 @@ msgstr "Resultados e Axudas:"
 
 msgctxt "PrefsUI|"
 msgid "Light theme"
-msgstr "Esquema claro de cores"
+msgstr "Tema claro"
 
 msgctxt "PrefsUI|"
 msgid "Dark theme"
-msgstr "Esquema escuro de cores"
+msgstr "Tema escuro"
 
 msgctxt "PrefsUI|"
 msgid "Preferred language"
@@ -3504,7 +3502,7 @@ msgstr ""
 
 msgctxt "PrefsData|"
 msgid "Show missing values as: "
-msgstr "Amosar o valores ausentes como: "
+msgstr "Amosar os valores ausentes como: "
 
 msgctxt "PrefsUI|"
 msgid "If disabled will switch the textrendering to native."
@@ -4448,7 +4446,7 @@ msgstr "Engadir un valor ausente"
 
 msgctxt "PrefsMissingValues|"
 msgid "Set current workspace with these values"
-msgstr "Fixar a área de traballo vixente con estes valores"
+msgstr "Fixar área de traballo vixente cos valores"
 
 msgctxt "PrefsMissingValues|"
 msgid "Set the current workspace missing values with these values"
@@ -4610,15 +4608,15 @@ msgstr "Fixar os valores baleiros para a columna '%1'"
 
 msgctxt "QObject|"
 msgid "Set workspace empty values"
-msgstr "Fixar os valores baleiros da área de traballo"
+msgstr "Fixar valores baleiros da área de traballo"
 
 msgctxt "PrefsMissingValues|"
 msgid "Show workspace missing values"
-msgstr "Amosar os valores ausentes da área de traballo"
+msgstr "Amosar valores ausentes da área de traballo"
 
 msgctxt "PrefsMissingValues|"
 msgid "Opens the settings for workspace missing values"
-msgstr "Abre a configuración para os valores ausentes da área de traballo"
+msgstr "Abre a configuración dos valores ausentes da área de traballo"
 
 msgctxt "MainPage|"
 msgid "Embed web video"
@@ -4749,7 +4747,7 @@ msgstr "Os datos teñen %1 filas, %2 (%3%4%) pasadas polo filtro"
 
 msgctxt "PrefsData|"
 msgid "External spreadsheet editor (for data synchronization)"
-msgstr "Editor externo de follas de cálculo (para a sincronización de datos)"
+msgstr "Editor externo de follas de cálculo (para sincronizar datos)"
 
 msgctxt "PrefsData|"
 msgid ""
@@ -5007,7 +5005,7 @@ msgstr ""
 
 msgctxt "PrefsData|"
 msgid "Threshold for Scale"
-msgstr "Limiar para a escala"
+msgstr "Lindeiro para a escala"
 
 #, qt-format
 msgctxt "ExpandDataProxyModel|"
@@ -5238,7 +5236,7 @@ msgstr "<Primeiro completa o nome da columna>"
 
 msgctxt "PrefsData|"
 msgid "Maximum allowed levels for scale when used as nominal/ordinal"
-msgstr "Niveis de escala máximos permitidos cando se usa como nominal/ordinal"
+msgstr "Niveis de escala máximos permitidos ao usar como nominal/ordinal"
 
 msgctxt "PrefsData|"
 msgid ""
@@ -5496,12 +5494,11 @@ msgstr "Elixir idioma"
 msgctxt "PrefsUI|"
 msgid "Use an alternative language and territory dependent display for numbers"
 msgstr ""
-"Usar un idioma alternativo e unha visualización dependente do territorio "
-"para os números"
+"Usar idioma alternativo e presentación segundo o territorio para os números"
 
 msgctxt "PrefsUI|"
 msgid "Use the locale specified below for display of numbers and currency."
-msgstr "Usar o localismo indicado abaixo para amosar os números e a moeda."
+msgstr "Usar o localismo indicado abaixo para presentar os números e a moeda."
 
 msgctxt "PrefsUI|"
 msgid "Alt. language"
@@ -5858,7 +5855,7 @@ msgstr "Fallo do Contorno seguro de protección"
 msgctxt "QObject|"
 msgid ""
 "Failed to activate Security Sandbox. Your system does not allow security "
-"sandboxing. Do you wish to continue with out is? (probably fine)"
+"sandboxing. Do you wish to continue without it? (probably fine)"
 msgstr ""
 "Fallo ao activar o Contorno seguro de protección. O teu sistema non permite "
 "usar un contorno seguro de protección. Queres continuar sen isto? "
@@ -5949,3 +5946,163 @@ msgstr "Non se atopa o ficheiro %1."
 msgctxt "MainWindow|"
 msgid "JASP does not support this file type %1."
 msgstr "JASP non admite este tipo de ficheiro %1."
+
+msgctxt "PrefsResults|"
+msgid "Store analysis state and plot in jasp-files"
+msgstr "Gardar estado da análise e gráfica en ficheiros de JASP"
+
+msgctxt "PrefsResults|"
+msgid ""
+"Enabling this can cause filesize of jaspfiles to increase, sometimes by a "
+"lot."
+msgstr ""
+"Permitir isto pode provocar que aumente o tamaño dos ficheiros, ás veces "
+"moito."
+
+msgctxt "MainWindow|"
+msgid "Stored without state"
+msgstr "Gardado sen estado"
+
+msgctxt "MainWindow|"
+msgid ""
+"This analysis was saved without state, to save the image it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Esta análise foi gardada sen estado; para gardar a imaxe, debe ser primeiro "
+"actualizada.\n"
+"\n"
+"Actualizar a análise?"
+
+msgctxt "MainWindow|"
+msgid ""
+"This analysis was stored without state, to resize the image it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Esta análise foi gardada sen estado; para redimensionar a imaxe, debe ser "
+"primeiro actualizada.\n"
+"\n"
+"Actualizar a análise?"
+
+msgctxt "AutoSaves|"
+msgid "Recovery"
+msgstr "Recuperación"
+
+msgctxt "AutoSaves|"
+msgid "No recovery files found"
+msgstr "Non se atoparon ficheiros de recuperación"
+
+msgctxt "AutoSaves|"
+msgid "Recovery files are deleted after a month"
+msgstr "Os ficheiros de recuperación se eliminan despois de un mes"
+
+msgctxt "PrefsData|"
+msgid "Save settings"
+msgstr "Configuración do gardado"
+
+msgctxt "PrefsData|"
+msgid "Automatically save a backup of your workspace"
+msgstr "Gardar automaticamente unha copia do teu espazo de traballo"
+
+msgctxt "PrefsData|"
+msgid ""
+"When enabled this will save a copy of your workspace in a folder next to the "
+"logs. If JASP crashes with otherwise unsaved changes this backup will make "
+"sure you don't lose all your work."
+msgstr ""
+"Cando se habilita, isto vai gardar unha copia do teu espazo de traballo nun "
+"cartafol próximo aos rexistros. Se JASP se quebra con cambios doutro xeito "
+"non gardados, esta copia vaite asegurar de que non perdas todo o teu "
+"traballo."
+
+msgctxt "PrefsData|"
+msgid "Autosave interval in minutes"
+msgstr "Intervalo de gardado automático, en minutos"
+
+msgctxt "PrefsData|"
+msgid "Interval in minutes between autosaves."
+msgstr "Intervalo, en minutos, entre gardados automáticos."
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "%1 autosaved"
+msgstr "Gardado automático %1"
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "Full path: %1"
+msgstr "Ruta completa: %1"
+
+msgctxt "DataSetPackage|"
+msgid "Unsaved workspace"
+msgstr "Espazo de traballo non gardado"
+
+#, qt-format
+msgctxt "DataSetPackage|"
+msgid "Unsaved workspace of datafile %1"
+msgstr "Espazo de traballo non gardado do ficheiro de datos %1"
+
+msgctxt "DataSetPackage|"
+msgid "Autosave"
+msgstr "Autogardado"
+
+msgctxt "FileEvent|"
+msgid "Saving autosave JASP File"
+msgstr "Gardar o ficheiro JASP de autogardado"
+
+#, qt-format
+msgctxt "AutoSaveFileSystem|"
+msgid "Saved at %1"
+msgstr "Gardado en %1"
+
+#, qt-format
+msgctxt "AutoSaveFileSystem|"
+msgid "Saved %1 seconds ago, might still be loaded in another JASP."
+msgstr "Gardado hai %1 segundos, aínda podería cargarse en outro JASP."
+
+msgctxt "ResourceButtons|"
+msgid "Recovery"
+msgstr "Recuperación"
+
+msgctxt "RibbonModel|"
+msgid "Test"
+msgstr "Proba"
+
+msgctxt "RibbonModel|"
+msgid "Run tests"
+msgstr "Executar probas"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid "Stored without state"
+msgstr "Gardado sen estado"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid ""
+"This analysis was stored without state, to edit the plot it must be "
+"refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Esta análise gardouse sen estado; para editar a gráfica débese refrescar "
+"primeiro.\n"
+"\n"
+"Refrescar a análise?"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid "Version incompatibility"
+msgstr "Incompatibilidade de versión"
+
+msgctxt "PlotEditor::PlotEditorModel|"
+msgid ""
+"This analysis was created in an older version of JASP, to edit the plot it "
+"must be refreshed first.\n"
+"\n"
+"Refresh the analysis?"
+msgstr ""
+"Esta análise creouse nunha versión anterior de JASP; para editar a gráfica "
+"débese refrescar primeiro.\n"
+"\n"
+"Refrescar a análise?"

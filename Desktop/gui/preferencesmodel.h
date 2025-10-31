@@ -82,11 +82,14 @@ class PreferencesModel : public PreferencesModelBase
 	Q_PROPERTY(QString		remoteConfigurationURL	READ remoteConfigurationURL		WRITE setRemoteConfigurationURL		NOTIFY remoteConfigurationURLChanged	)
 	Q_PROPERTY(bool			useConfigurationFile	READ useConfigurationFile		WRITE setUseConfigurationFile		NOTIFY useConfigurationFileChanged		)
 	Q_PROPERTY(bool			startMaximized			READ startMaximized				WRITE setStartMaximized				NOTIFY startMaximizedChanged			)
+	Q_PROPERTY(bool			storeStateEtc			READ storeStateEtc				WRITE setStoreStateEtc				NOTIFY storeStateEtcChanged				)
+	
+	Q_PROPERTY(int			autoSaveIntervalSec		READ autoSaveIntervalSec		WRITE setAutoSaveIntervalSec		NOTIFY autoSaveIntervalSecChanged		)
+	Q_PROPERTY(bool			autoSaveAtAll			READ autoSaveAtAll				WRITE setAutoSaveAtAll				NOTIFY autoSaveAtAllChanged				)
+	
 
 
 public:
-
-
 	explicit	 PreferencesModel(QObject *parent = 0);
 
 	static PreferencesModel * prefs() { return qobject_cast<PreferencesModel*>(_singleton); }
@@ -164,16 +167,20 @@ public:
 	QString			remoteConfigurationURL()				const;
 	bool			remoteConfiguration()					const;
 	bool			useConfigurationFile()					const;
-
+	bool			checkUpdates()							const;
+	bool			startMaximized()						const;
+	int				autoSaveIntervalSec()					const;
+	bool			autoSaveAtAll()							const;
+	bool			checkUpdatesAskUser()					const;
 	
-	bool checkUpdatesAskUser() const;
-	void setCheckUpdatesAskUser(bool newCheckUpdatesAskUser);
+	void			setCheckUpdatesAskUser(	bool	newCheckUpdatesAskUser);
+	void			setCheckUpdates(		bool	newCheckUpdates);
+	void			setStartMaximized(		bool	newStartMaximized);
+	void			setAutoSaveIntervalSec(	int		newAutoSaveIntervalSec);
+	void			setAutoSaveAtAll(		bool	newAutoSaveAtAll);
 	
-	bool checkUpdates() const;
-	void setCheckUpdates(bool newCheckUpdates);
-	
-	bool startMaximized() const;
-	void setStartMaximized(bool newStartMaximized);
+	bool storeStateEtc() const;
+	void setStoreStateEtc(bool newStoreStateEtc);
 	
 public slots:
 	bool engineSandbox()							const;
@@ -309,6 +316,9 @@ signals:
 	void remoteConfigurationURLChanged(	QString		remoteConfigurationURL);
 	void useConfigurationFileChanged(	bool		enabled);
 	void startMaximizedChanged(			bool		startMaximized);
+	void storeStateEtcChanged(			bool		state);
+	void autoSaveIntervalSecChanged(	int			interval);
+	void autoSaveAtAllChanged(			bool		autoSave);
 	
 private slots:
 	void dataLabelNAChangedSlot(QString label);
@@ -327,6 +337,8 @@ private:
 	QString			_checkFontList(QString fonts)					const;
 	QStringList		_splitValues(const QString& values)				const;
 	void			_setEmptyValues(const QStringList& values);
+	bool _autoSaveIntervalSec;
+	bool _autoSaveAtAll;
 };
 
 #endif // PREFERENCESDIALOG_H
